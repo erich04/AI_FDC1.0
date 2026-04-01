@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_archive_attachment")
+@TableName("fdc_arch_attachment_t")
 public class ArchiveAttachment {
     @TableId(type = IdType.AUTO)
     private Long attachmentId;

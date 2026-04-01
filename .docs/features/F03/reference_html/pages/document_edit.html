@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财经文档系统 - 编辑文档</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1173d4",
+                        "background-light": "#f6f7f8",
+                        "border-color": "#dbe0e6",
+                        "text-main": "#111418",
+                        "text-secondary": "#617589"
+                    },
+                    fontFamily: {
+                        "display": ["Microsoft YaHei", "微软雅黑", "Inter", "Noto Sans SC", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+            vertical-align: middle;
+            font-size: 20px;
+        }
+        .label-cell {
+            width: 162px;
+            display: flex;
+            align-items: center;
+            color: #617589;
+            font-size: 14px;
+            font-weight: normal;
+            padding: 8px 0;
+            flex-shrink: 0;
+        }
+        .input-cell {
+            flex-grow: 1;
+            padding: 6px 0;
+        }
+        .edit-input {
+            width: 100%;
+            border: 1px solid #dbe0e6;
+            border-radius: 6px;
+            font-size: 14px;
+            padding: 6px 12px;
+            transition: all 0.2s;
+        }
+        .edit-input:focus {
+            outline: none;
+            border-color: #1173d4;
+            box-shadow: 0 0 0 2px rgba(17, 115, 212, 0.1);
+        }
+        .edit-input[readonly] {
+            background-color: #f8fafc;
+            cursor: not-allowed;
+            border-color: #dbe0e6;
+        }
+        .edit-select {
+            width: 100%;
+            border: 1px solid #dbe0e6;
+            border-radius: 6px;
+            font-size: 14px;
+            padding: 6px 12px;
+            background-color: white;
+            transition: all 0.2s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364758b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        .edit-select:focus {
+            outline: none;
+            border-color: #1173d4;
+            box-shadow: 0 0 0 2px rgba(17, 115, 212, 0.1);
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background-light font-display text-text-main">
+    <!-- Header -->
+    <header class="bg-white border-b border-border-color h-16 flex items-center px-8 shrink-0 shadow-sm">
+        <div class="flex items-center justify-between w-full max-w-[1440px] mx-auto">
+            <div class="flex items-center gap-4">
+                <a href="data_maintenance.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <span class="material-symbols-outlined text-3xl">arrow_back</span>
+                    <span class="text-lg font-bold">返回数据维护</span>
+                </a>
+            </div>
+            <h1 class="text-2xl font-bold">财经文档系统</h1>
+            <div class="relative">
+                <input type="text" placeholder="搜索文档..." class="w-64 h-10 pl-10 pr-4 rounded-lg border border-border-color text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 max-w-[1440px] mx-auto w-full">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-text-secondary mb-6">
+            <a href="../index.html" class="hover:text-primary transition-colors">首页</a>
+            <span class="mx-1 text-gray-300">/</span>
+            <a href="data_maintenance.html" class="hover:text-primary transition-colors">数据维护</a>
+            <span class="mx-1 text-gray-300">/</span>
+            <span class="text-text-main font-medium">编辑文档</span>
+        </nav>
+
+        <!-- Page Title and Actions -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold" id="document-title">2020年度增值税进项税额抵扣凭证 0002AP00001</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="saveDocument()" class="flex items-center gap-2 px-8 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-all shadow-sm">
+                    保存
+                </button>
+                <button onclick="cancelEdit()" class="flex items-center gap-2 px-8 py-2.5 bg-white border border-border-color rounded-lg text-sm font-medium text-text-main hover:bg-gray-50 transition-all shadow-sm">
+                    取消
+                </button>
+            </div>
+        </div>
+
+        <!-- Form Sections -->
+        <div class="space-y-6">
+            <!-- Basic Information Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-border-color overflow-hidden">
+                <div class="px-6 py-4 border-b border-border-color bg-gray-50/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <h2 class="font-bold text-text-main">文档基本信息</h2>
+                    </div>
+                    <span class="material-symbols-outlined text-gray-400">expand_less</span>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-4">
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">文档类型</span>
+                            <div class="input-cell">
+                                <input class="edit-input" readonly type="text" value="会计凭证" id="doc-type">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">归档主体</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="北京分公司" id="archive-entity">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">业务模块</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="应付账款 AP" id="business-module">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">开始档期</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="month" value="2020-08" id="start-period">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">结束档期</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="month" value="2020-08" id="end-period">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">文档业务编码</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="0002AP00001" id="business-code">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 col-span-3">
+                            <span class="label-cell">文档名称</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="2020年度增值税进项税额抵扣凭证 0002AP00001" id="doc-name">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">归档责任人</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="李四" id="archive-person">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">归档责任部门</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="财务管理部" id="archive-dept">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">文档生成日期</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="date" value="2020-08-13" id="doc-date">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">密级</span>
+                            <div class="input-cell">
+                                <select class="edit-select" id="security-level">
+                                    <option>公开</option>
+                                    <option>内部</option>
+                                    <option>秘密</option>
+                                    <option>机密</option>
+                                    <option selected>绝密</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">系统来源</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="ERP核心系统" id="system-source">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">文档归档编码</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="GD-2020-AP-001245" id="archive-code">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">归档地</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="总部档案馆-02库区" id="archive-location">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">产生地</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="北京市朝阳区总部大厦" id="source-location">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">是否可见</span>
+                            <div class="input-cell">
+                                <select class="edit-select" id="visibility">
+                                    <option selected>是</option>
+                                    <option>否</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">载体类型</span>
+                            <div class="input-cell">
+                                <select class="edit-select" id="carrier-type">
+                                    <option value="电子件">电子件</option>
+                                    <option value="实物件">实物件</option>
+                                    <option value="电子件+实物件" selected>电子件+实物件</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">创建人</span>
+                            <div class="input-cell">
+                                <input class="edit-input" readonly type="text" value="李四" id="creator">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">创建时间</span>
+                            <div class="input-cell">
+                                <input class="edit-input" readonly type="text" value="2020-08-13 09:15:00" id="create-time">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 col-span-3">
+                            <span class="label-cell">备注</span>
+                            <div class="input-cell">
+                                <textarea class="edit-input h-20 resize-none" placeholder="请输入备注信息..." id="remarks">该笔凭证包含年度重点审计涉及的所有原始抵扣发票，涉及金额巨大，需妥善保管，查阅需经财务总监审批。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Extended Information Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-border-color overflow-hidden">
+                <div class="px-6 py-4 border-b border-border-color bg-gray-50/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <h2 class="font-bold text-text-main">扩展信息</h2>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-4">
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">条码模块</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="TX-AP-2020" id="barcode-module">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">文号</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="财会〔2020〕15号" id="doc-number">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">起止号</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="000001 - 000150" id="range-number">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">保存期限(年)</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="number" value="30" id="retention-period">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">档案类型</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="会计档案-原始凭证" id="archive-type">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">系统来源</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="FSSC共享平台" id="extended-system-source">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Archive Information Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-border-color overflow-hidden">
+                <div class="px-6 py-4 border-b border-border-color bg-gray-50/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <h2 class="font-bold text-text-main">归档信息</h2>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-4">
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">归档地</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="总部档案馆-02库区-A12架" id="archive-location-detail">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">归档责任人</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="张三" id="archive-person-detail">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">归档责任部门</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="档案管理中心" id="archive-dept-detail">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">电子归档时间</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="2020-08-15 10:30:00" id="electronic-archive-time">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">实物归档时间</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="2020-09-01 16:45:00" id="physical-archive-time">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="label-cell">实物载体类型</span>
+                            <div class="input-cell">
+                                <input class="edit-input" type="text" value="光盘 + 纸质原件" id="physical-carrier-type">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // 获取URL参数
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 保存文档
+        function saveDocument() {
+            const docId = getUrlParam('docId');
+            const from = getUrlParam('from') || 'data_maintenance';
+            
+            // 收集表单数据
+            const formData = {
+                docType: document.getElementById('doc-type').value,
+                archiveEntity: document.getElementById('archive-entity').value,
+                businessModule: document.getElementById('business-module').value,
+                startPeriod: document.getElementById('start-period').value,
+                endPeriod: document.getElementById('end-period').value,
+                businessCode: document.getElementById('business-code').value,
+                docName: document.getElementById('doc-name').value,
+                archivePerson: document.getElementById('archive-person').value,
+                archiveDept: document.getElementById('archive-dept').value,
+                docDate: document.getElementById('doc-date').value,
+                securityLevel: document.getElementById('security-level').value,
+                systemSource: document.getElementById('system-source').value,
+                archiveCode: document.getElementById('archive-code').value,
+                archiveLocation: document.getElementById('archive-location').value,
+                sourceLocation: document.getElementById('source-location').value,
+                visibility: document.getElementById('visibility').value,
+                carrierType: document.getElementById('carrier-type').value,
+                remarks: document.getElementById('remarks').value,
+                barcodeModule: document.getElementById('barcode-module').value,
+                docNumber: document.getElementById('doc-number').value,
+                rangeNumber: document.getElementById('range-number').value,
+                retentionPeriod: document.getElementById('retention-period').value,
+                archiveType: document.getElementById('archive-type').value,
+                extendedSystemSource: document.getElementById('extended-system-source').value,
+                archiveLocationDetail: document.getElementById('archive-location-detail').value,
+                archivePersonDetail: document.getElementById('archive-person-detail').value,
+                archiveDeptDetail: document.getElementById('archive-dept-detail').value,
+                electronicArchiveTime: document.getElementById('electronic-archive-time').value,
+                physicalArchiveTime: document.getElementById('physical-archive-time').value,
+                physicalCarrierType: document.getElementById('physical-carrier-type').value
+            };
+
+            console.log('保存文档:', docId, formData);
+            alert('文档保存成功！');
+            
+            // 返回来源页面
+            if (from === 'data_maintenance') {
+                window.location.href = 'data_maintenance.html';
+            } else {
+                window.location.href = from;
+            }
+        }
+
+        // 取消编辑
+        function cancelEdit() {
+            const from = getUrlParam('from') || 'data_maintenance';
+            if (confirm('确定要取消编辑吗？未保存的修改将丢失。')) {
+                if (from === 'data_maintenance') {
+                    window.location.href = 'data_maintenance.html';
+                } else {
+                    window.location.href = from;
+                }
+            }
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            const docId = getUrlParam('docId');
+            if (docId) {
+                // 根据docId加载文档数据
+                console.log('加载文档:', docId);
+                // 这里可以添加从后端获取文档数据的逻辑
+            }
+        };
+    </script>
+</body>
+</html>

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_bind_volume")
+@TableName("fdc_bind_volume_t")
 public class BindVolume {
     @TableId(type = IdType.AUTO)
     private Long volumeId;

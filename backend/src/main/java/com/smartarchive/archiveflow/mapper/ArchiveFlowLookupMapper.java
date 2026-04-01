@@ -7,8 +7,8 @@ import org.apache.ibatis.annotations.Select;
 public interface ArchiveFlowLookupMapper {
     @Select("""
         SELECT document_organization_code
-        FROM md_document_organization
-        WHERE enabled_flag = 'Y'
+        FROM fdc_document_organization_t
+        WHERE enable_flag = 'Y'
           AND delete_flag IN ('N', 'Y')
         ORDER BY document_organization_code
         """)
@@ -16,9 +16,9 @@ public interface ArchiveFlowLookupMapper {
 
     @Select("""
         SELECT COUNT(1)
-        FROM md_document_organization
+        FROM fdc_document_organization_t
         WHERE document_organization_code = #{code}
-          AND enabled_flag = 'Y'
+          AND enable_flag = 'Y'
           AND delete_flag IN ('N', 'Y')
         """)
     Integer countEnabledDocumentOrganizationCode(@Param("code") String code);

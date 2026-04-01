@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财经文档系统</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1173d4",
+                        "primary-dark": "#0d5bb0",
+                        "primary-light": "#3d8ce8",
+                        "background-light": "#f6f7f8",
+                        "border-color": "#dbe0e6",
+                        "text-main": "#111418",
+                        "text-secondary": "#617589",
+                        "success": "#10b981",
+                        "warning": "#f59e0b",
+                        "info": "#3b82f6"
+                    },
+                    fontFamily: {
+                        "display": ["Microsoft YaHei", "微软雅黑", "Inter", "Noto Sans SC", "sans-serif"]
+                    },
+                    animation: {
+                        "fade-in": "fadeIn 0.6s ease-out",
+                        "slide-up": "slideUp 0.5s ease-out",
+                        "float": "float 3s ease-in-out infinite"
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            "0%": { opacity: "0" },
+                            "100%": { opacity: "1" }
+                        },
+                        slideUp: {
+                            "0%": { transform: "translateY(20px)", opacity: "0" },
+                            "100%": { transform: "translateY(0)", opacity: "1" }
+                        },
+                        float: {
+                            "0%, 100%": { transform: "translateY(0)" },
+                            "50%": { transform: "translateY(-10px)" }
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+            vertical-align: middle;
+            font-size: 24px;
+        }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f6f7f8 0%, #e8f0f7 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #1173d4 0%, #3d8ce8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(17, 115, 212, 0.15);
+        }
+    </style>
+</head>
+<body class="font-display text-text-main">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="glass-effect border-b border-border-color h-20 flex items-center px-8 shrink-0 shadow-lg">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center shadow-lg">
+                    <span class="material-symbols-outlined text-white text-3xl">account_balance</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold gradient-text">财经文档系统</h1>
+                    <p class="text-xs text-gray-500">Financial Document Management System</p>
+                </div>
+            </div>
+            <div class="ml-auto flex items-center gap-4">
+                <div class="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-sm text-green-600 font-medium">系统运行正常</span>
+                </div>
+            </div>
+        </header>
+code
+Code
+
+download
+
+content_copy
+
+expand_less
+<!-- Main Content -->
+    <main class="flex-1 p-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Hero Section -->
+            <div class="text-center mb-16 animate-fade-in">
+                <h2 class="text-5xl font-bold mb-4 gradient-text">欢迎使用财经文档系统</h2>
+                <p class="text-xl text-gray-600 mb-8">安全、高效、智能的企业级文档管理解决方案</p>
+                
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg border border-border-color animate-slide-up" style="animation-delay: 0.1s">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary text-2xl">description</span>
+                            </div>
+                            <span class="text-3xl font-bold text-primary">1,234</span>
+                        </div>
+                        <p class="text-sm text-gray-500">文档总数</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg border border-border-color animate-slide-up" style="animation-delay: 0.2s">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center">
+                                <span class="material-symbols-outlined text-success text-2xl">folder_open</span>
+                            </div>
+                            <span class="text-3xl font-bold text-success">56</span>
+                        </div>
+                        <p class="text-sm text-gray-500">文档分类</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg border border-border-color animate-slide-up" style="animation-delay: 0.3s">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center">
+                                <span class="material-symbols-outlined text-warning text-2xl">schedule</span>
+                            </div>
+                            <span class="text-3xl font-bold text-warning">89</span>
+                        </div>
+                        <p class="text-sm text-gray-500">今日访问</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg border border-border-color animate-slide-up" style="animation-delay: 0.4s">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-info/10 rounded-xl flex items-center justify-center">
+                                <span class="material-symbols-outlined text-info text-2xl">cloud_done</span>
+                            </div>
+                            <span class="text-3xl font-bold text-info">99.9%</span>
+                        </div>
+                        <p class="text-sm text-gray-500">系统可用性</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <!-- Document Search Card -->
+                <a href="pages/document_search.html" class="group block animate-slide-up" style="animation-delay: 0.5s">
+                    <div class="bg-white rounded-2xl border border-border-color p-10 shadow-lg card-hover">
+                        <div class="flex items-center justify-between mb-8">
+                            <div class="w-20 h-20 bg-gradient-to-br from-primary to-primary-light rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                <span class="material-symbols-outlined text-white text-4xl">search</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-4xl font-bold gradient-text">01</span>
+                                <p class="text-sm text-gray-400 mt-1">核心功能</p>
+                            </div>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-4 group-hover:text-primary transition-colors">文档查询</h3>
+                        <p class="text-gray-500 text-base leading-relaxed mb-6">快速检索和管理财务文档，支持多条件筛选、高级搜索、全文检索等功能，让文档查找变得简单高效。</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex gap-3">
+                                <span class="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full">智能搜索</span>
+                                <span class="px-3 py-1 bg-primary/10 text-primary text-xs rounded-full">多条件筛选</span>
+                            </div>
+                            <div class="flex items-center text-primary font-semibold group-hover:translate-x-2 transition-all">
+                                <span>立即使用</span>
+                                <span class="material-symbols-outlined ml-2">arrow_forward</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Data Maintenance Card -->
+                <a href="pages/data_maintenance.html" class="group block animate-slide-up" style="animation-delay: 0.6s">
+                    <div class="bg-white rounded-2xl border border-border-color p-10 shadow-lg card-hover">
+                        <div class="flex items-center justify-between mb-8">
+                            <div class="w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                <span class="material-symbols-outlined text-white text-4xl">edit_note</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-4xl font-bold text-emerald-500">02</span>
+                                <p class="text-sm text-gray-400 mt-1">核心功能</p>
+                            </div>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-4 group-hover:text-emerald-500 transition-colors">数据维护</h3>
+                        <p class="text-gray-500 text-base leading-relaxed mb-6">管理文档数据，支持文档创建、编辑、更新、批量导入导出等功能，确保数据准确性和完整性。</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex gap-3">
+                                <span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs rounded-full">批量导入</span>
+                                <span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs rounded-full">数据校验</span>
+                            </div>
+                            <div class="flex items-center text-emerald-500 font-semibold group-hover:translate-x-2 transition-all">
+                                <span>立即使用</span>
+                                <span class="material-symbols-outlined ml-2">arrow_forward</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-2xl border border-border-color p-8 shadow-lg animate-slide-up" style="animation-delay: 0.7s">
+                <h3 class="text-xl font-bold mb-6 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">bolt</span>
+                    快捷操作
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <a href="pages/document_search.html" class="flex flex-col items-center p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all duration-300 group">
+                        <span class="material-symbols-outlined text-primary text-3xl mb-3 group-hover:scale-110 transition-transform">upload_file</span>
+                        <span class="text-sm font-medium text-gray-700">上传文档</span>
+                    </a>
+                    <a href="pages/document_search.html" class="flex flex-col items-center p-6 rounded-xl bg-gradient-to-br from-success/5 to-success/10 hover:from-success/10 hover:to-success/20 transition-all duration-300 group">
+                        <span class="material-symbols-outlined text-success text-3xl mb-3 group-hover:scale-110 transition-transform">download</span>
+                        <span class="text-sm font-medium text-gray-700">导出报表</span>
+                    </a>
+                    <a href="pages/data_maintenance.html" class="flex flex-col items-center p-6 rounded-xl bg-gradient-to-br from-warning/5 to-warning/10 hover:from-warning/10 hover:to-warning/20 transition-all duration-300 group">
+                        <span class="material-symbols-outlined text-warning text-3xl mb-3 group-hover:scale-110 transition-transform">settings</span>
+                        <span class="text-sm font-medium text-gray-700">系统设置</span>
+                    </a>
+                    <a href="pages/document_search.html" class="flex flex-col items-center p-6 rounded-xl bg-gradient-to-br from-info/5 to-info/10 hover:from-info/10 hover:to-info/20 transition-all duration-300 group">
+                        <span class="material-symbols-outlined text-info text-3xl mb-3 group-hover:scale-110 transition-transform">history</span>
+                        <span class="text-sm font-medium text-gray-700">操作日志</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="mt-12 text-center animate-slide-up" style="animation-delay: 0.8s">
+                <div class="inline-flex items-center gap-4 px-6 py-3 bg-white/80 rounded-full shadow-sm border border-border-color">
+                    <span class="text-sm text-gray-500">财经文档系统 v1.0</span>
+                    <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                    <span class="text-sm text-gray-500">安全可靠的企业级文档管理解决方案</span>
+                    <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                    <span class="text-sm text-primary font-medium">© 2024</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

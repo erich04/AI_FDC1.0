@@ -7,9 +7,9 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
-@TableName("arc_inventory_task")
+@TableName("fdc_inventory_task_t")
 public class InventoryTask {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "inventory_task_id", type = IdType.AUTO)
     private Long id;
     private String taskCode;
     private String warehouseCode;

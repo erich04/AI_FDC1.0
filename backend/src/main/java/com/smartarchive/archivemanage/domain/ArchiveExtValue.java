@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_archive_ext_value")
+@TableName("fdc_doc_ext_t")
 public class ArchiveExtValue {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "doc_ext_id", type = IdType.AUTO)
     private Long valueId;
     private Long archiveId;
     private String fieldCode;

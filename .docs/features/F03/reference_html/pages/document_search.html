@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财经文档系统 - 文档查询</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1173d4",
+                        "background-light": "#f6f7f8",
+                        "border-color": "#dbe0e6",
+                        "text-main": "#111418",
+                        "text-secondary": "#617589"
+                    },
+                    fontFamily: {
+                        "display": ["Microsoft YaHei", "微软雅黑", "Inter", "Noto Sans SC", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+            vertical-align: middle;
+            font-size: 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        #validation-toast {
+            display: none;
+        }
+        #validation-toast:target {
+            display: flex;
+        }
+        #filter-toggle:checked ~ .more-filters {
+            display: grid;
+        }
+        #filter-toggle:checked ~ .toggle-button-container .expand-icon {
+            transform: rotate(180deg);
+        }
+        #filter-toggle:checked ~ .toggle-button-container .toggle-text::after {
+            content: "收起筛选条件";
+        }
+        #filter-toggle:not(:checked) ~ .toggle-button-container .toggle-text::after {
+            content: "更多筛选条件";
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background-light font-display text-text-main">
+    <div id="app">
+        <div class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded shadow-lg items-center gap-3" id="validation-toast" style="display: none;">
+            <span class="material-symbols-outlined text-orange-500">warning</span>
+            <span class="text-sm font-medium">请选择文档类型</span>
+            <button onclick="hideValidationToast()" class="text-orange-400 hover:text-orange-600 ml-2">
+                <span class="material-symbols-outlined !text-[18px]">close</span>
+            </button>
+        </div>
+        <!-- Header -->
+        <header class="bg-white border-b border-border-color h-16 flex items-center px-6 shrink-0 shadow-sm">
+            <div class="flex items-center justify-between w-full max-w-[1440px] mx-auto">
+                <a href="../index.html" class="flex items-center gap-4 hover:opacity-80 transition-opacity">
+                    <span class="material-symbols-outlined text-3xl">arrow_back</span>
+                    <span class="text-lg font-bold">返回首页</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <input type="text" placeholder="搜索文档..." class="w-64 h-10 pl-10 pr-4 rounded-lg border border-border-color text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main -->
+        <main class="flex-1 p-6 max-w-[1440px] mx-auto w-full">
+            <h2 class="text-2xl font-bold mb-6">文档查询</h2>
+
+            <!-- Filter Section -->
+            <section class="bg-white rounded-lg border border-border-color p-6 shadow-sm mb-6">
+                <form class="flex flex-col gap-4">
+                    <input class="hidden" id="filter-toggle" type="checkbox"/>
+                    <div class="grid grid-cols-12 gap-x-6 gap-y-4 items-end">
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary flex items-center gap-1">
+                                <span class="text-red-500 font-bold">*</span>文档类型
+                            </label>
+                            <select class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none" id="doc-type-select" required>
+                                <option value="">请选择</option>
+                                <option>会计</option>
+                                <option>销资</option>
+                                <option>资金</option>
+                                <option>税务</option>
+                                <option>汇票</option>
+                                <option>存单</option>
+                                <option>保函</option>
+                                <option>信用证</option>
+                                <option>投资</option>
+                                <option>核算补充资料</option>
+                            </select>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">归档主体</label>
+                            <div class="relative group">
+                                <input type="text" class="w-full h-10 pl-3 pr-10 rounded border border-border-color text-sm cursor-pointer hover:border-primary transition-colors bg-white outline-none" placeholder="选择主体" readonly>
+                                <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400 group-hover:text-primary">search</span>
+                            </div>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">业务模块</label>
+                            <div class="relative group">
+                                <input type="text" class="w-full h-10 pl-3 pr-10 rounded border border-border-color text-sm cursor-pointer hover:border-primary transition-colors bg-white outline-none" placeholder="选择业务模块" readonly>
+                                <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400 group-hover:text-primary">open_in_new</span>
+                            </div>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">开始档期</label>
+                            <div class="relative">
+                                <input type="month" class="w-full h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none appearance-none" placeholder="YYYY-MM">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- More Filters -->
+                    <div class="more-filters hidden grid-cols-12 gap-x-6 gap-y-4 pt-2">
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">业务类型</label>
+                            <select class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none bg-white">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">文档名称</label>
+                            <input type="text" class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none" placeholder="请输入文档名称">
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">其他归档号</label>
+                            <input type="text" class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none" placeholder="请输入其他归档号">
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">发票号</label>
+                            <input type="text" class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none" placeholder="请输入发票号">
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">文号</label>
+                            <input type="text" class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none" placeholder="请输入文号">
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">起止号</label>
+                            <input type="text" class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none" placeholder="请输入起止号">
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">状态</label>
+                            <select class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none bg-white">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">国家/地区</label>
+                            <select class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none bg-white">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">子公司名称</label>
+                            <select class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none bg-white">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">文档生成日期</label>
+                            <div class="flex items-center gap-2">
+                                <input type="date" class="flex-1 h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none">
+                                <span class="text-text-secondary">~</span>
+                                <input type="date" class="flex-1 h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none">
+                            </div>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">文档创建日期</label>
+                            <div class="flex items-center gap-2">
+                                <input type="date" class="flex-1 h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none">
+                                <span class="text-text-secondary">~</span>
+                                <input type="date" class="flex-1 h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none">
+                            </div>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">条码模块</label>
+                            <div class="flex">
+                                <select class="flex-1 h-10 px-3 rounded-l border border-border-color text-sm focus:ring-primary focus:border-primary outline-none bg-white border-r-0">
+                                    <option value="">请选择</option>
+                                </select>
+                                <button type="button" class="px-3 h-10 bg-gray-50 border border-border-color rounded-r hover:bg-gray-100 flex items-center justify-center">
+                                    <span class="material-symbols-outlined !text-[18px] text-text-secondary">more_horiz</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">文档归档编码</label>
+                            <input type="text" class="h-10 px-3 rounded border border-border-color text-sm focus:ring-primary focus:border-primary outline-none" placeholder="请输入归档编码">
+                        </div>
+                        <div class="col-span-3 flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-text-secondary">归档责任部门</label>
+                            <div class="flex">
+                                <div class="relative flex-1">
+                                    <input type="text" class="w-full h-10 pl-3 pr-8 rounded-l border border-border-color text-sm focus:ring-primary focus:border-primary outline-none border-r-0" placeholder="请选择部门">
+                                    <button type="button" class="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600">
+                                        <span class="material-symbols-outlined !text-[16px]">close</span>
+                                    </button>
+                                </div>
+                                <button type="button" class="px-3 h-10 bg-gray-50 border border-border-color rounded-r hover:bg-gray-100 flex items-center justify-center">
+                                    <span class="material-symbols-outlined !text-[18px] text-text-secondary">more_horiz</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="toggle-button-container flex flex-col items-end gap-3 pt-2">
+                        <label for="filter-toggle" class="cursor-pointer text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 transition-all" onclick="validateDocTypeBeforeToggle()">
+                            <span class="toggle-text"></span>
+                            <span class="material-symbols-outlined expand-icon transition-transform duration-200">expand_more</span>
+                        </label>
+                        <div class="flex justify-end gap-3">
+                            <button type="reset" class="px-6 h-10 text-sm font-medium text-text-secondary hover:bg-gray-100 rounded transition-colors border border-border-color">重置</button>
+                            <button type="button" onclick="validateAndSearch()" class="px-8 h-10 text-sm font-medium bg-primary text-white hover:bg-primary/90 rounded transition-colors flex items-center justify-center">查询</button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Action Buttons -->
+            <section class="flex items-center gap-3 justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <button onclick="openBatchImportModal()" class="bg-primary text-white h-9 px-4 rounded text-sm font-medium hover:bg-primary/90 flex items-center gap-2">
+                        <span class="material-symbols-outlined !text-[18px]">search_check</span>
+                        批量导入查询
+                    </button>
+                    <button onclick="batchExport()" class="bg-white border border-border-color text-text-main h-9 px-4 rounded text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+                        <span class="material-symbols-outlined !text-[18px]">download</span>
+                        批量导出
+                    </button>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="w-9 h-9 flex items-center justify-center rounded border border-border-color bg-white text-text-secondary hover:text-primary hover:border-primary transition-colors">
+                        <span class="material-symbols-outlined">fullscreen</span>
+                    </button>
+                    <button class="w-9 h-9 flex items-center justify-center rounded border border-border-color bg-white text-text-secondary hover:text-primary hover:border-primary transition-colors">
+                        <span class="material-symbols-outlined">refresh</span>
+                    </button>
+                    <button onclick="openFieldSelectionModal()" class="w-9 h-9 flex items-center justify-center rounded border border-border-color bg-white text-text-secondary hover:text-primary hover:border-primary transition-colors">
+                        <span class="material-symbols-outlined">settings</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Document List -->
+            <section class="bg-white rounded-lg border border-border-color overflow-hidden shadow-sm flex-1">
+                <div class="overflow-x-auto custom-scrollbar flex-1">
+                    <table class="w-full text-sm text-left border-collapse min-w-[1200px]">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-border-color sticky top-0 z-10">
+                                <th class="w-12 px-4 py-3 text-center">
+                                    <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" onclick="event.stopPropagation(); toggleSelectAll(this)">
+                                </th>
+                                <th class="px-4 py-3 font-semibold text-text-secondary">文档编号</th>
+                                <th class="px-4 py-3 font-semibold text-text-secondary">文档名称</th>
+                                <th class="px-4 py-3 font-semibold text-text-secondary">业务模块</th>
+                                <th class="px-4 py-3 font-semibold text-text-secondary">归档主体</th>
+                                <th class="px-4 py-3 font-semibold text-text-secondary">档期</th>
+                                <th class="px-4 py-3 font-semibold text-text-secondary">状态</th>
+                                <th class="px-4 py-3 font-semibold text-text-secondary">更新人</th>
+                                <th class="px-4 py-3 font-semibold text-text-secondary">更新时间</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-color">
+                            <tr class="hover:bg-gray-50 transition-colors cursor-pointer">
+                                <td class="px-4 py-3.5 text-center">
+                                    <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" onclick="event.stopPropagation()">
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <a href="javascript:void(0)" onclick="viewDocument('DOC-20231024-001')" class="text-primary font-medium hover:underline">DOC-20231024-001</a>
+                                </td>
+                                <td class="px-4 py-3.5">会计凭证 0002AP00001</td>
+                                <td class="px-4 py-3.5">AP</td>
+                                <td class="px-4 py-3.5">上海总部</td>
+                                <td class="px-4 py-3.5">2023-10</td>
+                                <td class="px-4 py-3.5">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600 border border-green-100">成册</span>
+                                </td>
+                                <td class="px-4 py-3.5">李明</td>
+                                <td class="px-4 py-3.5 text-text-secondary">2023-10-24 10:00</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors cursor-pointer">
+                                <td class="px-4 py-3.5 text-center">
+                                    <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" onclick="event.stopPropagation()">
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <a href="javascript:void(0)" onclick="viewDocument('DOC-20231024-002')" class="text-primary font-medium hover:underline">DOC-20231024-002</a>
+                                </td>
+                                <td class="px-4 py-3.5">销资汇总表-北京</td>
+                                <td class="px-4 py-3.5">AR</td>
+                                <td class="px-4 py-3.5">北京分公司</td>
+                                <td class="px-4 py-3.5">2023-10</td>
+                                <td class="px-4 py-3.5">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100">电子归档</span>
+                                </td>
+                                <td class="px-4 py-3.5">张华</td>
+                                <td class="px-4 py-3.5 text-text-secondary">2023-10-24 09:15</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors cursor-pointer">
+                                <td class="px-4 py-3.5 text-center">
+                                    <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" onclick="event.stopPropagation()">
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <a href="javascript:void(0)" onclick="viewDocument('DOC-20231023-015')" class="text-primary font-medium hover:underline">DOC-20231023-015</a>
+                                </td>
+                                <td class="px-4 py-3.5">税务申报附件资料</td>
+                                <td class="px-4 py-3.5">GL</td>
+                                <td class="px-4 py-3.5">上海总部</td>
+                                <td class="px-4 py-3.5">2023-09</td>
+                                <td class="px-4 py-3.5">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">未归档</span>
+                                </td>
+                                <td class="px-4 py-3.5">王力</td>
+                                <td class="px-4 py-3.5 text-text-secondary">2023-10-23 16:45</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-6 py-4 border-t border-border-color flex items-center justify-between bg-white">
+                    <span class="text-sm text-text-secondary">共 3 条记录</span>
+                    <div class="flex items-center gap-2">
+                        <button class="w-8 h-8 flex items-center justify-center rounded border border-border-color hover:bg-gray-50 disabled:opacity-50" disabled>
+                            <span class="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-white text-sm font-medium">1</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded border border-border-color hover:bg-gray-50 text-sm">2</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded border border-border-color hover:bg-gray-50">
+                            <span class="material-symbols-outlined">chevron_right</span>
+                        </button>
+                        <select class="h-8 px-2 rounded border border-border-color text-xs">
+                            <option>10条/页</option>
+                            <option>20条/页</option>
+                            <option>50条/页</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        function validateAndSearch() {
+            const docType = document.getElementById('doc-type-select').value;
+            if (!docType) {
+                document.getElementById('validation-toast').style.display = 'flex';
+                return;
+            }
+            searchDocuments();
+        }
+
+        function hideValidationToast() {
+            document.getElementById('validation-toast').style.display = 'none';
+        }
+
+        function openBatchImportModal() {
+            const docType = document.getElementById('doc-type-select').value;
+            if (!docType) {
+                document.getElementById('validation-toast').style.display = 'flex';
+                return;
+            }
+            const modal = document.getElementById('batchImportModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeBatchImportModal() {
+            const modal = document.getElementById('batchImportModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('importFile').value = '';
+            document.getElementById('selectedFileName').classList.add('hidden');
+        }
+
+        function handleFileSelect(input) {
+            if (input.files && input.files[0]) {
+                const fileName = input.files[0].name;
+                const fileNameDisplay = document.getElementById('selectedFileName');
+                fileNameDisplay.textContent = '已选择文件: ' + fileName;
+                fileNameDisplay.classList.remove('hidden');
+            }
+        }
+
+        function submitBatchImport() {
+            const fileInput = document.getElementById('importFile');
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('请先选择要导入的文件');
+                return;
+            }
+            // 跳转到导入查询页面
+            window.location.href = 'import_query.html';
+        }
+
+        function searchDocuments() {
+            alert('查询功能演示：这里会执行搜索操作');
+        }
+
+        function viewDocument(docId) {
+            window.location.href = `document_detail.html?docId=${docId}&from=document_search`;
+        }
+
+        // 字段选择相关函数
+        function openFieldSelectionModal() {
+            const modal = document.getElementById('fieldSelectionModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeFieldSelectionModal() {
+            const modal = document.getElementById('fieldSelectionModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmFieldSelection() {
+            // 这里可以添加保存字段选择的逻辑
+            alert('字段选择已保存');
+            closeFieldSelectionModal();
+        }
+
+        // 切换筛选条件前验证文档类型
+        function validateDocTypeBeforeToggle() {
+            const docType = document.getElementById('doc-type-select').value;
+            if (!docType) {
+                document.getElementById('validation-toast').style.display = 'flex';
+                // 阻止默认行为，不切换筛选条件
+                event.preventDefault();
+            }
+        }
+
+        // 批量导出
+        function batchExport() {
+            // 检查是否有选中的文档
+            const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]:checked');
+            if (checkboxes.length === 0) {
+                alert('请至少选择一个文档');
+                return;
+            }
+
+            // 模拟导出提交
+            setTimeout(() => {
+                // 显示导出成功弹窗
+                const modal = document.getElementById('exportSuccessModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }, 500);
+        }
+
+        // 关闭导出成功弹窗
+        function closeExportSuccessModal() {
+            const modal = document.getElementById('exportSuccessModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // 全选/取消全选
+        function toggleSelectAll(checkbox) {
+            const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+        }
+    </script>
+
+    <!-- Batch Import Modal -->
+    <div id="batchImportModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-border-color bg-gray-50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">upload_file</span>
+                    <h3 class="text-lg font-semibold text-text-main">批量导入查询</h3>
+                </div>
+                <button onclick="closeBatchImportModal()" class="w-8 h-8 flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-gray-100 rounded-full transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <!-- Template Download -->
+                <div class="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-primary">description</span>
+                        <div>
+                            <p class="text-sm font-medium text-text-main mb-1">导入模板</p>
+                            <p class="text-xs text-text-secondary mb-2">请下载模板文件，按照模板格式填写数据后上传</p>
+                            <a href="#" class="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 font-medium">
+                                <span class="material-symbols-outlined !text-[16px]">download</span>
+                                下载导入模板
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- File Upload -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-text-secondary mb-2">选择文件</label>
+                    <div class="border-2 border-dashed border-border-color rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer" onclick="document.getElementById('importFile').click()">
+                        <span class="material-symbols-outlined text-4xl text-text-secondary mb-2">cloud_upload</span>
+                        <p class="text-sm text-text-secondary mb-1">点击或拖拽文件到此处上传</p>
+                        <p class="text-xs text-text-secondary">支持 Excel (.xlsx, .xls) 格式</p>
+                        <input type="file" id="importFile" class="hidden" accept=".xlsx,.xls" onchange="handleFileSelect(this)">
+                    </div>
+                    <div id="selectedFileName" class="mt-2 text-sm text-text-main hidden"></div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-border-color bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeBatchImportModal()" class="px-5 h-9 text-sm font-medium text-text-secondary hover:bg-gray-100 rounded transition-colors border border-border-color">取消</button>
+                <button onclick="submitBatchImport()" class="px-5 h-9 text-sm font-medium bg-primary text-white hover:bg-primary/90 rounded transition-colors">确认导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Field Selection Modal -->
+    <div id="fieldSelectionModal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white w-[480px] rounded-lg shadow-xl flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-border-color">
+                <h3 class="text-lg font-bold text-text-main">字段选择</h3>
+                <button onclick="closeFieldSelectionModal()" class="text-text-secondary hover:text-text-main transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 overflow-hidden flex flex-col gap-4">
+                <div class="relative">
+                    <input class="w-full h-9 pl-9 pr-3 text-sm rounded border border-border-color focus:ring-primary focus:border-primary outline-none transition-all" placeholder="搜索字段名称" type="text">
+                    <span class="material-symbols-outlined absolute left-2.5 top-2 text-gray-400 !text-[18px]">search</span>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                    <div class="grid grid-cols-2 gap-y-3 gap-x-6">
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input checked class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">文档编号</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input checked class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">文档名称</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input checked class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">业务模块</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input checked class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">归档主体</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input checked class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">档期</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input checked class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">状态</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input checked class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">更新人</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input checked class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">更新时间</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">电子附件</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">文档类型</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">其他归档号</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" type="checkbox">
+                            <span class="text-sm text-text-main group-hover:text-primary transition-colors">发票号</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-border-color flex justify-end gap-3 bg-gray-50 rounded-b-lg">
+                <button class="px-4 h-9 text-sm font-medium text-text-secondary bg-white border border-border-color hover:bg-gray-50 rounded transition-colors">重置</button>
+                <button onclick="confirmFieldSelection()" class="px-6 h-9 text-sm font-medium bg-primary text-white hover:bg-primary/90 rounded transition-colors shadow-sm">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Success Modal -->
+    <div id="exportSuccessModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-border-color bg-gray-50 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-text-main">提示</h3>
+                <button onclick="closeExportSuccessModal()" class="w-8 h-8 flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-gray-100 rounded-full transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined text-green-500 mt-0.5">check_circle</span>
+                    <p class="text-sm text-text-secondary mb-4">导出提交成功，系统正在处理，稍后请到 <a href="my_exports.html" class="text-primary hover:underline font-medium">导入导出 > 我的导出</a> 中查看导出结果。</p>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-border-color bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeExportSuccessModal()" class="px-6 h-9 text-sm font-medium bg-primary text-white hover:bg-primary/90 rounded transition-colors">确定</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

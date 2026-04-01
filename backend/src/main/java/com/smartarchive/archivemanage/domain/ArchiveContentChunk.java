@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_archive_content_chunk")
+@TableName("fdc_arch_content_chunk_t")
 public class ArchiveContentChunk {
     @TableId(type = IdType.AUTO)
     private Long chunkId;

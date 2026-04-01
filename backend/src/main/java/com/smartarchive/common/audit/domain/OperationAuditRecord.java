@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("com_operation_audit")
+@TableName("fdc_operation_audit_log_t")
 public class OperationAuditRecord {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "operation_audit_log_id", type = IdType.AUTO)
     private Long id;
     private String moduleCode;
     private String moduleName;

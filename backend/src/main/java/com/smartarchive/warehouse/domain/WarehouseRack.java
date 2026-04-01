@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("wh_rack")
+@TableName("fdc_warehouse_rack_t")
 public class WarehouseRack {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "warehouse_rack_id", type = IdType.AUTO)
     private Long id;
     private String warehouseCode;
     private String areaCode;

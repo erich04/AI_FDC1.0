@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财经文档系统 - 文档详情</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1173d4",
+                        "background-light": "#f6f7f8",
+                        "slate": {
+                            50: "#f8fafc",
+                            100: "#f1f5f9",
+                            200: "#e2e8f0",
+                            300: "#cbd5e1",
+                            400: "#94a3b8",
+                            500: "#64748b",
+                            600: "#475569",
+                            700: "#334155",
+                            800: "#1e293b",
+                            900: "#0f172a",
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply bg-slate-50 font-display text-slate-900 min-h-screen;
+                width: 1440px;
+                margin: 0 auto;
+                overflow-x: hidden;
+            }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .label-cell {
+            width: 120px;
+            @apply text-slate-500 text-sm font-normal py-2.5 flex-shrink-0;
+        }
+        .value-cell {
+            @apply text-slate-800 text-sm font-medium py-2.5 flex-grow break-all;
+        }
+        .info-grid-item {
+            @apply flex items-baseline border-b border-slate-50;
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <!-- Header -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-[1440px] mx-auto px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="document_search.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                </a>
+                <span class="text-xl font-bold text-slate-800">财经文档系统</span>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="relative">
+                    <input type="text" placeholder="搜索文档..." class="pl-10 pr-4 py-1.5 bg-slate-100 border-none rounded-md text-sm w-80 focus:ring-2 focus:ring-primary/20">
+                    <span class="material-symbols-outlined text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-lg">search</span>
+                </div>
+                <div class="flex items-center gap-3 border-l pl-6 border-slate-200">
+                    <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">管</div>
+                    <span class="text-sm font-medium text-slate-700">管理员</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-[1440px] mx-auto px-8 py-6">
+        <div class="flex items-center gap-2 text-sm text-slate-500">
+            <a href="../index.html" class="hover:text-primary transition-colors">首页</a>
+            <span class="mx-1 text-slate-300">/</span>
+            <a href="document_search.html" class="hover:text-primary transition-colors">文档查询</a>
+            <span class="mx-1 text-slate-300">/</span>
+            <span class="text-slate-900 font-medium">文档详情</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-[1440px] mx-auto px-8 py-6">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold text-slate-900">2020年度增值税进项税额抵扣凭证 0002AP00001</h1>
+                <div class="flex flex-wrap gap-2">
+                    <span class="px-2.5 py-1 rounded bg-blue-50 text-blue-600 text-xs font-semibold border border-blue-100">电子归档</span>
+                    <span class="px-2.5 py-1 rounded bg-emerald-50 text-emerald-600 text-xs font-semibold border border-emerald-100">已生效</span>
+                    <span class="px-2.5 py-1 rounded bg-red-50 text-red-600 text-xs font-semibold border border-red-100 uppercase">绝密</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="editButton" onclick="editDocument()" class="flex items-center gap-2 px-5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+                    <span class="material-symbols-outlined text-lg">edit</span>
+                    编辑
+                </button>
+            </div>
+        </div>
+
+        <!-- Document Sections -->
+        <div class="space-y-6">
+            <!-- Basic Information -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">description</span>
+                        <h2 class="font-bold text-slate-800">文档基本信息</h2>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-1">
+                        <div class="info-grid-item">
+                            <span class="label-cell">文档类型</span>
+                            <span class="value-cell">记账凭证</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">归档主体</span>
+                            <span class="value-cell">北京分公司</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">业务模块</span>
+                            <span class="value-cell">应付账款 AP</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">开始档期</span>
+                            <span class="value-cell">2020-01-01</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">结束档期</span>
+                            <span class="value-cell">2020-12-31</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">文档业务编码</span>
+                            <span class="value-cell">0002AP00001</span>
+                        </div>
+                        <div class="info-grid-item col-span-3">
+                            <span class="label-cell">文档名称</span>
+                            <span class="value-cell">2020年度增值税进项税额抵扣凭证 0002AP00001</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">归档责任人</span>
+                            <span class="value-cell">李四</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">归档责任部门</span>
+                            <span class="value-cell">财务管理部</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">创建人</span>
+                            <span class="value-cell">李四</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">创建时间</span>
+                            <span class="value-cell">2020-08-13 09:15:00</span>
+                        </div>
+                        <div class="info-grid-item col-span-3 border-none">
+                            <span class="label-cell">备注</span>
+                            <span class="value-cell text-slate-500 font-normal">该笔凭证包含年度重点审计涉及的所有原始抵扣发票，涉及金额巨大，需妥善保管，查阅需经财务总监审批。</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Extended Information -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between cursor-pointer" onclick="toggleSection('extendedInfo')">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">extension</span>
+                        <h2 class="font-bold text-slate-800">扩展信息</h2>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-500 transition-transform" id="extendedInfoIcon">expand_more</span>
+                </div>
+                <div class="p-6" id="extendedInfoContent">
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-1">
+                        <div class="info-grid-item">
+                            <span class="label-cell">条码模块</span>
+                            <span class="value-cell">TX-AP-2020</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">文号</span>
+                            <span class="value-cell">财会〔2020〕15号</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">起止号</span>
+                            <span class="value-cell">000001 - 000150</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">保存期限(年)</span>
+                            <span class="value-cell">30年</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">档案类型</span>
+                            <span class="value-cell">会计档案-原始凭证</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">系统来源</span>
+                            <span class="value-cell">FSSC共享平台</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Archive Information -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between cursor-pointer" onclick="toggleSection('archiveInfo')">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">archive</span>
+                        <h2 class="font-bold text-slate-800">归档信息</h2>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-500 transition-transform" id="archiveInfoIcon">expand_more</span>
+                </div>
+                <div class="p-6" id="archiveInfoContent">
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-1">
+                        <div class="info-grid-item">
+                            <span class="label-cell">归档地</span>
+                            <span class="value-cell">总部档案馆-02库区-A12架</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">归档责任人</span>
+                            <span class="value-cell">张三</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">归档责任部门</span>
+                            <span class="value-cell">档案管理中心</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">电子归档时间</span>
+                            <span class="value-cell">2020-08-15 10:30:22</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">实物归档时间</span>
+                            <span class="value-cell">2020-09-01 16:45:10</span>
+                        </div>
+                        <div class="info-grid-item">
+                            <span class="label-cell">载体类型</span>
+                            <span class="value-cell">光盘 + 纸质原件</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Attachment List -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2 cursor-pointer" onclick="toggleSection('attachmentList')">
+                        <span class="material-symbols-outlined text-primary">attachment</span>
+                        <h2 class="font-bold text-slate-800">文档附件列表 <span class="text-slate-400 font-normal ml-1">(3)</span></h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+                            <span class="material-symbols-outlined text-lg">download</span>
+                            批量下载
+                        </button>
+                        <span class="material-symbols-outlined text-slate-500 transition-transform cursor-pointer" id="attachmentListIcon" onclick="toggleSection('attachmentList')">expand_more</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto" id="attachmentListContent">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-slate-50/50 border-b border-slate-100">
+                                <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">文件名</th>
+                                <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">附件类型</th>
+                                <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">大小</th>
+                                <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">上传时间</th>                                <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">补充信息</th>
+                                <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="material-symbols-outlined text-red-500">picture_as_pdf</span>
+                                        <span class="text-sm font-medium text-slate-700">凭证原始扫描件_0002AP00001.pdf</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-600">记账凭证</td>
+                                <td class="px-6 py-4 text-sm text-slate-500">2.4 MB</td>
+                                <td class="px-6 py-4 text-sm text-slate-500">2020-08-13</td>
+                                <td class="px-6 py-4 text-sm text-slate-500 font-mono">No. 12345678</td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex justify-end gap-2">
+                                        <button onclick="previewAttachment('pdf')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-all" title="预览">
+                                            <span class="material-symbols-outlined text-lg">visibility</span>
+                                        </button>
+                                        <a href="#" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-all" title="下载">
+                                            <span class="material-symbols-outlined text-lg">download</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="material-symbols-outlined text-emerald-500">description</span>
+                                        <span class="text-sm font-medium text-slate-700">对账明细清单.xlsx</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-600">记账凭证</td>
+                                <td class="px-6 py-4 text-sm text-slate-500">845 KB</td>
+                                <td class="px-6 py-4 text-sm text-slate-500">2020-08-13</td>
+                                <td class="px-6 py-4 text-sm text-slate-500 font-mono">No. 87654321</td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex justify-end gap-2">
+                                        <button onclick="previewAttachment('xlsx')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-all" title="预览">
+                                            <span class="material-symbols-outlined text-lg">visibility</span>
+                                        </button>
+                                        <a href="#" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-all" title="下载">
+                                            <span class="material-symbols-outlined text-lg">download</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="material-symbols-outlined text-blue-500">image</span>
+                                        <span class="text-sm font-medium text-slate-700">发票真伪查验截图.jpg</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-600">记账凭证</td>
+                                <td class="px-6 py-4 text-sm text-slate-500">1.2 MB</td>
+                                <td class="px-6 py-4 text-sm text-slate-500">2020-08-14</td>
+                                <td class="px-6 py-4 text-sm text-slate-500 font-mono">No. 11223344</td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex justify-end gap-2">
+                                        <button onclick="previewAttachment('img')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-all" title="预览">
+                                            <span class="material-symbols-outlined text-lg">visibility</span>
+                                        </button>
+                                        <a href="#" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-all" title="下载">
+                                            <span class="material-symbols-outlined text-lg">download</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Operation Log -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between cursor-pointer" onclick="toggleSection('operationLog')">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">history</span>
+                        <h2 class="font-bold text-slate-800">操作日志</h2>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-500 transition-transform" id="operationLogIcon">expand_more</span>
+                </div>
+                <div class="p-6" id="operationLogContent">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-slate-50/50 border-b border-slate-100">
+                                    <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">操作人</th>
+                                    <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">操作类型</th>
+                                    <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">操作内容</th>
+                                    <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">时间</th>
+                                    <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">备注</th>
+                                    <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">补充附件</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-700">李四</td>
+                                    <td class="px-6 py-4 text-sm text-primary font-medium">创建文档</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">-</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">2020-08-13 09:15:00</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">
+                                        <div class="flex items-center gap-1.5">
+                                            <span>关联业务电子流YW856829365928</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-1.5 text-slate-600">
+                                            <span class="text-xs truncate max-w-[150px] text-[#1173d4] hover:underline cursor-pointer">申请附件.pdf</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-700">王五</td>
+                                    <td class="px-6 py-4 text-sm text-primary font-medium">集成电子件</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">本批共集成100个电子件</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">2020-08-15 10:30:22</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">-</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">-</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-700">赵六</td>
+                                    <td class="px-6 py-4 text-sm text-primary font-medium">档案更新</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">将[文档组织]由[深圳会计]调整至[西安会计]</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">2020-09-01 14:20:31</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">
+                                        <div class="flex items-center gap-1.5">
+                                            <span>因业务调整</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">-</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-700">张三</td>
+                                    <td class="px-6 py-4 text-sm text-primary font-medium">批量导入核销</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">[文档状态]变更为[已签收]</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">2020-10-15 10:20:00</td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">
+                                        <div class="flex items-center gap-1.5">
+                                            <span>已完成本批次500条进项税额核销</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-1.5 text-slate-600">
+                                            <span class="text-xs truncate max-w-[150px] text-[#1173d4] hover:underline cursor-pointer">备份核销结果.xlsx</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- PDF Preview Modal -->
+    <div id="pdfModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-8 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-6xl h-full rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-red-500">picture_as_pdf</span>
+                    <span class="font-semibold text-slate-800">凭证原始扫描件_0002AP00001</span>
+                </div>
+                <button onclick="closePreview()" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
+            </div>
+
+            <!-- PDF Content -->
+            <div class="flex-grow bg-gray-100 flex justify-center items-center p-8">
+                <div class="bg-white shadow-lg pdf-page">
+                    <div class="p-8">
+                        <h3 class="text-2xl font-bold mb-6">会计凭证</h3>
+                        <p class="text-sm text-gray-600 mb-8">北京分公司 (BP01)</p>
+                        <div class="border-2 border-gray-300 mb-8">
+                            <div class="p-4">
+                                <p class="text-sm mb-2">PDF预览演示</p>
+                                <p class="text-xs text-gray-500">实际项目中这里会显示真实的PDF内容</p>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-400 text-right">
+                            第 1 页，共 1 页
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function previewAttachment(type) {
+            window.location.href = 'attachment_preview.html';
+        }
+
+        // Toggle section visibility
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + 'Content');
+            const icon = document.getElementById(sectionId + 'Icon');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // 编辑文档
+        function editDocument() {
+            // 获取URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const docId = urlParams.get('docId') || 'DOC-20231024-001'; // 默认值
+            const from = urlParams.get('from') || 'document_detail';
+            
+            // 跳转到编辑页面
+            window.location.href = `document_edit.html?docId=${docId}&from=${from}`;
+        }
+
+        // 控制编辑按钮的显示/隐藏
+        function controlEditButton() {
+            const editButton = document.getElementById('editButton');
+            
+            // 获取URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const from = urlParams.get('from');
+            
+            // 调试：打印来源参数
+            console.log('From parameter:', from);
+            
+            // 检查来源页面
+            if (from === 'document_search') {
+                // 从文档查询页进入，隐藏编辑按钮
+                editButton.style.display = 'none';
+                console.log('Hiding edit button - from document_search');
+            } else if (from === 'data_maintenance') {
+                // 从数据维护页进入，显示编辑按钮
+                editButton.style.display = 'flex';
+                console.log('Showing edit button - from data_maintenance');
+            } else {
+                // 其他来源，默认显示
+                editButton.style.display = 'flex';
+                console.log('Showing edit button - from other source');
+            }
+        }
+
+        // 页面加载时执行
+        window.onload = function() {
+            controlEditButton();
+        }
+    </script>
+</body>
+</html>

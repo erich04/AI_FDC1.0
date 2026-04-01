@@ -8,9 +8,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("md_company_project_line")
+@TableName("fdc_company_project_line_t")
 public class CompanyProjectLine {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "company_project_line_id", type = IdType.AUTO)
     private Long id;
     private String companyProjectCode;
     private Integer lineNo;

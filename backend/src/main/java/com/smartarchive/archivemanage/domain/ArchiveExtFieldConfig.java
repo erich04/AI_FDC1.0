@@ -1,6 +1,7 @@
 package com.smartarchive.archivemanage.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -8,9 +9,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_ext_field_config")
+@TableName("fdc_doc_field_config_t")
 public class ArchiveExtFieldConfig {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "doc_field_config_id", type = IdType.AUTO)
     private Long fieldId;
     private String fieldCode;
     private String documentTypeCode;
@@ -19,6 +20,7 @@ public class ArchiveExtFieldConfig {
     private String dictCategoryCode;
     private String semanticCode;
     private String requiredFlag;
+    @TableField("enable_flag")
     private String enabledFlag;
     private Integer formSortOrder;
     private String queryEnabledFlag;

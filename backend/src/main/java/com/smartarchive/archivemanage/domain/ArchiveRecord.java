@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_archive")
+@TableName("fdc_arch_t")
 public class ArchiveRecord {
     @TableId(type = IdType.AUTO)
     private Long archiveId;

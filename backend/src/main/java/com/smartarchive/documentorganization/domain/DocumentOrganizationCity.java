@@ -1,6 +1,7 @@
 package com.smartarchive.documentorganization.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -8,14 +9,15 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("md_document_organization_city")
+@TableName("fdc_document_organization_city_t")
 public class DocumentOrganizationCity {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "document_organization_city_id", type = IdType.AUTO)
     private Long id;
     private String countryCode;
     private String cityCode;
     private String cityName;
     private Integer sortOrder;
+    @TableField("enable_flag")
     private String enabledFlag;
     @TableLogic(value = "N", delval = "Y")
     private String deleteFlag;

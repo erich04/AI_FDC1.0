@@ -7,9 +7,9 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
-@TableName("arc_catalog_task")
+@TableName("fdc_catalog_task_t")
 public class CatalogTask {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "catalog_task_id", type = IdType.AUTO)
     private Long id;
     private String taskCode;
     private String archiveCode;

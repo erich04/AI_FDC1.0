@@ -1,6 +1,7 @@
 package com.smartarchive.archiveflow.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -8,9 +9,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("md_archive_flow_rule")
+@TableName("fdc_archive_rule_t")
 public class ArchiveFlowRule {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "archive_rule_id", type = IdType.AUTO)
     private Long id;
     private String companyProjectCode;
     private String documentTypeCode;
@@ -20,6 +21,7 @@ public class ArchiveFlowRule {
     private Integer retentionPeriodYears;
     private String securityLevelCode;
     private String externalDisplayFlag;
+    @TableField("enable_flag")
     private String enabledFlag;
     @TableLogic(value = "N", delval = "Y")
     private String deleteFlag;

@@ -1,6 +1,7 @@
 package com.smartarchive.documenttype.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -8,13 +9,14 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("doc_document_type")
+@TableName("fdc_document_type_t")
 public class DocumentType {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "document_type_id", type = IdType.AUTO)
     private Long id;
     private String typeCode;
     private String typeName;
     private String description;
+    @TableField("enable_flag")
     private String enabledFlag;
     private String parentCode;
     private Integer levelNum;

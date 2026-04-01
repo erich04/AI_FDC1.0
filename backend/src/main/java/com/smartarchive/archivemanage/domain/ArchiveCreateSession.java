@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_archive_create_session")
+@TableName("fdc_archive_create_session_t")
 public class ArchiveCreateSession {
     @TableId(type = IdType.AUTO)
     private Long sessionId;

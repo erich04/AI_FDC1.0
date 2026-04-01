@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_archive_paper")
+@TableName("fdc_arch_paper_t")
 public class ArchivePaper {
     @TableId(type = IdType.AUTO)
     private Long paperId;

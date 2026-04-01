@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_storage_batch_item")
+@TableName("fdc_storage_batch_item_t")
 public class StorageBatchItem {
     @TableId(type = IdType.AUTO)
     private Long storageItemId;

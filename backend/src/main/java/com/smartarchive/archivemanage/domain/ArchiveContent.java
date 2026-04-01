@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_archive_content")
+@TableName("fdc_arch_content_t")
 public class ArchiveContent {
     @TableId(type = IdType.AUTO)
     private Long contentId;

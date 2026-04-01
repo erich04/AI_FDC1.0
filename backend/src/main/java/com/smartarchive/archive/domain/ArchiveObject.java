@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_archive_object")
+@TableName("fdc_archive_object_t")
 public class ArchiveObject {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "archive_object_id", type = IdType.AUTO)
     private Long id;
     private String archiveCode;
     private String title;
@@ -37,7 +37,7 @@ public class ArchiveObject {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    @TableLogic
-    @TableField("deleted")
-    private Integer deleted;
+    @TableLogic(value = "N", delval = "Y")
+    @TableField("delete_flag")
+    private String deleteFlag;
 }

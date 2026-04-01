@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_bind_batch")
+@TableName("fdc_bind_batch_t")
 public class BindBatch {
     @TableId(type = IdType.AUTO)
     private Long bindBatchId;

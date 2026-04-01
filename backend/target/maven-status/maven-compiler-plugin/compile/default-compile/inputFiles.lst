@@ -1,278 +1,303 @@
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\ai\controller\AiCapabilityController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\ai\dto\AiCapabilityDto.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\ai\service\AiCapabilityService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\ai\service\impl\AiCapabilityServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\command\AssignLocationCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\command\CreateArchiveReceiptCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\command\CreateBorrowRecordCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\command\CreateDisposalRecordCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\command\CreateInventoryTaskCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\controller\ArchiveObjectController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\controller\ArchiveReceiptController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\controller\BorrowRecordController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\controller\CatalogTaskController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\controller\DisposalRecordController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\controller\InventoryTaskController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\domain\ArchiveObject.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\domain\ArchiveReceipt.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\domain\BorrowRecord.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\domain\CatalogTask.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\domain\DisposalRecord.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\domain\InventoryTask.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\domain\WorkflowInstance.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\dto\ArchiveObjectQueryRequest.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\mapper\ArchiveObjectMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\mapper\ArchiveReceiptMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\mapper\ArchiveWorkflowInstanceMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\mapper\BorrowRecordMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\mapper\CatalogTaskMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\mapper\DisposalRecordMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\mapper\InventoryTaskMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\ArchiveObjectService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\ArchiveReceiptService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\BorrowRecordService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\CatalogTaskService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\DisposalRecordService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\impl\ArchiveObjectServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\impl\ArchiveReceiptServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\impl\BorrowRecordServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\impl\CatalogTaskServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\impl\DisposalRecordServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\impl\InventoryTaskServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\impl\WorkflowInstanceServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\InventoryTaskService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archive\service\WorkflowInstanceService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\controller\ArchiveFlowRuleController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\domain\ArchiveFlowRule.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\domain\SecurityLevelDictionary.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleDetailResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleOptionResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRulePermissionPreviewResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleSummaryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\dto\SecurityLevelOptionResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\mapper\ArchiveFlowLookupMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\mapper\ArchiveFlowRuleMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\mapper\SecurityLevelDictionaryMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\service\ArchiveFlowRuleService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archiveflow\service\impl\ArchiveFlowRuleServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\controller\AiModelConfigController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\controller\ArchiveManagementController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\controller\DocumentTypeExtFieldController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\AiModelConfig.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveAttachment.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveContent.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveContentChunk.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveCreateSession.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveExtFieldConfig.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveExtValue.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchivePaper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveRecord.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\BindBatch.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\BindVolume.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\BindVolumeItem.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\StorageBatch.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\StorageBatchItem.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\domain\StorageLedger.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\AiModelConfigCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\AiModelConfigResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\AiModelConnectionTestResult.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAiParseResult.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAskCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAskResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAttachmentResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAttachmentUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveCreateOptionsResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveCreateSessionCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveCreateSessionResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveDefaultResolveResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveQueryCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveQueryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveSummaryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveTransferCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveTransferResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\BindArchiveCandidateResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\BindBatchResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\BindCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\BindOptionsResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\BindPreviewCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\BindPreviewResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\BindQueryCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\BindVolumeItemResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\BindVolumeResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\DocumentTypeExtFieldCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\DocumentTypeExtFieldResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\DocumentTypeExtFieldUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\LabelValueOption.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageBatchItemResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageBatchResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageLedgerQueryCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageLedgerResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageOptionsResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageQueryCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageQueryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\AiModelConfigMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveAttachmentMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveContentChunkMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveContentMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveCreateSessionMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveExtFieldConfigMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveExtValueMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchivePaperMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveRecordMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\BindBatchMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\BindVolumeItemMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\BindVolumeMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\StorageBatchItemMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\StorageBatchMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\mapper\StorageLedgerMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\AiModelConfigService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\ArchiveManagementService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\DocumentTypeExtFieldService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\impl\AiModelConfigServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\impl\ArchiveManagementServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\impl\DocumentTypeExtFieldServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\support\ArchiveAiChatService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\support\ArchiveFileTextExtractor.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\support\ArchiveTextChunkService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\support\ArchiveTextVectorService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\archivemanage\service\support\PdfOcrService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\common\api\ApiResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\common\audit\controller\OperationAuditController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\common\audit\domain\OperationAuditRecord.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\common\audit\dto\AuditRecordResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\common\audit\mapper\OperationAuditRecordMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\common\audit\service\impl\OperationAuditServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\common\audit\service\OperationAuditService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\common\exception\BusinessException.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\common\exception\GlobalExceptionHandler.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\controller\CompanyProjectController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\domain\CompanyProject.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\domain\CompanyProjectLine.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\domain\CompanyProjectOrgCategory.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\domain\Country.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectDetailResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectLineCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectLineResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectOrgCategoryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectPermissionPreviewResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectSummaryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CountryDictionaryCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CountryDictionaryItemResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\CountryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\OrgCategoryDictionaryCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\dto\OrgCategoryDictionaryItemResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\mapper\CompanyProjectLineMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\mapper\CompanyProjectMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\mapper\CompanyProjectOrgCategoryMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\mapper\CountryMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\service\CompanyProjectService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\companyproject\service\impl\CompanyProjectServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\config\MybatisPlusConfig.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\config\WebConfig.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\controller\DashboardController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardDistributionItem.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardMetric.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardNoticeItem.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardRecentItem.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardRiskIndicator.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardSummaryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardTaskBucket.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardTaskItem.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardTrendGroup.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardTrendPoint.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardWorkspaceStats.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\service\DashboardService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dashboard\service\impl\DashboardServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\controller\DictionaryController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\domain\DictionaryCategory.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\domain\DictionaryItem.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryCategoryCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryCategoryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryCategoryUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryItemCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryItemResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryItemUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\mapper\DictionaryCategoryMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\mapper\DictionaryItemMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\service\DictionaryService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\dictionary\service\impl\DictionaryServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\controller\DocumentOrganizationController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\domain\DocumentOrganization.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\domain\DocumentOrganizationCity.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationCityResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationDetailResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationPermissionPreviewResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationSummaryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\mapper\DocumentOrganizationCityMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\mapper\DocumentOrganizationMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\service\DocumentOrganizationService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documentorganization\service\impl\DocumentOrganizationServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documenttype\controller\DocumentTypeController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documenttype\domain\DocumentType.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documenttype\dto\DocumentTypeCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documenttype\dto\DocumentTypePermissionPreviewResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documenttype\dto\DocumentTypeTreeNodeResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documenttype\dto\DocumentTypeUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documenttype\mapper\DocumentTypeMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documenttype\service\DocumentTypeService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\documenttype\service\impl\DocumentTypeServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\IntelligentArchiveApplication.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\rule\controller\RuleController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\rule\dto\RuleDefinitionDto.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\rule\service\impl\RuleServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\rule\service\RuleService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\security\controller\SecurityPolicyController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\security\dto\SecurityPolicyDto.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\security\service\impl\SecurityPolicyServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\security\service\SecurityPolicyService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\controller\WarehouseController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\domain\Warehouse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\domain\WarehouseArea.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\domain\WarehouseLocation.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\domain\WarehouseRack.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseAreaCopyCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseAreaCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseAreaUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseCopyCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseDetailResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseLocationCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseLocationUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseManagementResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseRackCopyCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseRackCreateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseRackUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseSummaryResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseUpdateCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseVisualizationResponse.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseVisualNode.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\mapper\WarehouseAreaMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\mapper\WarehouseLocationMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\mapper\WarehouseMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\mapper\WarehouseRackMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\service\impl\WarehouseServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\warehouse\service\WarehouseService.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\controller\WorkflowController.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\domain\WorkflowHistory.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\domain\WorkflowInstance.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\domain\WorkflowTask.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\dto\CompleteTaskCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\dto\DelegateTaskCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\dto\MergeProcessesCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\dto\RejectTaskCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\dto\SplitProcessCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\dto\StartProcessCommand.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\dto\WorkflowDefinitionDto.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\mapper\WorkflowHistoryMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\mapper\WorkflowInstanceMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\mapper\WorkflowTaskMapper.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\service\impl\WorkflowServiceImpl.java
-D:\AI project\smart-archive-management-system\backend\src\main\java\com\smartarchive\workflow\service\WorkflowService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\ai\controller\AiCapabilityController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\ai\dto\AiCapabilityDto.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\ai\service\AiCapabilityService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\ai\service\impl\AiCapabilityServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\command\AssignLocationCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\command\CreateArchiveReceiptCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\command\CreateBorrowRecordCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\command\CreateDisposalRecordCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\command\CreateInventoryTaskCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\controller\ArchiveObjectController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\controller\ArchiveReceiptController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\controller\BorrowRecordController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\controller\CatalogTaskController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\controller\DisposalRecordController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\controller\InventoryTaskController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\domain\ArchiveObject.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\domain\ArchiveReceipt.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\domain\BorrowRecord.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\domain\CatalogTask.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\domain\DisposalRecord.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\domain\InventoryTask.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\domain\WorkflowInstance.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\dto\ArchiveObjectQueryRequest.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\mapper\ArchiveObjectMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\mapper\ArchiveReceiptMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\mapper\ArchiveWorkflowInstanceMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\mapper\BorrowRecordMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\mapper\CatalogTaskMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\mapper\DisposalRecordMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\mapper\InventoryTaskMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\ArchiveObjectService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\ArchiveReceiptService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\BorrowRecordService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\CatalogTaskService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\DisposalRecordService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\impl\ArchiveObjectServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\impl\ArchiveReceiptServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\impl\BorrowRecordServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\impl\CatalogTaskServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\impl\DisposalRecordServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\impl\InventoryTaskServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\impl\WorkflowInstanceServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\InventoryTaskService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archive\service\WorkflowInstanceService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\controller\ArchiveFlowRuleController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\domain\ArchiveFlowRule.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\domain\SecurityLevelDictionary.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleDetailResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleOptionResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRulePermissionPreviewResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleSummaryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\dto\ArchiveFlowRuleUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\dto\SecurityLevelOptionResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\mapper\ArchiveFlowLookupMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\mapper\ArchiveFlowRuleMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\mapper\SecurityLevelDictionaryMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\service\ArchiveFlowRuleService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archiveflow\service\impl\ArchiveFlowRuleServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\controller\AiModelConfigController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\controller\ArchiveManagementController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\controller\DocumentTypeExtFieldController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\AiModelConfig.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveAttachment.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveContent.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveContentChunk.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveCreateSession.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveExtFieldConfig.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveExtValue.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchivePaper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\ArchiveRecord.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\BindBatch.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\BindVolume.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\BindVolumeItem.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\StorageBatch.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\StorageBatchItem.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\domain\StorageLedger.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\AiModelConfigCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\AiModelConfigResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\AiModelConnectionTestResult.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAiParseResult.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAskCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAskResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAttachmentResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveAttachmentUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveCreateOptionsResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveCreateSessionCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveCreateSessionResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveDefaultResolveResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveQueryCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveQueryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveSummaryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveTransferCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\ArchiveTransferResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\BindArchiveCandidateResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\BindBatchResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\BindCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\BindOptionsResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\BindPreviewCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\BindPreviewResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\BindQueryCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\BindVolumeItemResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\BindVolumeResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\DocumentTypeExtFieldCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\DocumentTypeExtFieldResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\DocumentTypeExtFieldUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\LabelValueOption.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageBatchItemResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageBatchResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageLedgerQueryCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageLedgerResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageOptionsResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageQueryCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\dto\StorageQueryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\AiModelConfigMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveAttachmentMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveContentChunkMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveContentMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveCreateSessionMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveExtFieldConfigMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveExtValueMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchivePaperMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\ArchiveRecordMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\BindBatchMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\BindVolumeItemMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\BindVolumeMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\StorageBatchItemMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\StorageBatchMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\mapper\StorageLedgerMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\AiModelConfigService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\ArchiveManagementService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\DocumentTypeExtFieldService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\impl\AiModelConfigServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\impl\ArchiveManagementServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\impl\DocumentTypeExtFieldServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\support\ArchiveAiChatService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\support\ArchiveFileTextExtractor.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\support\ArchiveTextChunkService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\support\ArchiveTextVectorService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\archivemanage\service\support\PdfOcrService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\common\api\ApiResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\common\audit\controller\OperationAuditController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\common\audit\domain\OperationAuditRecord.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\common\audit\dto\AuditRecordResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\common\audit\mapper\OperationAuditRecordMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\common\audit\service\impl\OperationAuditServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\common\audit\service\OperationAuditService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\common\exception\BusinessException.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\common\exception\GlobalExceptionHandler.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\controller\CompanyProjectController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\domain\CompanyProject.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\domain\CompanyProjectLine.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\domain\CompanyProjectOrgCategory.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\domain\Country.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectDetailResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectLineCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectLineResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectOrgCategoryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectPermissionPreviewResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectSummaryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CompanyProjectUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CountryDictionaryCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CountryDictionaryItemResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\CountryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\OrgCategoryDictionaryCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\dto\OrgCategoryDictionaryItemResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\mapper\CompanyProjectLineMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\mapper\CompanyProjectMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\mapper\CompanyProjectOrgCategoryMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\mapper\CountryMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\service\CompanyProjectService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\service\impl\CompanyProjectServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\config\MybatisPlusConfig.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\config\WebConfig.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\controller\DashboardController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardDistributionItem.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardMetric.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardNoticeItem.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardRecentItem.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardRiskIndicator.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardSummaryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardTaskBucket.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardTaskItem.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardTrendGroup.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardTrendPoint.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardWorkspaceStats.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\service\DashboardService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\service\impl\DashboardServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\controller\DictionaryController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\domain\DictionaryCategory.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\domain\DictionaryItem.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryCategoryCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryCategoryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryCategoryUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryItemCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryItemResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\dto\DictionaryItemUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\mapper\DictionaryCategoryMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\mapper\DictionaryItemMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\service\DictionaryService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dictionary\service\impl\DictionaryServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\controller\DocumentOrganizationController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\domain\DocumentOrganization.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\domain\DocumentOrganizationCity.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationCityResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationDetailResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationPermissionPreviewResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationSummaryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\dto\DocumentOrganizationUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\mapper\DocumentOrganizationCityMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\mapper\DocumentOrganizationMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\service\DocumentOrganizationService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documentorganization\service\impl\DocumentOrganizationServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\controller\DocumentTypeController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\domain\DocumentType.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\dto\DocumentTypeCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\dto\DocumentTypePermissionPreviewResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\dto\DocumentTypeTreeNodeResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\dto\DocumentTypeUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\mapper\DocumentTypeMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\service\DocumentTypeService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\service\impl\DocumentTypeServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\IntelligentArchiveApplication.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\config\KnowledgeGraphConfiguration.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\config\KnowledgeGraphNeo4jProperties.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\controller\ProcurementKnowledgeGraphController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\ComplianceCheckItemDto.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\ContractComplianceResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\CreateConversationRequest.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\EvidenceItemDto.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\GraphEdgeDto.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\GraphNodeDto.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\MatchingRuleVersionResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\ProcurementAskRequest.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\ProcurementAskResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\ProcurementChainResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\ProcurementConversationMessageResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\ProcurementConversationResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\RebuildTaskRequest.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\RebuildTaskResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\SendConversationMessageRequest.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\SupplierAccountTimelineResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\TimelineEventDto.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\dto\UpdateMatchingRuleCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\event\ArchiveGraphRefreshEvent.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\event\DocumentTypeSemanticChangedEvent.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\service\impl\ProcurementKnowledgeGraphServiceFallbackImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\service\ProcurementKnowledgeGraphService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\rule\controller\RuleController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\rule\dto\RuleDefinitionDto.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\rule\service\impl\RuleServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\rule\service\RuleService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\security\controller\SecurityPolicyController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\security\dto\SecurityPolicyDto.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\security\service\impl\SecurityPolicyServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\security\service\SecurityPolicyService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\controller\WarehouseController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\domain\Warehouse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\domain\WarehouseArea.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\domain\WarehouseLocation.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\domain\WarehouseRack.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseAreaCopyCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseAreaCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseAreaUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseCopyCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseDetailResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseLocationCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseLocationUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseManagementResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseRackCopyCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseRackCreateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseRackUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseSummaryResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseUpdateCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseVisualizationResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\dto\WarehouseVisualNode.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\mapper\WarehouseAreaMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\mapper\WarehouseLocationMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\mapper\WarehouseMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\mapper\WarehouseRackMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\service\impl\WarehouseServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\warehouse\service\WarehouseService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\controller\WorkflowController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\domain\WorkflowHistory.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\domain\WorkflowInstance.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\domain\WorkflowTask.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\dto\CompleteTaskCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\dto\DelegateTaskCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\dto\MergeProcessesCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\dto\RejectTaskCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\dto\SplitProcessCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\dto\StartProcessCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\dto\WorkflowDefinitionDto.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\mapper\WorkflowHistoryMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\mapper\WorkflowInstanceMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\mapper\WorkflowTaskMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\service\impl\WorkflowServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\workflow\service\WorkflowService.java

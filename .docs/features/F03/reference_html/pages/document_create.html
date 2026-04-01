@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财经文档系统 - 创建文档</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1173d4",
+                        "slate": {
+                            50: "#f8fafc",
+                            100: "#f1f5f9",
+                            200: "#e2e8f0",
+                            300: "#cbd5e1",
+                            400: "#94a3b8",
+                            500: "#64748b",
+                            600: "#475569",
+                            700: "#334155",
+                            800: "#1e293b",
+                            900: "#0f172a",
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply bg-slate-50 font-display text-slate-900 min-h-screen;
+                width: 1440px;
+                margin: 0 auto;
+                overflow-x: hidden;
+            }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .form-label {
+            @apply text-slate-500 text-sm font-normal mb-1.5 block flex-shrink-0;
+        }
+        .form-input {
+            @apply w-full border border-slate-200 rounded-md py-2 px-3 text-sm text-slate-800 placeholder:text-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white;
+        }
+        .form-select {
+            @apply w-full border border-slate-200 rounded-md py-2 px-3 text-sm text-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white appearance-none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <!-- Header -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-[1440px] mx-auto px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="data_maintenance.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                </a>
+                <span class="text-xl font-bold text-slate-800">财经文档系统</span>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="relative">
+                    <input type="text" placeholder="搜索文档..." class="pl-10 pr-4 py-1.5 bg-slate-100 border-none rounded-md text-sm w-80 focus:ring-2 focus:ring-primary/20">
+                    <span class="material-symbols-outlined text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-lg">search</span>
+                </div>
+                <div class="flex items-center gap-3 border-l pl-6 border-slate-200">
+                    <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">管</div>
+                    <span class="text-sm font-medium text-slate-700">管理员</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <nav class="max-w-[1440px] mx-auto px-8 py-6">
+        <div class="flex items-center gap-2 text-sm text-slate-500">
+            <a href="../index.html" class="hover:text-primary transition-colors">首页</a>
+            <span class="mx-1 text-slate-300">/</span>
+            <a href="data_maintenance.html" class="hover:text-primary transition-colors">数据维护</a>
+            <span class="mx-1 text-slate-300">/</span>
+            <span class="text-slate-900 font-medium">创建文档</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-[1440px] mx-auto px-8 py-6">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold text-slate-900">创建文档</h1>
+                <span class="px-2.5 py-1 rounded bg-blue-50 text-blue-600 text-xs font-semibold border border-blue-100">新文档草稿</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="submitDocument()" class="flex items-center gap-2 px-6 py-2.5 bg-primary text-white border border-primary rounded-lg text-sm font-semibold hover:bg-primary/90 transition-all shadow-sm">
+                    提交
+                </button>
+                <button onclick="cancelCreate()" class="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+                    取消
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 pb-12">
+            <!-- Document Basic Information -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">description</span>
+                        <h2 class="font-bold text-slate-800">文档基本信息</h2>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-6">
+                        <div>
+                            <label class="form-label">文档类型 <span class="text-red-500">*</span></label>
+                            <select class="form-select">
+                                <option value="">请选择文档类型</option>
+                                <option>记账凭证</option>
+                                <option>原始凭证</option>
+                                <option>合同协议</option>
+                                <option>报表报告</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">归档主体 <span class="text-red-500">*</span></label>
+                            <select class="form-select">
+                                <option value="">请选择归档主体</option>
+                                <option>集团总部</option>
+                                <option>北京分公司</option>
+                                <option>上海分公司</option>
+                                <option>海外事业部</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">业务模块 <span class="text-red-500">*</span></label>
+                            <select class="form-select">
+                                <option value="">请选择业务模块</option>
+                                <option>应付账款 AP</option>
+                                <option>应收账款 AR</option>
+                                <option>总账 GL</option>
+                                <option>费用报销 TE</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">开始档期</label>
+                            <input type="date" class="form-input">
+                        </div>
+                        <div>
+                            <label class="form-label">结束档期</label>
+                            <input type="date" class="form-input">
+                        </div>
+                        <div>
+                            <label class="form-label">文档业务编码</label>
+                            <input type="text" class="form-input" placeholder="请输入业务编码">
+                        </div>
+                        <div class="col-span-3">
+                            <label class="form-label">文档名称 <span class="text-red-500">*</span></label>
+                            <input type="text" class="form-input" placeholder="请输入文档名称">
+                        </div>
+                        <div>
+                            <label class="form-label">归档责任人</label>
+                            <input type="text" class="form-input" placeholder="请输入责任人姓名">
+                        </div>
+                        <div>
+                            <label class="form-label">归档责任部门</label>
+                            <input type="text" class="form-input" placeholder="请输入责任部门">
+                        </div>
+                        <div>
+                            <label class="form-label">文档生成日期</label>
+                            <input type="date" class="form-input">
+                        </div>
+                        <div>
+                            <label class="form-label">密级 <span class="text-red-500">*</span></label>
+                            <select class="form-select">
+                                <option>公开</option>
+                                <option>内部</option>
+                                <option>秘密</option>
+                                <option>机密</option>
+                                <option selected>绝密</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">系统来源</label>
+                            <select class="form-select">
+                                <option>ERP核心系统</option>
+                                <option>FSSC共享平台</option>
+                                <option>OA办公系统</option>
+                                <option>人工录入</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">文档归档编码</label>
+                            <input type="text" class="form-input" placeholder="自动生成或手动录入">
+                        </div>
+                        <div>
+                            <label class="form-label">归档地</label>
+                            <input type="text" class="form-input" placeholder="请输入归档地">
+                        </div>
+                        <div>
+                            <label class="form-label">产生地</label>
+                            <input type="text" class="form-input" placeholder="请输入产生地">
+                        </div>
+                        <div>
+                            <label class="form-label">是否可见</label>
+                            <select class="form-select">
+                                <option value="1">是</option>
+                                <option value="0">否</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">载体类型</label>
+                            <select class="form-select">
+                                <option>电子</option>
+                                <option>纸质</option>
+                                <option selected>电子+纸质</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">创建人</label>
+                            <input type="text" class="form-input bg-slate-50" readonly value="管理员">
+                        </div>
+                        <div>
+                            <label class="form-label">创建时间</label>
+                            <input type="datetime-local" class="form-input">
+                        </div>
+                        <div class="col-span-3">
+                            <label class="form-label">备注</label>
+                            <textarea class="form-input min-h-[80px]" placeholder="请输入备注信息..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Extended Information -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">extension</span>
+                        <h2 class="font-bold text-slate-800">扩展信息</h2>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-6">
+                        <div>
+                            <label class="form-label">条码模块</label>
+                            <input type="text" class="form-input" placeholder="请输入条码模块">
+                        </div>
+                        <div>
+                            <label class="form-label">文号</label>
+                            <input type="text" class="form-input" placeholder="请输入文号">
+                        </div>
+                        <div>
+                            <label class="form-label">起止号</label>
+                            <input type="text" class="form-input" placeholder="例如：000001 - 000150">
+                        </div>
+                        <div>
+                            <label class="form-label">保存期限(年)</label>
+                            <input type="number" class="form-input" placeholder="请输入年限">
+                        </div>
+                        <div>
+                            <label class="form-label">档案类型</label>
+                            <select class="form-select">
+                                <option>会计档案-原始凭证</option>
+                                <option>行政档案</option>
+                                <option>业务档案</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">系统来源</label>
+                            <select class="form-select">
+                                <option>FSSC共享平台</option>
+                                <option>ERP核心系统</option>
+                                <option>外部导入</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Archive Information -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">archive</span>
+                        <h2 class="font-bold text-slate-800">归档信息</h2>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-3 gap-x-8 gap-y-6">
+                        <div>
+                            <label class="form-label">归档地</label>
+                            <input type="text" class="form-input" placeholder="总部档案馆-02库区-A12架">
+                        </div>
+                        <div>
+                            <label class="form-label">归档责任人</label>
+                            <input type="text" class="form-input" placeholder="请输入责任人">
+                        </div>
+                        <div>
+                            <label class="form-label">归档责任部门</label>
+                            <input type="text" class="form-input" placeholder="请输入部门">
+                        </div>
+                        <div>
+                            <label class="form-label">电子归档时间</label>
+                            <input type="datetime-local" class="form-input">
+                        </div>
+                        <div>
+                            <label class="form-label">实物归档时间</label>
+                            <input type="datetime-local" class="form-input">
+                        </div>
+                        <div>
+                            <label class="form-label">载体类型</label>
+                            <select class="form-select">
+                                <option>光盘 + 纸质原件</option>
+                                <option>移动硬盘</option>
+                                <option>云存储</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        function submitDocument() {
+            alert('提交功能演示：这里会执行提交操作并保存文档');
+        }
+
+        function cancelCreate() {
+            if (confirm('确定要取消创建吗？未保存的内容将会丢失。')) {
+                window.location.href = 'data_maintenance.html';
+            }
+        }
+    </script>
+</body>
+</html>

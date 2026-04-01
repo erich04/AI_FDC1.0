@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_archive_receipt")
+@TableName("fdc_archive_receipt_t")
 public class ArchiveReceipt {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "archive_receipt_id", type = IdType.AUTO)
     private Long id;
     private String receiptCode;
     private String sourceDept;

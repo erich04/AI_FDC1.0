@@ -354,8 +354,8 @@ public class WarehouseServiceImpl extends ServiceImpl<WarehouseLocationMapper, W
         location.setWidth(command.getWidth() == null ? 140 : command.getWidth());
         location.setHeight(command.getHeight() == null ? 76 : command.getHeight());
         location.setUtilizationRate(BigDecimal.ZERO);
-        location.setUpdatedAt(LocalDateTime.now());
-        location.setDeleted(0);
+        location.setLastUpdateDate(LocalDateTime.now());
+        location.setDeleteFlag("N");
         save(location);
         touchWarehouse(command.getWarehouseCode());
         touchArea(command.getWarehouseCode(), command.getAreaCode());
@@ -377,7 +377,7 @@ public class WarehouseServiceImpl extends ServiceImpl<WarehouseLocationMapper, W
         int occupiedCount = "FREE".equals(command.getStatus()) ? 0 : Math.max(1, location.getOccupiedCount() == null ? 0 : location.getOccupiedCount());
         location.setOccupiedCount(occupiedCount);
         location.setUtilizationRate(calculateRate(occupiedCount, command.getCapacity()));
-        location.setUpdatedAt(LocalDateTime.now());
+        location.setLastUpdateDate(LocalDateTime.now());
         updateById(location);
         touchWarehouse(location.getWarehouseCode());
         touchArea(location.getWarehouseCode(), location.getAreaCode());
@@ -512,8 +512,8 @@ public class WarehouseServiceImpl extends ServiceImpl<WarehouseLocationMapper, W
                 location.setWidth(140);
                 location.setHeight(76);
                 location.setUtilizationRate(BigDecimal.ZERO);
-                location.setUpdatedAt(LocalDateTime.now());
-                location.setDeleted(0);
+                location.setLastUpdateDate(LocalDateTime.now());
+                location.setDeleteFlag("N");
                 save(location);
             }
         }
@@ -568,8 +568,8 @@ public class WarehouseServiceImpl extends ServiceImpl<WarehouseLocationMapper, W
         locationCopy.setWidth(sourceLocation.getWidth());
         locationCopy.setHeight(sourceLocation.getHeight());
         locationCopy.setUtilizationRate(BigDecimal.ZERO);
-        locationCopy.setUpdatedAt(LocalDateTime.now());
-        locationCopy.setDeleted(0);
+        locationCopy.setLastUpdateDate(LocalDateTime.now());
+        locationCopy.setDeleteFlag("N");
         return locationCopy;
     }
 

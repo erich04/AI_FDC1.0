@@ -9,9 +9,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("wf_workflow_task")
+@TableName("fdc_workflow_task_t")
 public class WorkflowTask {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "workflow_task_id", type = IdType.AUTO)
     private Long id;
     private String taskId;
     private String processInstanceId;

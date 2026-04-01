@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_storage_ledger")
+@TableName("fdc_storage_ledger_t")
 public class StorageLedger {
     @TableId(type = IdType.AUTO)
     private Long ledgerId;

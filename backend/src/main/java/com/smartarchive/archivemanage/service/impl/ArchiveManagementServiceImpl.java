@@ -758,7 +758,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             .map(item -> option(item.getWarehouseCode(), item.getWarehouseName()))
             .toList();
         List<LabelValueOption> locationOptions = warehouseLocationMapper.selectList(new LambdaQueryWrapper<WarehouseLocation>()
-                .eq(WarehouseLocation::getDeleted, 0)
+                .eq(WarehouseLocation::getDeleteFlag, "N")
                 .orderByAsc(WarehouseLocation::getWarehouseCode)
                 .orderByAsc(WarehouseLocation::getLocationCode))
             .stream()
@@ -889,7 +889,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     }
 
     private List<LabelValueOption> listEnabledDocumentOrganizations() {
-        return jdbcTemplate.query("select document_organization_code, document_organization_name from md_document_organization where enabled_flag = 'Y' and delete_flag = 'N' order by document_organization_code", (rs, rowNum) -> option(rs.getString(1), rs.getString(2)));
+        return jdbcTemplate.query("select document_organization_code, document_organization_name from fdc_document_organization_t where enable_flag = 'Y' and delete_flag = 'N' order by document_organization_code", (rs, rowNum) -> option(rs.getString(1), rs.getString(2)));
     }
 
     private List<LabelValueOption> listEnabledCities() {
@@ -905,7 +905,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     }
 
     private List<LabelValueOption> loadDictionaryOptions(String categoryCode) {
-        return jdbcTemplate.query("select item_code, item_name from md_dict_item where category_code = ? and enabled_flag = 'Y' and delete_flag = 'N' order by sort_order, item_code", (rs, rowNum) -> option(rs.getString(1), rs.getString(2)), categoryCode);
+        return jdbcTemplate.query("select item_code, item_name from fdc_dict_item_t where category_code = ? and enable_flag = 'Y' and delete_flag = 'N' order by sort_order, item_code", (rs, rowNum) -> option(rs.getString(1), rs.getString(2)), categoryCode);
     }
 
     private List<BindArchiveCandidateResponse> listBindableArchiveCandidates(String keyword, String documentTypeCode, String companyProjectCode) {
@@ -1278,7 +1278,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         location.setOccupiedCount(occupiedCount);
         location.setStatus(occupiedCount >= Objects.requireNonNullElse(location.getCapacity(), 0) ? "WARNING" : "OCCUPIED");
         location.setUtilizationRate(calculateRate(occupiedCount, location.getCapacity()));
-        location.setUpdatedAt(LocalDateTime.now());
+        location.setLastUpdateDate(LocalDateTime.now());
         warehouseLocationMapper.updateById(location);
     }
 
@@ -1376,7 +1376,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         WarehouseLocation location = warehouseLocationMapper.selectOne(new LambdaQueryWrapper<WarehouseLocation>()
             .eq(WarehouseLocation::getWarehouseCode, warehouseCode)
             .eq(WarehouseLocation::getLocationCode, locationCode)
-            .eq(WarehouseLocation::getDeleted, 0)
+            .eq(WarehouseLocation::getDeleteFlag, "N")
             .last("limit 1"));
         if (location == null) {
             throw new BusinessException("Location not found");
@@ -1559,7 +1559,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
 
             var vector = archiveTextVectorService.embed(chunkText);
             jdbcTemplate.update(
-                "insert into arc_archive_chunk_vector (chunk_id, archive_id, attachment_id, embedding_model_code, vector_value, vector_dimension, content_version, delete_flag, created_by, creation_date, last_updated_by, last_update_date) values (?, ?, ?, ?, CAST(? AS vector), ?, ?, 'N', ?, current_timestamp, ?, current_timestamp)",
+                "insert into fdc_arch_chunk_vector_t (chunk_id, archive_id, attachment_id, embedding_model_code, vector_value, vector_dimension, content_version, delete_flag, created_by, creation_date, last_updated_by, last_update_date) values (?, ?, ?, ?, CAST(? AS vector), ?, ?, 'N', ?, current_timestamp, ?, current_timestamp)",
                 chunk.getChunkId(),
                 archiveId,
                 attachment.getAttachmentId(),
@@ -1715,27 +1715,27 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         if (searchTerms.isEmpty()) return Set.of();
         Set<Long> matchedArchiveIds = new LinkedHashSet<>();
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive_content where delete_flag = 'N' and (%s)",
+            "select distinct archive_id from fdc_arch_content_t where delete_flag = 'N' and (%s)",
             "full_text",
             searchTerms
         ));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive_attachment where delete_flag = 'N' and active_flag = 'Y' and (%s)",
+            "select distinct archive_id from fdc_arch_attachment_t where delete_flag = 'N' and active_flag = 'Y' and (%s)",
             "file_name",
             searchTerms
         ));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive_attachment where delete_flag = 'N' and active_flag = 'Y' and (%s)",
+            "select distinct archive_id from fdc_arch_attachment_t where delete_flag = 'N' and active_flag = 'Y' and (%s)",
             "ai_summary",
             searchTerms
         ));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive where delete_flag = 'N' and (%s)",
+            "select distinct archive_id from fdc_arch_t where delete_flag = 'N' and (%s)",
             "document_name",
             searchTerms
         ));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive where delete_flag = 'N' and (%s)",
+            "select distinct archive_id from fdc_arch_t where delete_flag = 'N' and (%s)",
             "ai_archive_summary",
             searchTerms
         ));
@@ -1747,32 +1747,32 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         Set<Long> matchedArchiveIds = new LinkedHashSet<>();
         matchedArchiveIds.addAll(loadKeywordMatchedArchiveIds(searchTerms));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive where delete_flag = 'N' and (%s)",
+            "select distinct archive_id from fdc_arch_t where delete_flag = 'N' and (%s)",
             "business_code",
             searchTerms
         ));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive where delete_flag = 'N' and (%s)",
+            "select distinct archive_id from fdc_arch_t where delete_flag = 'N' and (%s)",
             "archive_filing_code",
             searchTerms
         ));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive where delete_flag = 'N' and (%s)",
+            "select distinct archive_id from fdc_arch_t where delete_flag = 'N' and (%s)",
             "duty_department",
             searchTerms
         ));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive where delete_flag = 'N' and (%s)",
+            "select distinct archive_id from fdc_arch_t where delete_flag = 'N' and (%s)",
             "source_system",
             searchTerms
         ));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive_ext_value where (%s)",
+            "select distinct archive_id from fdc_doc_ext_t where (%s)",
             "text_value",
             searchTerms
         ));
         matchedArchiveIds.addAll(queryArchiveIdsByTerms(
-            "select distinct archive_id from arc_archive_ext_value where (%s)",
+            "select distinct archive_id from fdc_doc_ext_t where (%s)",
             "dict_item_name_snapshot",
             searchTerms
         ));
@@ -1793,7 +1793,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
 
     private Set<Long> loadContentMatchedArchiveIds(List<String> searchTerms) {
         if (searchTerms.isEmpty()) return Set.of();
-        StringBuilder sql = new StringBuilder("select distinct archive_id from arc_archive_content where delete_flag = 'N' and (");
+        StringBuilder sql = new StringBuilder("select distinct archive_id from fdc_arch_content_t where delete_flag = 'N' and (");
         List<Object> params = new ArrayList<>();
         for (int index = 0; index < searchTerms.size(); index++) {
             if (index > 0) sql.append(" or ");
@@ -2296,9 +2296,9 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                     a.archive_id,
                     c.chunk_text,
                     (v.vector_value <=> cast(? as vector)) as distance
-                from arc_archive_chunk_vector v
-                join arc_archive_content_chunk c on c.chunk_id = v.chunk_id and c.delete_flag = 'N'
-                join arc_archive a on a.archive_id = v.archive_id and a.delete_flag = 'N'
+                from fdc_arch_chunk_vector_t v
+                join fdc_arch_content_chunk_t c on c.chunk_id = v.chunk_id and c.delete_flag = 'N'
+                join fdc_arch_t a on a.archive_id = v.archive_id and a.delete_flag = 'N'
                 where v.delete_flag = 'N'
                   and v.embedding_model_code = ?
                 """);

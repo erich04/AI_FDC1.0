@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("wh_location")
+@TableName("fdc_warehouse_location_t")
 public class WarehouseLocation {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "warehouse_location_id", type = IdType.AUTO)
     private Long id;
     private String warehouseCode;
     private String warehouseName;
@@ -29,9 +29,10 @@ public class WarehouseLocation {
     private Integer width;
     private Integer height;
     private BigDecimal utilizationRate;
-    private LocalDateTime updatedAt;
+    @TableField("last_update_date")
+    private LocalDateTime lastUpdateDate;
 
     @TableLogic
-    @TableField("deleted")
-    private Integer deleted;
+    @TableField("delete_flag")
+    private String deleteFlag;
 }

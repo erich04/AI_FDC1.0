@@ -1,6 +1,7 @@
 package com.smartarchive.archivemanage.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -8,9 +9,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("ai_model_config")
+@TableName("fdc_ai_model_config_t")
 public class AiModelConfig {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "ai_model_config_id", type = IdType.AUTO)
     private Long modelConfigId;
     private String modelCode;
     private String modelName;
@@ -27,6 +28,7 @@ public class AiModelConfig {
     private Double officialScoreThreshold;
     private Integer relatedResultCount;
     private Double relatedScoreThreshold;
+    @TableField("enable_flag")
     private String enabledFlag;
     private String remark;
     @TableLogic(value = "N", delval = "Y")

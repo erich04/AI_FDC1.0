@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_disposal_record")
+@TableName("fdc_disposal_record_t")
 public class DisposalRecord {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "disposal_record_id", type = IdType.AUTO)
     private Long id;
     private String disposalCode;
     private String archiveCode;

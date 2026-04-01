@@ -1,6 +1,7 @@
 package com.smartarchive.companyproject.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -8,13 +9,14 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("md_country")
+@TableName("fdc_country_t")
 public class Country {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "country_id", type = IdType.AUTO)
     private Long id;
     private String countryCode;
     private String countryName;
     private Integer sortOrder;
+    @TableField("enable_flag")
     private String enabledFlag;
     @TableLogic(value = "N", delval = "Y")
     private String deleteFlag;

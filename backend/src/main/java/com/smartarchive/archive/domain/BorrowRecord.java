@@ -8,9 +8,9 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("arc_borrow_record")
+@TableName("fdc_borrow_record_t")
 public class BorrowRecord {
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "borrow_record_id", type = IdType.AUTO)
     private Long id;
     private String borrowCode;
     private String archiveCode;
