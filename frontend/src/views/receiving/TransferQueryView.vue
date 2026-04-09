@@ -1,182 +1,214 @@
 <template>
   <div class="transfer-query-page">
     <el-card shadow="never">
-      <template #header>
-        <div class="section-head">
-          <div>
-            <strong>移交记录查询</strong>
-            <span>展示真实电子流移交记录，支持按条件筛选和查看详情。</span>
-          </div>
-          <div class="section-actions">
-            <el-button type="primary" @click="goToCreate">发起移交</el-button>
-          </div>
-        </div>
-      </template>
-
-      <div class="search-form">
-        <el-form :inline="true" :model="searchForm">
-          <el-form-item label="移交编号">
-            <el-input v-model="searchForm.transferId" placeholder="请输入移交编号" clearable />
+      <el-form :model="searchForm" label-width="108px" class="filter-form" @submit.prevent>
+        <div class="filter-grid">
+          <el-form-item label="文档业务编码">
+            <el-input v-model="searchForm.docBusiNo" class="input-w180" placeholder="模糊查询" clearable />
           </el-form-item>
-          <el-form-item label="移交方式">
-            <el-select v-model="searchForm.transferMethod" placeholder="请选择移交方式" clearable>
-              <el-option label="直接移交" value="DIRECT" />
-              <el-option label="邮寄" value="MAIL" />
+          <el-form-item label="公司">
+            <el-select v-model="searchForm.companyProjectCode" class="input-w180" clearable filterable placeholder="请选择">
+              <el-option v-for="o in companyOptions" :key="o.code" :label="o.name" :value="o.code" />
             </el-select>
           </el-form-item>
-          <el-form-item label="业务编码">
-            <el-input v-model="searchForm.businessCode" placeholder="请输入业务编码" clearable />
-          </el-form-item>
-          <el-form-item label="移交人">
-            <el-select v-model="searchForm.transferorId" filterable placeholder="请选择移交人" clearable>
-              <el-option v-for="user in userOptions" :key="user.id" :label="user.name" :value="user.id" />
+          <el-form-item label="业务模块">
+            <el-select v-model="searchForm.busiModuleCode" class="input-w180" clearable filterable placeholder="请选择">
+              <el-option v-for="o in busiModuleOptions" :key="o.code" :label="o.name" :value="o.code" />
             </el-select>
           </el-form-item>
-          <el-form-item label="签收人">
-            <el-select v-model="searchForm.assigneeId" filterable placeholder="请选择签收人" clearable>
-              <el-option v-for="user in userOptions" :key="user.id" :label="user.name" :value="user.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
-              <el-option label="处理中" value="RUNNING" />
-              <el-option label="已通过" value="APPROVED" />
-              <el-option label="已驳回" value="REJECTED" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="时间范围">
+          <el-form-item label="档期" class="span-range">
             <el-date-picker
-              v-model="searchForm.dateRange"
+              v-model="searchForm.archPeriodRange"
               type="daterange"
               value-format="YYYY-MM-DD"
               range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
+              start-placeholder="开始"
+              end-placeholder="结束"
+              unlink-panels
+              class="input-range"
             />
           </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="search">查询</el-button>
-            <el-button @click="reset">重置</el-button>
+          <el-form-item label="申请人">
+            <el-select v-model="searchForm.applicant" class="input-w180" clearable filterable placeholder="用户 ID">
+              <el-option v-for="u in userOptions" :key="u.id" :label="u.name" :value="u.id" />
+            </el-select>
           </el-form-item>
-        </el-form>
-      </div>
 
-      <div v-if="loading" class="loading-container">
-        <el-skeleton :rows="8" animated />
-      </div>
+          <el-form-item label="申请单号">
+            <el-input v-model="searchForm.applicationNumber" class="input-w180" placeholder="模糊查询" clearable />
+          </el-form-item>
+          <el-form-item label="申请日期" class="span-range">
+            <el-date-picker
+              v-model="searchForm.applicationDateRange"
+              type="daterange"
+              value-format="YYYY-MM-DD"
+              range-separator="至"
+              start-placeholder="开始"
+              end-placeholder="结束"
+              unlink-panels
+              class="input-range"
+            />
+          </el-form-item>
+          <el-form-item label="申请状态">
+            <el-select v-model="searchForm.applicationStatus" class="input-w180" clearable placeholder="请选择">
+              <el-option v-for="o in statusOptions" :key="o.code" :label="o.name" :value="o.code" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="载体类型">
+            <el-select v-model="searchForm.carrierType" class="input-w180" clearable placeholder="请选择">
+              <el-option v-for="o in carrierTypeOptions" :key="o.code" :label="o.name" :value="o.code" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="差异原因">
+            <el-select v-model="searchForm.diffReasonCode" class="input-w180" clearable placeholder="请选择">
+              <el-option v-for="o in diffReasonOptions" :key="o.code" :label="o.name" :value="o.code" />
+            </el-select>
+          </el-form-item>
+        </div>
 
-      <div v-else class="transfer-list">
-        <el-table :data="pagedRecords" border class="transfer-table">
-          <el-table-column label="移交编号" min-width="200">
-            <template #default="{ row }">
-              <el-button link type="primary" @click="viewDetail(row.processInstanceId)">{{ row.id }}</el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="transferorName" label="移交人" width="120" />
-          <el-table-column prop="assigneeName" label="签收人" width="120" />
-          <el-table-column label="移交方式" width="120">
-            <template #default="{ row }">
-              <el-tag :type="row.transferMethod === 'DIRECT' ? 'primary' : 'success'" effect="light">
-                {{ row.transferMethod === 'DIRECT' ? '直接移交' : '邮寄' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="100">
-            <template #default="{ row }">
-              <el-tag :type="getStatusType(row.status)" effect="light">
-                {{ getStatusLabel(row.status) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="documentCount" label="文档数量" width="100" />
-          <el-table-column prop="displayUpdatedAt" label="最后更新时间" width="180" />
-          <el-table-column label="操作" width="120">
-            <template #default="{ row }">
-              <el-button size="small" @click="viewDetail(row.processInstanceId)">查看详情</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <div v-show="filterExpanded" class="filter-grid filter-grid--extra">
+          <el-form-item label="移交方式">
+            <el-select v-model="searchForm.applyMethod" class="input-w180" clearable placeholder="请选择">
+              <el-option v-for="o in applyMethodOptions" :key="o.code" :label="o.name" :value="o.code" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="邮寄方式">
+            <el-select v-model="searchForm.expressType" class="input-w180" clearable placeholder="请选择">
+              <el-option v-for="o in expressTypeOptions" :key="o.code" :label="o.name" :value="o.code" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="邮寄单号">
+            <el-input v-model="searchForm.expressNumber" class="input-w180" placeholder="模糊查询" clearable />
+          </el-form-item>
+          <el-form-item label="接收人">
+            <el-select v-model="searchForm.documentRecipient" class="input-w180" clearable filterable placeholder="用户 ID">
+              <el-option v-for="u in userOptions" :key="u.id" :label="u.name" :value="u.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="册号">
+            <el-input v-model="searchForm.catalogVolumeNo" class="input-w180" placeholder="模糊查询" clearable />
+          </el-form-item>
+        </div>
 
-        <div class="pagination">
-          <el-pagination
-            v-model:current-page="pagination.currentPage"
-            v-model:page-size="pagination.pageSize"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="filteredRecords.length"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-          />
+        <div class="filter-toolbar">
+          <el-button link type="primary" @click="filterExpanded = !filterExpanded">
+            {{ filterExpanded ? '收起更多条件' : '展开更多条件' }}
+          </el-button>
+          <div class="filter-toolbar__actions">
+            <el-button @click="reset">重置</el-button>
+            <el-button type="primary" :loading="loading" @click="runQuery">查询</el-button>
+          </div>
+        </div>
+      </el-form>
+
+      <div class="table-section">
+        <div class="table-toolbar">
+          <div class="table-toolbar__left">
+            <el-button type="primary" @click="goToCreate">发起移交</el-button>
+            <el-button @click="hintTodo('导出')">导出</el-button>
+          </div>
+        </div>
+
+        <div v-if="loading" class="loading-container">
+          <el-skeleton :rows="8" animated />
+        </div>
+        <div v-else class="transfer-list">
+          <el-table :data="tableRecords" border class="transfer-table">
+            <el-table-column label="序号" width="64" align="center">
+              <template #default="{ $index }">
+                {{ (pagination.page - 1) * pagination.pageSize + $index + 1 }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="applicationNumber" label="申请单号" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="documentTypeName" label="文档类型" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="applicantName" label="申请人" width="120" show-overflow-tooltip />
+            <el-table-column label="申请日期" width="170">
+              <template #default="{ row }">{{ formatDateTime(row.applicationDate) }}</template>
+            </el-table-column>
+            <el-table-column label="申请状态" width="110">
+              <template #default="{ row }">
+                <el-tag v-if="row.applicationStatus" size="small" :type="statusTagType(row.applicationStatus)" effect="light">
+                  {{ labelOf(statusOptions, row.applicationStatus) }}
+                </el-tag>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="documentRecipientName" label="接收人" width="120" show-overflow-tooltip />
+            <el-table-column label="邮寄方式" width="120">
+              <template #default="{ row }">{{ labelOf(expressTypeOptions, row.expressType) }}</template>
+            </el-table-column>
+            <el-table-column prop="expressNumber" label="邮寄单号" min-width="140" show-overflow-tooltip />
+            <el-table-column label="操作" width="150" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" @click="openView(row.applicationId)">查看</el-button>
+                <el-button
+                  v-if="row.applicationStatus === 'DRAFT' || row.applicationStatus === 'REJECTED'"
+                  link
+                  type="primary"
+                  @click="goEdit(row.applicationId)"
+                >
+                  编辑
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <div class="pagination">
+            <el-pagination
+              v-model:current-page="pagination.page"
+              v-model:page-size="pagination.pageSize"
+              :page-sizes="[20, 50, 100, 200]"
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="pagination.total"
+              @size-change="handleSizeChange"
+              @current-change="handlePageChange"
+            />
+          </div>
         </div>
       </div>
 
-      <el-dialog v-model="detailDialogVisible" title="移交详情" width="980px" :show-close="true">
-        <div v-if="currentTransferDetail" class="transfer-detail">
+      <el-dialog v-model="detailVisible" title="移交申请详情" width="920px" destroy-on-close>
+        <div v-if="detailLoading" class="loading-container"><el-skeleton :rows="6" animated /></div>
+        <div v-else-if="detailData" class="transfer-detail">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="移交编号">{{ currentTransferDetail.id }}</el-descriptions-item>
-            <el-descriptions-item label="流程实例ID">{{ currentTransferDetail.processInstanceId }}</el-descriptions-item>
-            <el-descriptions-item label="移交人">{{ currentTransferDetail.transferorName }}</el-descriptions-item>
-            <el-descriptions-item label="签收人">{{ currentTransferDetail.assigneeName }}</el-descriptions-item>
-            <el-descriptions-item label="移交方式">
-              <el-tag :type="currentTransferDetail.transferMethod === 'DIRECT' ? 'primary' : 'success'" effect="light">
-                {{ currentTransferDetail.transferMethod === 'DIRECT' ? '直接移交' : '邮寄' }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="流程状态">
-              <el-tag :type="getStatusType(currentTransferDetail.status)" effect="light">
-                {{ getStatusLabel(currentTransferDetail.status) }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ currentTransferDetail.displayCreateTime }}</el-descriptions-item>
-            <el-descriptions-item label="最后更新时间">{{ currentTransferDetail.displayUpdatedAt }}</el-descriptions-item>
-            <el-descriptions-item v-if="currentTransferDetail.transferMethod === 'MAIL'" label="物流公司">
-              {{ currentTransferDetail.logisticsCompany || '无' }}
-            </el-descriptions-item>
-            <el-descriptions-item v-if="currentTransferDetail.transferMethod === 'MAIL'" label="邮寄单号">
-              {{ currentTransferDetail.trackingNumber || '无' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="备注" :span="2">{{ currentTransferDetail.remark || '无' }}</el-descriptions-item>
+            <el-descriptions-item label="申请单号">{{ detailData.applicationNumber }}</el-descriptions-item>
+            <el-descriptions-item label="申请状态">{{ labelOf(statusOptions, detailData.applicationStatus) }}</el-descriptions-item>
+            <el-descriptions-item label="申请人">{{ formatUser(detailData.applicant) }}</el-descriptions-item>
+            <el-descriptions-item label="申请日期">{{ formatDateTime(detailData.applicationDate) }}</el-descriptions-item>
+            <el-descriptions-item label="文档类型">{{ detailData.documentTypeCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="移交方式">{{ labelOf(applyMethodOptions, detailData.applyMethod) }}</el-descriptions-item>
+            <el-descriptions-item label="载体类型">{{ labelOf(carrierTypeOptions, detailData.carrierType) }}</el-descriptions-item>
+            <el-descriptions-item label="邮寄方式">{{ labelOf(expressTypeOptions, detailData.expressType) }}</el-descriptions-item>
+            <el-descriptions-item label="邮寄单号">{{ detailData.expressNumber || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="接收人">{{ formatUser(detailData.documentRecipient) }}</el-descriptions-item>
+            <el-descriptions-item label="差异原因">{{ labelOf(diffReasonOptions, detailData.diffReasonCode) }}</el-descriptions-item>
+            <el-descriptions-item label="说明" :span="2">{{ detailData.applicationDescription || '-' }}</el-descriptions-item>
           </el-descriptions>
 
           <div class="documents-section">
-            <h3>移交文档</h3>
-            <el-table :data="currentTransferDetail.documents" border class="documents-table">
-              <el-table-column type="index" label="#" width="54" />
-              <el-table-column prop="documentTypeName" label="文档类型" min-width="180" />
-              <el-table-column prop="businessCode" label="业务编码" min-width="140" />
-              <el-table-column prop="documentOrganizationName" label="文档组织" min-width="180" />
-              <el-table-column label="扩展字段" min-width="280">
-                <template #default="{ row }">
-                  <div v-if="row.extFieldEntries.length" class="ext-field-list">
-                    <span v-for="field in row.extFieldEntries" :key="field.key" class="ext-chip">{{ field.key }}：{{ field.value || '-' }}</span>
-                  </div>
-                  <span v-else>无扩展字段</span>
-                </template>
+            <h3>申请明细</h3>
+            <el-table :data="detailData.details || []" border size="small">
+              <el-table-column type="index" label="#" width="50" />
+              <el-table-column prop="docBusiNo" label="文档业务编码" min-width="120" show-overflow-tooltip />
+              <el-table-column prop="docName" label="文档名称" min-width="160" show-overflow-tooltip />
+              <el-table-column label="公司/项目" min-width="120" show-overflow-tooltip>
+                <template #default="{ row }">{{ labelOf(companyOptions, row.companyProjectCode) }}</template>
               </el-table-column>
+              <el-table-column label="业务模块" width="120">
+                <template #default="{ row }">{{ labelOf(busiModuleOptions, row.busiModuleCode) }}</template>
+              </el-table-column>
+              <el-table-column label="档期起" width="120">
+                <template #default="{ row }">{{ row.startArchPeriod || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="档期止" width="120">
+                <template #default="{ row }">{{ row.endArchPeriod || '-' }}</template>
+              </el-table-column>
+              <el-table-column prop="catalogVolumeNo" label="册号" width="100" show-overflow-tooltip />
             </el-table>
-          </div>
-
-          <div class="documents-section">
-            <h3>电子流审批记录</h3>
-            <div v-if="processTasks.length" class="timeline-list">
-              <div v-for="task in processTasks" :key="`${task.taskId}-${task.status}-${task.completeTime || ''}`" class="timeline-item">
-                <div class="timeline-dot" :class="`is-${getTaskTone(task.status)}`"></div>
-                <div class="timeline-content">
-                  <div class="timeline-top">
-                    <strong>{{ task.taskName }}</strong>
-                    <el-tag size="small" :type="getTaskType(task.status)">{{ getTaskLabel(task.status) }}</el-tag>
-                  </div>
-                  <div class="timeline-meta">处理人：{{ resolveUserName(task.assignee) }}</div>
-                  <div class="timeline-meta">创建时间：{{ formatDateTime(task.createTime) || '-' }}</div>
-                  <div class="timeline-meta">完成时间：{{ formatDateTime(task.completeTime) || '-' }}</div>
-                </div>
-              </div>
-            </div>
-            <el-empty v-else description="当前流程暂无审批记录" />
           </div>
         </div>
         <template #footer>
-          <el-button @click="detailDialogVisible = false">关闭</el-button>
+          <el-button @click="detailVisible = false">关闭</el-button>
         </template>
       </el-dialog>
     </el-card>
@@ -184,331 +216,279 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import axios from 'axios'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { fetchArchiveCreateOptions } from '../../api/modules/archiveManagement'
-import { getProcessInstance, getProcessTasks, listProcesses } from '../../api/modules/workflow'
-import type { ArchiveCreateOptions } from '../../types'
+import { fetchDictionaryItems } from '../../api/modules/dictionary'
+import {
+  getTransferApplication,
+  searchTransferApplicationRecords,
+  type TransferApplicationDetailPayload,
+  type TransferApplicationRecordQuery,
+  type TransferApplicationRecordRow
+} from '../../api/modules/transferApplications'
+import type { ArchiveCreateOptions, DictionaryItem } from '../../types'
 
-interface TransferDocumentView {
-  documentTypeName: string
-  businessCode: string
-  documentOrganizationName: string
-  extFieldEntries: Array<{ key: string; value: string }>
+interface LabelOption {
+  code: string
+  name: string
 }
 
-interface TransferRecordView {
-  id: string
-  processInstanceId: string
-  transferorId: string
-  transferorName: string
-  assigneeId: string
-  assigneeName: string
-  transferMethod: string
-  logisticsCompany: string
-  trackingNumber: string
-  status: string
-  remark: string
-  businessCodes: string[]
-  documentCount: number
-  createTime?: string
-  updatedAt?: string
-  displayCreateTime: string
-  displayUpdatedAt: string
-  documents: TransferDocumentView[]
-}
-
-interface ProcessTaskView {
-  taskId: string
-  taskName: string
-  assignee?: string
-  status?: string
-  createTime?: string
-  completeTime?: string
-}
+const DEFAULT_TENANT_ID = 1
 
 const router = useRouter()
 const loading = ref(false)
+const filterExpanded = ref(false)
 const archiveOptions = ref<ArchiveCreateOptions | null>(null)
-const currentUserId = ref('2')
-const allRecords = ref<TransferRecordView[]>([])
-const filteredRecords = ref<TransferRecordView[]>([])
-const detailDialogVisible = ref(false)
-const currentTransferDetail = ref<TransferRecordView | null>(null)
-const processTasks = ref<ProcessTaskView[]>([])
+
+const tableRecords = ref<TransferApplicationRecordRow[]>([])
+const pagination = reactive({
+  page: 1,
+  pageSize: 20,
+  total: 0
+})
+
+const searchForm = reactive<TransferApplicationRecordQuery>({
+  docBusiNo: '',
+  companyProjectCode: '',
+  busiModuleCode: '',
+  archPeriodRange: undefined,
+  applicant: undefined,
+  applicationNumber: '',
+  applicationDateRange: undefined,
+  applicationStatus: '',
+  carrierType: '',
+  diffReasonCode: '',
+  applyMethod: '',
+  expressType: '',
+  expressNumber: '',
+  documentRecipient: undefined,
+  catalogVolumeNo: ''
+})
 
 const userOptions = ref([
-  { id: '1', name: '张三' },
-  { id: '2', name: '李四' },
-  { id: '3', name: '王五' }
+  { id: 1, name: '张三' },
+  { id: 2, name: '李四' },
+  { id: 3, name: '王五' }
 ])
 
-const searchForm = reactive({
-  transferId: '',
-  transferMethod: '',
-  businessCode: '',
-  transferorId: '',
-  assigneeId: '',
-  status: '',
-  dateRange: [] as string[]
-})
+const companyOptions = ref<LabelOption[]>([])
+const carrierTypeOptions = ref<LabelOption[]>([])
+const busiModuleOptions = ref<LabelOption[]>([])
+const statusOptions = ref<LabelOption[]>([])
+const diffReasonOptions = ref<LabelOption[]>([])
+const applyMethodOptions = ref<LabelOption[]>([])
+const expressTypeOptions = ref<LabelOption[]>([])
 
-const pagination = reactive({
-  currentPage: 1,
-  pageSize: 20
-})
+const detailVisible = ref(false)
+const detailLoading = ref(false)
+const detailData = ref<TransferApplicationDetailPayload | null>(null)
 
-const pagedRecords = computed(() => {
-  const start = (pagination.currentPage - 1) * pagination.pageSize
-  return filteredRecords.value.slice(start, start + pagination.pageSize)
-})
-
-const formatDateTime = (value?: string | null) => {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  const pad = (num: number) => String(num).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+function toLabelOptions(items: DictionaryItem[]): LabelOption[] {
+  return items
+    .filter((i) => i.enabledFlag === 'Y')
+    .map((i) => ({ code: i.itemCode, name: i.itemName }))
 }
 
-const resolveOptionName = (key: 'documentTypes' | 'documentOrganizations', code?: string) => {
-  if (!code) return '-'
-  const options = archiveOptions.value?.[key] ?? []
-  return options.find(option => option.code === code)?.name ?? code
-}
-
-const resolveUserName = (userId?: string) => {
-  if (!userId) return '-'
-  return userOptions.value.find(user => user.id === String(userId))?.name ?? String(userId)
-}
-
-const parseVariables = (variables?: string) => {
-  if (!variables) return {}
+async function tryDict(categoryCode: string): Promise<LabelOption[]> {
   try {
-    return JSON.parse(variables)
-  } catch (error) {
-    console.error('Failed to parse workflow variables:', error)
-    return {}
+    const items = await fetchDictionaryItems(categoryCode)
+    return toLabelOptions(items)
+  } catch {
+    return []
   }
 }
 
-const buildTransferRecord = (process: any): TransferRecordView => {
-  const parsed = parseVariables(process.variables) as Record<string, any>
-  const form = parsed.transferForm ?? {}
-  const documents = Array.isArray(parsed.transferDocuments) ? parsed.transferDocuments : []
-  const transferorId = String(parsed.initiatorId ?? process.initiatorId ?? '')
-  const assigneeId = String(parsed.assigneeId ?? form.assigneeId ?? '')
+function mergeOptions(primary: LabelOption[], fallback: LabelOption[]): LabelOption[] {
+  if (primary.length) return primary
+  return fallback
+}
 
-  return {
-    id: process.businessKey,
-    processInstanceId: process.processInstanceId,
-    transferorId,
-    transferorName: parsed.initiatorName ?? process.initiatorName ?? resolveUserName(transferorId),
-    assigneeId,
-    assigneeName: resolveUserName(assigneeId),
-    transferMethod: form.transferMethod ?? 'DIRECT',
-    logisticsCompany: form.logisticsCompany ?? '',
-    trackingNumber: form.trackingNumber ?? '',
-    status: process.status,
-    remark: form.remark ?? '',
-    businessCodes: documents.map((item: Record<string, unknown>) => String(item.businessCode ?? '')).filter(Boolean),
-    documentCount: documents.length,
-    createTime: process.startTime,
-    updatedAt: process.lastUpdateDate || process.endTime || process.startTime,
-    displayCreateTime: formatDateTime(process.startTime),
-    displayUpdatedAt: formatDateTime(process.lastUpdateDate || process.endTime || process.startTime),
-    documents: documents.map((document: Record<string, unknown>) => {
-      const documentTypeCode = String(document.documentTypeCode ?? '')
-      const documentOrganizationCode = String(document.documentOrganizationCode ?? '')
-      return {
-        documentTypeName: resolveOptionName('documentTypes', documentTypeCode),
-        businessCode: String(document.businessCode ?? ''),
-        documentOrganizationName: resolveOptionName('documentOrganizations', documentOrganizationCode),
-        extFieldEntries: Object.entries((document.extFields as Record<string, string>) ?? {}).map(([key, value]) => ({
-          key,
-          value: String(value ?? '')
-        }))
-      }
-    })
+const FALLBACK_STATUS: LabelOption[] = [
+  { code: 'DRAFT', name: '草稿' },
+  { code: 'SUBMITTED', name: '已提交' },
+  { code: 'RUNNING', name: '处理中' },
+  { code: 'APPROVED', name: '已通过' },
+  { code: 'REJECTED', name: '已驳回' }
+]
+
+const FALLBACK_APPLY: LabelOption[] = [
+  { code: 'DIRECT', name: '直接移交' },
+  { code: 'MAIL', name: '邮寄' }
+]
+
+const FALLBACK_EXPRESS: LabelOption[] = [
+  { code: 'SF', name: '顺丰' },
+  { code: 'EMS', name: 'EMS' },
+  { code: 'OTHER', name: '其他' }
+]
+
+const FALLBACK_DIFF: LabelOption[] = [
+  { code: 'NONE', name: '无差异' },
+  { code: 'QTY', name: '数量差异' },
+  { code: 'CONTENT', name: '内容差异' }
+]
+
+function labelOf(options: LabelOption[], code?: string | null) {
+  if (!code) return '-'
+  return options.find((o) => o.code === code)?.name ?? code
+}
+
+function formatUser(id?: number | null) {
+  if (id == null) return '-'
+  return userOptions.value.find((u) => u.id === id)?.name ?? `用户-${id}`
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return '-'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
+
+function statusTagType(status: string) {
+  switch (status) {
+    case 'RUNNING':
+      return 'warning'
+    case 'APPROVED':
+      return 'success'
+    case 'REJECTED':
+      return 'danger'
+    case 'DRAFT':
+      return 'info'
+    default:
+      return 'info'
   }
 }
 
-const decorateProcessTasks = (tasks: ProcessTaskView[], processStatus?: string) =>
-  [...tasks]
-    .map(task => {
-      let status = task.status || 'COMPLETED'
-      if (status === 'COMPLETED') {
-        if (processStatus === 'APPROVED') status = 'APPROVED'
-        if (processStatus === 'REJECTED') status = 'REJECTED'
-      }
-      return { ...task, status }
-    })
-    .sort((a, b) => {
-      const aTime = new Date(a.completeTime || a.createTime || 0).getTime()
-      const bTime = new Date(b.completeTime || b.createTime || 0).getTime()
-      return bTime - aTime
-    })
-
-const applyFilters = () => {
-  const [beginDate, endDate] = searchForm.dateRange
-  const beginTime = beginDate ? new Date(`${beginDate} 00:00:00`).getTime() : null
-  const endTime = endDate ? new Date(`${endDate} 23:59:59`).getTime() : null
-
-  filteredRecords.value = allRecords.value.filter(record => {
-    const recordTime = new Date(record.updatedAt || record.createTime || 0).getTime()
-    if (searchForm.transferId && !record.id.toLowerCase().includes(searchForm.transferId.toLowerCase())) return false
-    if (searchForm.transferMethod && record.transferMethod !== searchForm.transferMethod) return false
-    if (searchForm.businessCode && !record.businessCodes.some(code => code.toLowerCase().includes(searchForm.businessCode.toLowerCase()))) return false
-    if (searchForm.transferorId && record.transferorId !== searchForm.transferorId) return false
-    if (searchForm.assigneeId && record.assigneeId !== searchForm.assigneeId) return false
-    if (searchForm.status && record.status !== searchForm.status) return false
-    if (beginTime !== null && recordTime < beginTime) return false
-    if (endTime !== null && recordTime > endTime) return false
-    return true
-  })
-
-  filteredRecords.value.sort((a, b) => new Date(b.updatedAt || b.createTime || 0).getTime() - new Date(a.updatedAt || a.createTime || 0).getTime())
-  pagination.currentPage = 1
+function buildFilterPayload(): TransferApplicationRecordQuery {
+  const f: TransferApplicationRecordQuery = {}
+  if (searchForm.docBusiNo) f.docBusiNo = searchForm.docBusiNo.trim()
+  if (searchForm.companyProjectCode) f.companyProjectCode = searchForm.companyProjectCode
+  if (searchForm.busiModuleCode) f.busiModuleCode = searchForm.busiModuleCode
+  if (searchForm.archPeriodRange?.length === 2) f.archPeriodRange = [...searchForm.archPeriodRange]
+  if (searchForm.applicant != null) f.applicant = searchForm.applicant
+  if (searchForm.applicationNumber) f.applicationNumber = searchForm.applicationNumber.trim()
+  if (searchForm.applicationDateRange?.length === 2) f.applicationDateRange = [...searchForm.applicationDateRange]
+  if (searchForm.applicationStatus) f.applicationStatus = searchForm.applicationStatus
+  if (searchForm.carrierType) f.carrierType = searchForm.carrierType
+  if (searchForm.diffReasonCode) f.diffReasonCode = searchForm.diffReasonCode
+  if (searchForm.applyMethod) f.applyMethod = searchForm.applyMethod
+  if (searchForm.expressType) f.expressType = searchForm.expressType
+  if (searchForm.expressNumber) f.expressNumber = searchForm.expressNumber.trim()
+  if (searchForm.documentRecipient != null) f.documentRecipient = searchForm.documentRecipient
+  if (searchForm.catalogVolumeNo) f.catalogVolumeNo = searchForm.catalogVolumeNo.trim()
+  return f
 }
 
-const loadData = async () => {
+async function runQuery() {
   loading.value = true
   try {
-    const [options, processes] = await Promise.all([
-      fetchArchiveCreateOptions(),
-      listProcesses('documentTransfer')
-    ])
-    archiveOptions.value = options
-    allRecords.value = (processes as any[]).map(buildTransferRecord).sort((a, b) => {
-      return new Date(b.updatedAt || b.createTime || 0).getTime() - new Date(a.updatedAt || a.createTime || 0).getTime()
+    const res = await searchTransferApplicationRecords({
+      filter: buildFilterPayload(),
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      tenantid: DEFAULT_TENANT_ID
     })
-    applyFilters()
-  } catch (error) {
-    console.error('Failed to load transfer records:', error)
-    ElMessage.error('加载移交记录失败，请稍后重试')
+    tableRecords.value = res.records
+    pagination.total = res.total
+  } catch (e) {
+    console.error(e)
+    let msg = '查询失败，请稍后重试'
+    if (axios.isAxiosError(e) && e.response?.data && typeof e.response.data === 'object' && 'message' in e.response.data) {
+      msg = String((e.response.data as { message?: string }).message || msg)
+    } else if (e instanceof Error && e.message) {
+      msg = e.message
+    }
+    ElMessage.error(msg)
   } finally {
     loading.value = false
   }
 }
 
-const goToCreate = () => {
+function reset() {
+  searchForm.docBusiNo = ''
+  searchForm.companyProjectCode = ''
+  searchForm.busiModuleCode = ''
+  searchForm.archPeriodRange = undefined
+  searchForm.applicant = undefined
+  searchForm.applicationNumber = ''
+  searchForm.applicationDateRange = undefined
+  searchForm.applicationStatus = ''
+  searchForm.carrierType = ''
+  searchForm.diffReasonCode = ''
+  searchForm.applyMethod = ''
+  searchForm.expressType = ''
+  searchForm.expressNumber = ''
+  searchForm.documentRecipient = undefined
+  searchForm.catalogVolumeNo = ''
+  pagination.page = 1
+  runQuery()
+}
+
+function handleSizeChange() {
+  pagination.page = 1
+  runQuery()
+}
+
+function handlePageChange() {
+  runQuery()
+}
+
+function goToCreate() {
   router.push('/archive-management/transfer')
 }
 
-const search = () => {
-  applyFilters()
+function goEdit(applicationId: number) {
+  router.push({ path: '/archive-management/transfer', query: { applicationId: String(applicationId) } })
 }
 
-const reset = () => {
-  searchForm.transferId = ''
-  searchForm.transferMethod = ''
-  searchForm.businessCode = ''
-  searchForm.transferorId = ''
-  searchForm.assigneeId = ''
-  searchForm.status = ''
-  searchForm.dateRange = []
-  applyFilters()
-}
-
-const handleSizeChange = (size: number) => {
-  pagination.pageSize = size
-}
-
-const handleCurrentChange = (current: number) => {
-  pagination.currentPage = current
-}
-
-const viewDetail = async (processInstanceId: string) => {
+async function openView(applicationId: number) {
+  detailVisible.value = true
+  detailLoading.value = true
+  detailData.value = null
   try {
-    const [process, tasks] = await Promise.all([
-      getProcessInstance(processInstanceId),
-      getProcessTasks(processInstanceId)
-    ])
-    currentTransferDetail.value = buildTransferRecord(process)
-    processTasks.value = decorateProcessTasks(tasks as ProcessTaskView[], currentTransferDetail.value.status)
-    detailDialogVisible.value = true
-  } catch (error) {
-    console.error('Failed to load transfer detail:', error)
-    ElMessage.error('加载移交详情失败，请稍后重试')
+    detailData.value = await getTransferApplication(applicationId)
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('加载详情失败')
+    detailVisible.value = false
+  } finally {
+    detailLoading.value = false
   }
 }
 
-const getStatusType = (status?: string) => {
-  switch (status) {
-    case 'RUNNING':
-      return 'warning'
-    case 'APPROVED':
-      return 'success'
-    case 'REJECTED':
-      return 'danger'
-    default:
-      return 'info'
-  }
+function hintTodo(action: string) {
+  ElMessage.info(`${action}功能开发中`)
 }
 
-const getStatusLabel = (status?: string) => {
-  switch (status) {
-    case 'RUNNING':
-      return '处理中'
-    case 'APPROVED':
-      return '已通过'
-    case 'REJECTED':
-      return '已驳回'
-    default:
-      return status || '-'
+onMounted(async () => {
+  try {
+    const options = await fetchArchiveCreateOptions()
+    archiveOptions.value = options
+    companyOptions.value = (options.companyProjects ?? []).map((c) => ({ code: c.code, name: c.name }))
+    carrierTypeOptions.value = (options.carrierTypes ?? []).map((c) => ({ code: c.code, name: c.name }))
+  } catch {
+    ElMessage.warning('加载基础选项失败，部分下拉为空')
   }
-}
 
-const getTaskType = (status?: string) => {
-  switch (status) {
-    case 'ACTIVE':
-      return 'warning'
-    case 'APPROVED':
-      return 'success'
-    case 'REJECTED':
-      return 'danger'
-    case 'DELEGATED':
-      return 'primary'
-    default:
-      return 'info'
-  }
-}
+  const [bm, st, diff, am, ex] = await Promise.all([
+    tryDict('FUNCTION_MODULE'),
+    tryDict('TRANSFER_APPLICATION_STATUS'),
+    tryDict('TRANSFER_DIFF_REASON'),
+    tryDict('TRANSFER_APPLY_METHOD'),
+    tryDict('TRANSFER_EXPRESS_TYPE')
+  ])
+  busiModuleOptions.value = bm
+  statusOptions.value = mergeOptions(st, FALLBACK_STATUS)
+  diffReasonOptions.value = mergeOptions(diff, FALLBACK_DIFF)
+  applyMethodOptions.value = mergeOptions(am, FALLBACK_APPLY)
+  expressTypeOptions.value = mergeOptions(ex, FALLBACK_EXPRESS)
 
-const getTaskTone = (status?: string) => {
-  switch (status) {
-    case 'ACTIVE':
-      return 'warning'
-    case 'APPROVED':
-      return 'success'
-    case 'REJECTED':
-      return 'danger'
-    case 'DELEGATED':
-      return 'primary'
-    default:
-      return 'info'
-  }
-}
-
-const getTaskLabel = (status?: string) => {
-  switch (status) {
-    case 'ACTIVE':
-      return '待处理'
-    case 'APPROVED':
-      return '已通过'
-    case 'REJECTED':
-      return '已驳回'
-    case 'DELEGATED':
-      return '已转审'
-    case 'COMPLETED':
-      return '已完成'
-    default:
-      return status || '-'
-  }
-}
-
-onMounted(() => {
-  loadData()
+  await runQuery()
 })
 </script>
 
@@ -518,95 +498,72 @@ onMounted(() => {
   gap: 16px;
 }
 
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
+.filter-form {
+  margin-bottom: 8px;
 }
 
-.section-head strong {
-  display: block;
-  font-size: 16px;
-  color: #24324a;
-}
-
-.section-head span {
-  color: #7a879a;
-  font-size: 12px;
-}
-
-.section-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.search-form,
-.transfer-list,
-.transfer-detail,
-.documents-section {
+.filter-grid {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
 }
 
-.timeline-list {
-  display: grid;
-  gap: 14px;
+.filter-grid--extra {
+  margin-top: 4px;
 }
 
-.timeline-item {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
+.filter-form :deep(.el-form-item) {
+  margin-bottom: 10px;
 }
 
-.timeline-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-top: 6px;
-  background: #d9e2ef;
+.input-w180 {
+  width: 180px;
 }
 
-.timeline-dot.is-warning {
-  background: #e6a23c;
+.input-range {
+  width: 240px;
 }
 
-.timeline-dot.is-success {
-  background: #67c23a;
+.span-range :deep(.el-form-item__content) {
+  flex-wrap: nowrap;
 }
 
-.timeline-dot.is-danger {
-  background: #f56c6c;
-}
-
-.timeline-dot.is-primary {
-  background: #409eff;
-}
-
-.timeline-content {
-  display: grid;
-  gap: 6px;
-  padding-bottom: 14px;
-  border-bottom: 1px dashed #e7edf5;
-}
-
-.timeline-top {
+.filter-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.filter-toolbar__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.table-section {
+  display: grid;
   gap: 12px;
 }
 
-.timeline-meta {
-  color: #7a879a;
-  font-size: 12px;
+.table-toolbar {
+  display: flex;
+  align-items: center;
+}
+
+.table-toolbar__left {
+  display: flex;
+  gap: 10px;
 }
 
 .loading-container {
-  padding: 20px 0;
+  padding: 16px 0;
+}
+
+.transfer-list {
+  display: grid;
+  gap: 12px;
 }
 
 .pagination {
@@ -614,25 +571,26 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
+.transfer-detail {
+  display: grid;
+  gap: 16px;
+}
+
 .documents-section h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   color: #24324a;
 }
 
-.ext-field-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+@media (max-width: 1400px) {
+  .filter-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
-.ext-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #f3f7fd;
-  color: #36506c;
-  font-size: 12px;
+@media (max-width: 1200px) {
+  .filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 </style>

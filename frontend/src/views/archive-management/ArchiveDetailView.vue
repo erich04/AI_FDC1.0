@@ -114,12 +114,12 @@
           <template #header><div class="sub-card__title">文档扩展信息</div></template>
           <div class="form-grid form-grid--4">
             <el-form-item
-              v-for="(value, key) in archiveDetail.extValues"
-              :key="key"
-              :label="key"
-              :class="{ 'span-2': key.length > 8 }"
+              v-for="item in extDisplayItems"
+              :key="item.key"
+              :label="item.label"
+              :class="{ 'span-2': item.label.length > 8 }"
             >
-              <el-input :model-value="value" disabled />
+              <el-input :model-value="item.value" disabled />
             </el-form-item>
           </div>
         </el-card>
@@ -186,13 +186,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getArchiveDetail } from '../../api/modules/archiveManagement'
+import { fetchEffectiveDocumentTypeExtFields, getArchiveDetail } from '../../api/modules/archiveManagement'
 import type { ArchiveRecordSummary } from '../../types'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const archiveDetail = ref<ArchiveRecordSummary | null>(null)
+const extFieldNameMap = ref<Record<string, string>>({})
 
 const archiveSteps = [
   { code: 'CREATED', label: '创建', meta: '办理人：当前用户 · 时间：待保存' },
@@ -209,6 +210,14 @@ const electronicAttachments = computed(() => archiveDetail.value?.attachments?.f
 const paperAttachments = computed(() => archiveDetail.value?.attachments?.filter(item => item.attachmentRole === 'PAPER_SCAN') ?? [])
 const showElectronicSection = computed(() => archiveDetail.value && ['ELECTRONIC', 'HYBRID'].includes(archiveDetail.value.carrierTypeCode))
 const showPaperSection = computed(() => archiveDetail.value && ['PAPER', 'HYBRID'].includes(archiveDetail.value.carrierTypeCode))
+const extDisplayItems = computed(() => {
+  if (!archiveDetail.value) return []
+  return Object.entries(archiveDetail.value.extValues || {}).map(([key, value]) => ({
+    key,
+    label: extFieldNameMap.value[key] || key,
+    value
+  }))
+})
 
 const loadArchiveDetail = async () => {
   const archiveId = Number(route.params.id)
@@ -221,6 +230,13 @@ const loadArchiveDetail = async () => {
     loading.value = true
     const result = await getArchiveDetail(archiveId)
     archiveDetail.value = result
+    extFieldNameMap.value = {}
+    if (result.documentTypeCode) {
+      const fields = await fetchEffectiveDocumentTypeExtFields(result.documentTypeCode).catch(() => [])
+      extFieldNameMap.value = Object.fromEntries(
+        (fields || []).map(item => [item.fieldCode, item.fieldName || item.fieldCode])
+      )
+    }
     // 更新当前步骤
     if (result.archiveStatus) {
       currentStep.value = result.archiveStatus

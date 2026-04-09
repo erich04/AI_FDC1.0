@@ -154,10 +154,10 @@
                 <div class="rack-card-grid">
                   <el-card
                     v-for="rack in racksByArea(area.areaCode)"
-                    :key="rack.rackCode"
+                    :key="rackCollapseKey(rack)"
                     shadow="never"
                     class="rack-board-card"
-                    :class="{ 'is-collapsed': isRackCollapsed(rack.rackCode) }"
+                    :class="{ 'is-collapsed': isRackCollapsed(rack) }"
                   >
                     <template #header>
                       <div class="rack-board-card__header">
@@ -166,7 +166,7 @@
                           <div class="rack-board-card__meta">{{ rack.rackCode }} · {{ rack.layerCount }} 层 / {{ rack.slotCount }} 格</div>
                         </div>
                         <div class="rack-board-card__actions">
-                          <el-button link @click="toggleRackCollapse(rack.rackCode)">{{ isRackCollapsed(rack.rackCode) ? '展开' : '收缩' }}</el-button>
+                          <el-button link @click="toggleRackCollapse(rack)">{{ isRackCollapsed(rack) ? '展开' : '收缩' }}</el-button>
                           <el-button link type="primary" @click="openRackEditDialog(rack)">编辑</el-button>
                           <el-button link @click="openRackCopyDialog(rack)">复制</el-button>
                           <el-button link type="danger" @click="deleteRackAction(rack)">删除</el-button>
@@ -174,7 +174,7 @@
                       </div>
                     </template>
 
-                    <div v-if="!isRackCollapsed(rack.rackCode)" class="rack-slots-board">
+                    <div v-if="!isRackCollapsed(rack)" class="rack-slots-board">
                       <div v-for="layer in buildRackLayers(rack)" :key="layer.layerCode" class="rack-layer-row">
                         <span class="rack-layer-row__label">{{ layer.layerLabel }}</span>
                         <div class="rack-layer-row__slots">
@@ -491,15 +491,19 @@ const overviewCards = computed(() => {
 
 const formatArea = (value?: number) => (value == null ? '-' : `${value} ㎡`)
 const racksByArea = (areaCode: string) => (selectedManagement.value?.racks || []).filter(item => item.areaCode === areaCode)
-const isRackCollapsed = (rackCode: string) => Boolean(collapsedRacks[rackCode])
-const toggleRackCollapse = (rackCode: string) => { collapsedRacks[rackCode] = !collapsedRacks[rackCode] }
-const collapseAreaRacks = (areaCode: string) => racksByArea(areaCode).forEach(rack => { collapsedRacks[rack.rackCode] = true })
-const expandAreaRacks = (areaCode: string) => racksByArea(areaCode).forEach(rack => { collapsedRacks[rack.rackCode] = false })
-const collapseAllRacks = () => (selectedManagement.value?.racks || []).forEach(rack => { collapsedRacks[rack.rackCode] = true })
-const expandAllRacks = () => (selectedManagement.value?.racks || []).forEach(rack => { collapsedRacks[rack.rackCode] = false })
+const rackCollapseKey = (rack: WarehouseRack) => `${rack.areaCode}::${rack.rackCode}`
+const isRackCollapsed = (rack: WarehouseRack) => Boolean(collapsedRacks[rackCollapseKey(rack)])
+const toggleRackCollapse = (rack: WarehouseRack) => {
+  const key = rackCollapseKey(rack)
+  collapsedRacks[key] = !collapsedRacks[key]
+}
+const collapseAreaRacks = (areaCode: string) => racksByArea(areaCode).forEach(rack => { collapsedRacks[rackCollapseKey(rack)] = true })
+const expandAreaRacks = (areaCode: string) => racksByArea(areaCode).forEach(rack => { collapsedRacks[rackCollapseKey(rack)] = false })
+const collapseAllRacks = () => (selectedManagement.value?.racks || []).forEach(rack => { collapsedRacks[rackCollapseKey(rack)] = true })
+const expandAllRacks = () => (selectedManagement.value?.racks || []).forEach(rack => { collapsedRacks[rackCollapseKey(rack)] = false })
 const displayLocationCode = (locationCode: string) => locationCode.split('-').slice(-2).join('-')
 
-const rackLocations = (rack: WarehouseRack) => selectedManagement.value?.locations.filter(item => item.shelfCode === rack.rackCode) || []
+const rackLocations = (rack: WarehouseRack) => selectedManagement.value?.locations.filter(item => item.areaCode === rack.areaCode && item.shelfCode === rack.rackCode) || []
 const rackStats = (rack: WarehouseRack) => {
   const locations = rackLocations(rack)
   return {

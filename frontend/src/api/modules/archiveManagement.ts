@@ -1,4 +1,4 @@
-﻿import http, { apiRequest } from '../http'
+import http, { apiRequest } from '../http'
 import type {
   ArchiveAskResult,
   ArchiveAiModelSummary,
@@ -11,6 +11,8 @@ import type {
   BindOptions,
   BindPreviewResult,
   DocumentTypeExtField,
+  FourAttrInspectionConfig,
+  FourAttrInspectionDetail,
   LabelValueOption,
   StorageBatch,
   StorageLedger,
@@ -19,6 +21,9 @@ import type {
 } from '../../types'
 
 export interface DocumentTypeExtFieldCreateCommand {
+  usageModule: string
+  relatedModuleCode: string
+  relatedField: string
   fieldName: string
   fieldType: 'TEXT' | 'DICT'
   dictCategoryCode?: string
@@ -77,6 +82,7 @@ export interface ArchiveQueryCommand {
   sourceSystem?: string
   documentOrganizationCode?: string
   extFilters?: Record<string, string>
+  excludeSubmittedTransferApplied?: boolean
 }
 
 export interface ArchiveAskCommand {
@@ -301,4 +307,67 @@ export function queryStorageLedger(data: StorageLedgerQueryCommand) {
 
 export function getStorageLedger(ledgerId: number) {
   return apiRequest<StorageLedger>(http.get(`/api/archive-management/storage/ledger/${ledgerId}`))
+}
+
+export interface FourAttrInspectionQueryParams {
+  inspectionName?: string
+  inspectionStage?: string
+  enableFlag?: 'Y' | 'N'
+  tenantid?: number
+}
+
+export interface FourAttrInspectionSaveCommand {
+  inspectionName: string
+  inspectionStage: string
+  dataPackageSpec: string
+  metadataSpec: string
+  enableFlag: 'Y' | 'N'
+  tenantid?: number
+}
+
+export interface FourAttrInspectionDetailBatchSaveCommand {
+  inspectionId: number
+  tenantid?: number
+  details: FourAttrInspectionDetail[]
+}
+
+export function queryFourAttrInspections(params: FourAttrInspectionQueryParams) {
+  return apiRequest<FourAttrInspectionConfig[]>(http.get('/api/security/four-properties/configs', { params }))
+}
+
+export function getFourAttrInspectionDetail(inspectionId: number, tenantid?: number) {
+  return apiRequest<FourAttrInspectionConfig>(http.get(`/api/security/four-properties/configs/${inspectionId}`, {
+    params: tenantid ? { tenantid } : undefined
+  }))
+}
+
+export function createFourAttrInspection(data: FourAttrInspectionSaveCommand) {
+  return apiRequest<FourAttrInspectionConfig>(http.post('/api/security/four-properties/configs', data))
+}
+
+export function updateFourAttrInspection(inspectionId: number, data: FourAttrInspectionSaveCommand) {
+  return apiRequest<FourAttrInspectionConfig>(http.put(`/api/security/four-properties/configs/${inspectionId}`, data))
+}
+
+export function saveFourAttrInspectionDetails(inspectionId: number, data: FourAttrInspectionDetailBatchSaveCommand) {
+  return apiRequest<FourAttrInspectionConfig>(http.put(`/api/security/four-properties/configs/${inspectionId}/details`, data))
+}
+
+export async function exportFourAttrInspections(params: FourAttrInspectionQueryParams) {
+  const response = await http.get('/api/security/four-properties/configs/export', {
+    params,
+    responseType: 'blob'
+  })
+  return response.data as Blob
+}
+
+export function importFourAttrInspections(file: File, tenantid?: number) {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (typeof tenantid === 'number') {
+    formData.append('tenantid', String(tenantid))
+  }
+  return apiRequest<number>(http.post('/api/security/four-properties/configs/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }))
 }

@@ -20,6 +20,7 @@ public class ArchiveQueryCommand {
     private String sourceSystem;
     private String documentOrganizationCode;
     private Map<String, String> extFilters;
+    private Boolean excludeSubmittedTransferApplied;
     private Integer page = 1;
     private Integer pageSize = 20;
 }

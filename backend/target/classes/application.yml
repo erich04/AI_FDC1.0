@@ -16,6 +16,9 @@ spring:
     username: postgres
     password: 123456
     driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
   data:
     redis:
       host: localhost

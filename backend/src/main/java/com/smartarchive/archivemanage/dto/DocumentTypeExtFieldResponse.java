@@ -10,6 +10,9 @@ public class DocumentTypeExtFieldResponse {
     private Long fieldId;
     private String fieldCode;
     private String documentTypeCode;
+    private String usageModule;
+    private String relatedModuleCode;
+    private String relatedField;
     private String fieldName;
     private String fieldType;
     private String dictCategoryCode;

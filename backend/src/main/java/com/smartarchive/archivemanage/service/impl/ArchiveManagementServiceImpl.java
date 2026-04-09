@@ -421,6 +421,38 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             .eq(StringUtils.hasText(command.getDocumentOrganizationCode()), ArchiveRecord::getDocumentOrganizationCode, trimToNull(command.getDocumentOrganizationCode()));
 
         List<ArchiveRecord> allRecords = archiveRecordMapper.selectList(wrapper);
+        if (Boolean.TRUE.equals(command.getExcludeSubmittedTransferApplied()) && !allRecords.isEmpty()) {
+            List<String> businessCodes = allRecords.stream()
+                .map(ArchiveRecord::getBusinessCode)
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .toList();
+            if (!businessCodes.isEmpty()) {
+                String placeholders = String.join(",", java.util.Collections.nCopies(businessCodes.size(), "?"));
+                List<String> usedBusinessCodes = jdbcTemplate.queryForList(
+                    """
+                    select distinct d.doc_busi_no
+                      from fdc_application_detail_t d
+                      join fdc_application_t a on a.application_id = d.application_id
+                     where d.delete_flag = 'N'
+                       and a.delete_flag = 'N'
+                       and d.doc_busi_no in (""" + placeholders + ")"
+                       + " and upper(coalesce(a.application_status, '')) in ('DRAFT','SUBMITTED','APPROVED','REJECTED')",
+                    String.class,
+                    businessCodes.toArray()
+                );
+                if (!usedBusinessCodes.isEmpty()) {
+                    Set<String> usedSet = usedBusinessCodes.stream()
+                        .filter(StringUtils::hasText)
+                        .map(String::trim)
+                        .collect(Collectors.toSet());
+                    allRecords = allRecords.stream()
+                        .filter(item -> !usedSet.contains(trimToNull(item.getBusinessCode())))
+                        .toList();
+                }
+            }
+        }
         List<Long> archiveIds = allRecords.stream().map(ArchiveRecord::getArchiveId).toList();
         Map<Long, Map<String, String>> extValueMap = loadExtValueMap(archiveIds);
         Map<Long, List<ArchiveAttachment>> archiveAttachmentMap = loadAttachmentMap(archiveIds);
@@ -1580,7 +1612,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private ArchiveSummaryResponse buildArchiveSummary(ArchiveRecord archive, Map<String, String> extValues, List<ArchiveAttachment> attachments) {
         Map<String, String> typeNameMap = documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>().eq(DocumentType::getDeleteFlag, "N")).stream().collect(Collectors.toMap(DocumentType::getTypeCode, DocumentType::getTypeName, (left, right) -> left));
         Map<String, String> companyNameMap = companyProjectMapper.selectList(new LambdaQueryWrapper<CompanyProject>().eq(CompanyProject::getDeleteFlag, "N")).stream().collect(Collectors.toMap(CompanyProject::getCompanyProjectCode, CompanyProject::getCompanyProjectName, (left, right) -> left));
-        return ArchiveSummaryResponse.builder().archiveId(archive.getArchiveId()).archiveCode(archive.getArchiveCode()).archiveFilingCode(archive.getArchiveFilingCode()).documentTypeCode(archive.getDocumentTypeCode()).documentTypeName(typeNameMap.getOrDefault(archive.getDocumentTypeCode(), archive.getDocumentTypeCode())).companyProjectCode(archive.getCompanyProjectCode()).companyProjectName(companyNameMap.getOrDefault(archive.getCompanyProjectCode(), archive.getCompanyProjectCode())).documentName(archive.getDocumentName()).businessCode(archive.getBusinessCode()).dutyPerson(archive.getDutyPerson()).dutyDepartment(archive.getDutyDepartment()).documentDate(archive.getDocumentDate()).securityLevelCode(archive.getSecurityLevelCode()).sourceSystem(archive.getSourceSystem()).archiveDestination(archive.getArchiveDestination()).originPlace(archive.getOriginPlace()).carrierTypeCode(archive.getCarrierTypeCode()).aiArchiveSummary(archive.getAiArchiveSummary()).documentOrganizationCode(archive.getDocumentOrganizationCode()).retentionPeriodYears(archive.getRetentionPeriodYears()).archiveTypeCode(archive.getArchiveTypeCode()).archiveStatus(archive.getArchiveStatus()).parseStatus(archive.getParseStatus()).vectorStatus(archive.getVectorStatus()).lastUpdateDate(archive.getLastUpdateDate()).attachmentCount(attachments.size()).extValues(extValues).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).build();
+        return ArchiveSummaryResponse.builder().archiveId(archive.getArchiveId()).archiveCode(archive.getArchiveCode()).archiveFilingCode(archive.getArchiveFilingCode()).documentTypeCode(archive.getDocumentTypeCode()).documentTypeName(typeNameMap.getOrDefault(archive.getDocumentTypeCode(), archive.getDocumentTypeCode())).companyProjectCode(archive.getCompanyProjectCode()).companyProjectName(companyNameMap.getOrDefault(archive.getCompanyProjectCode(), archive.getCompanyProjectCode())).beginPeriod(archive.getBeginPeriod()).endPeriod(archive.getEndPeriod()).documentName(archive.getDocumentName()).businessCode(archive.getBusinessCode()).dutyPerson(archive.getDutyPerson()).dutyDepartment(archive.getDutyDepartment()).documentDate(archive.getDocumentDate()).securityLevelCode(archive.getSecurityLevelCode()).sourceSystem(archive.getSourceSystem()).archiveDestination(archive.getArchiveDestination()).originPlace(archive.getOriginPlace()).carrierTypeCode(archive.getCarrierTypeCode()).remark(archive.getRemark()).aiArchiveSummary(archive.getAiArchiveSummary()).documentOrganizationCode(archive.getDocumentOrganizationCode()).retentionPeriodYears(archive.getRetentionPeriodYears()).archiveTypeCode(archive.getArchiveTypeCode()).archiveStatus(archive.getArchiveStatus()).parseStatus(archive.getParseStatus()).vectorStatus(archive.getVectorStatus()).lastUpdateDate(archive.getLastUpdateDate()).attachmentCount(attachments.size()).extValues(extValues).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).build();
     }
 
     private List<ArchiveAttachment> listSessionAttachments(Long sessionId) {

@@ -6,6 +6,12 @@ import lombok.Data;
 @Data
 public class DocumentTypeExtFieldCreateCommand {
     @NotBlank
+    private String usageModule;
+    @NotBlank
+    private String relatedModuleCode;
+    @NotBlank
+    private String relatedField;
+    @NotBlank
     private String fieldName;
     @NotBlank
     private String fieldType;

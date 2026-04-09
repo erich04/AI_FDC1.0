@@ -1,13 +1,16 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 
 export interface ApiResponse<T> {
-  success: boolean
-  message: string
+  code?: number
+  msg?: string
+  success?: boolean
+  message?: string
   data: T
 }
 
 const http = axios.create({
-  baseURL: 'http://localhost:8080',
+  // Keep same-origin requests; API modules already prefix paths with /api.
+  baseURL: '',
   timeout: 15000
 })
 
@@ -15,10 +18,12 @@ http.interceptors.response.use((response) => response, (error) => Promise.reject
 
 export async function apiRequest<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
   const response = await promise
-  if (!response.data.success) {
-    throw new Error(response.data.message || 'Request failed')
+  const payload = response.data
+  const isSuccess = typeof payload.code === 'number' ? payload.code === 0 : payload.success === true
+  if (!isSuccess) {
+    throw new Error(payload.msg || payload.message || 'Request failed')
   }
-  return response.data.data
+  return payload.data
 }
 
 export default http

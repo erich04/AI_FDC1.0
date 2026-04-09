@@ -495,6 +495,9 @@ export interface DocumentTypeExtField {
   fieldId: number
   fieldCode: string
   documentTypeCode: string
+  usageModule: string
+  relatedModuleCode: string
+  relatedField: string
   fieldName: string
   fieldType: 'TEXT' | 'DICT'
   dictCategoryCode?: string
@@ -584,6 +587,8 @@ export interface ArchiveRecordSummary {
   documentTypeName?: string
   companyProjectCode: string
   companyProjectName?: string
+  beginPeriod?: string
+  endPeriod?: string
   documentName: string
   businessCode?: string
   dutyPerson: string
@@ -594,6 +599,7 @@ export interface ArchiveRecordSummary {
   archiveDestination?: string
   originPlace?: string
   carrierTypeCode: string
+  remark?: string
   bindVolumeCode?: string
   currentWarehouseCode?: string
   currentLocationCode?: string
@@ -797,4 +803,82 @@ export interface StorageOptions {
 export interface StorageQueryResult {
   volumes: BindVolume[]
   archives: BindArchiveCandidate[]
+}
+
+export interface TransferApplicationExtValue {
+  fieldCode: string
+  value?: string
+}
+
+export interface TransferApplicationDetailAttachment {
+  attachmentId: number
+  applicationId: number
+  applicationDetailId: number
+  fileName: string
+  mimeType?: string
+  fileSize?: number
+  remark?: string
+  creationDate?: string
+}
+
+export interface TransferApplicationDetailCreate {
+  companyProjectCode: string
+  docBusiNo: string
+  docName: string
+  busiModuleCode: string
+  archPlaceAlpha2Code: string
+  carrierType: string
+  endArchPeriod: string
+  startArchPeriod: string
+  archTypeCode: string
+  docGenerationDate?: string
+  archCopies: number
+  remark?: string
+  description?: string
+  extValues?: TransferApplicationExtValue[]
+  attachments?: TransferApplicationDetailAttachment[]
+}
+
+export interface TransferApplicationCreateCommand {
+  applicationId?: number
+  applicationNumber: string
+  applicant: number
+  applicationDate: string
+  department: string
+  documentTypeCode: string
+  applyMethod: string
+  expressType?: string
+  expressNumber?: string
+  documentRecipient: number
+  handoverForm?: string
+  applicationStatus?: string
+  applicationDescription?: string
+  tenantid: number
+  details: TransferApplicationDetailCreate[]
+}
+
+export interface FourAttrInspectionDetail {
+  detailId?: number
+  inspectionType: string
+  inspectionCode?: string
+  inspectionItem?: string
+  inspectionPurpose?: string
+  inspectionObject?: string
+  inspectionBasisMethod?: string
+  displayOrder?: number
+  enableFlag: 'Y' | 'N'
+}
+
+export interface FourAttrInspectionConfig {
+  inspectionId: number
+  inspectionName: string
+  inspectionStage: string
+  dataPackageSpec: string
+  metadataSpec: string
+  enableFlag: 'Y' | 'N'
+  createdBy?: number
+  creationDate?: string
+  lastUpdatedBy?: number
+  lastUpdateDate?: string
+  details: FourAttrInspectionDetail[]
 }

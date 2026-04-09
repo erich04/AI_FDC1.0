@@ -68,7 +68,9 @@
                 <el-tag :type="workflowStatusType(row.status)">{{ formatWorkflowStatus(row.status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="initiatorName" label="发起人" width="120" />
+            <el-table-column label="发起人" width="120">
+              <template #default="{ row }">{{ resolveUserDisplayName(row.initiatorName) }}</template>
+            </el-table-column>
             <el-table-column prop="displayUpdatedAt" label="最后更新时间" width="180" />
             <el-table-column label="操作" width="100" fixed="right">
               <template #default="{ row }">
@@ -92,7 +94,9 @@
                 <el-tag :type="workflowStatusType(row.status)">{{ formatWorkflowStatus(row.status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="initiatorName" label="发起人" width="120" />
+            <el-table-column label="发起人" width="120">
+              <template #default="{ row }">{{ resolveUserDisplayName(row.initiatorName) }}</template>
+            </el-table-column>
             <el-table-column prop="displayUpdatedAt" label="最后更新时间" width="180" />
             <el-table-column label="操作" width="100" fixed="right">
               <template #default="{ row }">
@@ -221,7 +225,8 @@
               <el-descriptions :column="2" border>
                 <el-descriptions-item label="流程实例ID">{{ currentProcess.processInstanceId }}</el-descriptions-item>
                 <el-descriptions-item label="流程定义">{{ currentProcess.processDefinitionKey }}</el-descriptions-item>
-                <el-descriptions-item label="发起人">{{ transferDetail.transferorName || currentProcess.initiatorName || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="申请单号">{{ transferDetail.applicationNumber || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="发起人">{{ resolveUserDisplayName(transferDetail.transferorName || currentProcess.initiatorName) }}</el-descriptions-item>
                 <el-descriptions-item label="签收人">{{ transferDetail.assigneeName || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="移交方式">{{ transferMethodLabel(transferDetail.transferMethod) }}</el-descriptions-item>
                 <el-descriptions-item label="物流公司">{{ transferDetail.logisticsCompany || '-' }}</el-descriptions-item>
@@ -318,10 +323,12 @@ import {
   fetchMyProcesses,
   fetchMyTasks,
   fetchParticipatedProcesses,
+  getProcessTransferDetail,
   getProcessInstance,
   getProcessTasks,
   rejectTask,
-  startProcess
+  startProcess,
+  type WorkflowTransferDetailResponse
 } from '../../api/modules/workflow'
 import type { ArchiveCreateOptions } from '../../types'
 
@@ -378,6 +385,7 @@ interface TransferDetailView {
   logisticsCompany: string
   trackingNumber: string
   remark: string
+  applicationNumber: string
   documents: TransferDocumentView[]
 }
 
@@ -389,6 +397,17 @@ const processTasks = ref<WorkflowTaskItem[]>([])
 const currentTask = ref<WorkflowTaskItem | null>(null)
 const currentProcess = ref<WorkflowProcessItem | null>(null)
 const archiveOptions = ref<ArchiveCreateOptions | null>(null)
+const transferDetail = ref<TransferDetailView>({
+  transferorName: '',
+  assigneeId: '',
+  assigneeName: '',
+  transferMethod: '',
+  logisticsCompany: '',
+  trackingNumber: '',
+  remark: '',
+  applicationNumber: '',
+  documents: []
+})
 
 const selectedUserId = ref('1')
 const users = ref<WorkflowUser[]>([
@@ -459,6 +478,22 @@ const resolveOptionName = (key: 'documentTypes' | 'documentOrganizations', code?
 const resolveUserName = (userId?: string) => {
   if (!userId) return '-'
   return users.value.find(user => user.id === String(userId))?.name ?? String(userId)
+}
+
+const resolveUserDisplayName = (value?: string) => {
+  if (!value) return '-'
+  const raw = String(value).trim()
+  if (!raw) return '-'
+  if (/^\d+$/.test(raw)) {
+    return resolveUserName(raw)
+  }
+  if (raw.startsWith('用户-')) {
+    const id = raw.substring(3).trim()
+    if (/^\d+$/.test(id)) {
+      return resolveUserName(id)
+    }
+  }
+  return raw
 }
 
 const workflowStatusType = (status?: string) => {
@@ -555,18 +590,20 @@ const parseVariables = (variables?: string) => {
   }
 }
 
-const transferDetail = computed<TransferDetailView>(() => {
-  const emptyState: TransferDetailView = {
-    transferorName: '',
-    assigneeId: '',
-    assigneeName: '',
-    transferMethod: '',
-    logisticsCompany: '',
-    trackingNumber: '',
-    remark: '',
-    documents: []
-  }
+const getEmptyTransferDetail = (): TransferDetailView => ({
+  transferorName: '',
+  assigneeId: '',
+  assigneeName: '',
+  transferMethod: '',
+  logisticsCompany: '',
+  trackingNumber: '',
+  remark: '',
+  applicationNumber: '',
+  documents: []
+})
 
+const buildTransferDetailFromVariables = (): TransferDetailView => {
+  const emptyState = getEmptyTransferDetail()
   if (!currentProcess.value?.variables) return emptyState
 
   const parsed = parseVariables(currentProcess.value.variables) as Record<string, any>
@@ -582,6 +619,7 @@ const transferDetail = computed<TransferDetailView>(() => {
     logisticsCompany: form.logisticsCompany ?? '',
     trackingNumber: form.trackingNumber ?? '',
     remark: form.remark ?? '',
+    applicationNumber: String(parsed.applicationNumber ?? ''),
     documents: documents.map((document: Record<string, unknown>) => {
       const documentTypeCode = String(document.documentTypeCode ?? '')
       const documentOrganizationCode = String(document.documentOrganizationCode ?? '')
@@ -598,7 +636,55 @@ const transferDetail = computed<TransferDetailView>(() => {
       }
     })
   }
-})
+}
+
+const buildTransferDetailFromApi = (payload?: WorkflowTransferDetailResponse | null): TransferDetailView | null => {
+  if (!payload) return null
+  const apiDocuments = Array.isArray(payload.documents) ? payload.documents : []
+  const hasMeaningfulData = Boolean(payload.applicationNumber) || Boolean(payload.transferorName) || apiDocuments.length > 0
+  if (!hasMeaningfulData) return null
+  const assigneeId = String(payload.assigneeId ?? '')
+  return {
+    transferorName: payload.transferorName ?? '',
+    assigneeId,
+    assigneeName: resolveUserName(assigneeId),
+    transferMethod: payload.transferMethod ?? '',
+    logisticsCompany: payload.logisticsCompany ?? '',
+    trackingNumber: payload.trackingNumber ?? '',
+    remark: payload.remark ?? '',
+    applicationNumber: payload.applicationNumber ?? '',
+    documents: apiDocuments.map(document => {
+      const documentTypeCode = String(document.documentTypeCode ?? '')
+      const documentOrganizationCode = String(document.documentOrganizationCode ?? '')
+      return {
+        documentTypeCode,
+        documentTypeName: resolveOptionName('documentTypes', documentTypeCode),
+        businessCode: String(document.businessCode ?? ''),
+        documentOrganizationCode,
+        documentOrganizationName: resolveOptionName('documentOrganizations', documentOrganizationCode),
+        extFieldEntries: Object.entries(document.extFields ?? {}).map(([key, value]) => ({
+          key,
+          value: String(value ?? '')
+        }))
+      }
+    })
+  }
+}
+
+const resetTransferDetail = () => {
+  transferDetail.value = getEmptyTransferDetail()
+}
+
+const loadTransferDetail = async (processInstanceId: string) => {
+  const fallback = buildTransferDetailFromVariables()
+  try {
+    const detail = await getProcessTransferDetail(processInstanceId)
+    transferDetail.value = buildTransferDetailFromApi(detail as WorkflowTransferDetailResponse) ?? fallback
+  } catch (error) {
+    console.error('Failed to load transfer detail from api:', error)
+    transferDetail.value = fallback
+  }
+}
 
 const loadData = async () => {
   try {
@@ -804,12 +890,14 @@ const decorateProcessTasks = (tasks: WorkflowTaskItem[], processStatus: string) 
 
 const viewProcess = async (process: WorkflowProcessItem) => {
   try {
+    resetTransferDetail()
     const [instance, tasks] = await Promise.all([
       getProcessInstance(process.processInstanceId),
       getProcessTasks(process.processInstanceId)
     ])
     currentProcess.value = normalizeProcess(instance as WorkflowProcessItem)
     processTasks.value = decorateProcessTasks(tasks as WorkflowTaskItem[], currentProcess.value.status)
+    await loadTransferDetail(currentProcess.value.processInstanceId)
     currentTask.value = currentActiveTask.value
     processDetailVisible.value = true
   } catch (error) {
@@ -820,6 +908,7 @@ const viewProcess = async (process: WorkflowProcessItem) => {
 
 const openProcessDetailByTask = async (task: WorkflowTaskItem) => {
   currentTask.value = task
+  resetTransferDetail()
   await viewProcess({
     processInstanceId: task.processInstanceId,
     processDefinitionKey: '',

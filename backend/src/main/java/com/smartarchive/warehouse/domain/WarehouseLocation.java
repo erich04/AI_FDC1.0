@@ -32,7 +32,7 @@ public class WarehouseLocation {
     @TableField("last_update_date")
     private LocalDateTime lastUpdateDate;
 
-    @TableLogic
+    @TableLogic(value = "N", delval = "Y")
     @TableField("delete_flag")
     private String deleteFlag;
 }

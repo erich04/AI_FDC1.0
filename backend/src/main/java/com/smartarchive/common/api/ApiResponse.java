@@ -8,15 +8,19 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApiResponse<T> {
-    private boolean success;
-    private String message;
+    private Integer code;
+    private String msg;
     private T data;
 
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(true, "OK", data);
+        return new ApiResponse<>(0, "OK", data);
     }
 
     public static <T> ApiResponse<T> failure(String message) {
-        return new ApiResponse<>(false, message, null);
+        return new ApiResponse<>(1, message, null);
+    }
+
+    public static <T> ApiResponse<T> failure(Integer code, String message) {
+        return new ApiResponse<>(code, message, null);
     }
 }

@@ -9,6 +9,8 @@ import com.smartarchive.archivemanage.dto.DocumentTypeExtFieldUpdateCommand;
 import com.smartarchive.archivemanage.mapper.ArchiveExtFieldConfigMapper;
 import com.smartarchive.archivemanage.service.DocumentTypeExtFieldService;
 import com.smartarchive.common.exception.BusinessException;
+import com.smartarchive.dictionary.domain.DictionaryItem;
+import com.smartarchive.dictionary.mapper.DictionaryItemMapper;
 import com.smartarchive.documenttype.domain.DocumentType;
 import com.smartarchive.documenttype.mapper.DocumentTypeMapper;
 import java.time.LocalDateTime;
@@ -28,9 +30,11 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldService {
     private static final Long SYSTEM_OPERATOR_ID = 1L;
+    private static final String FUNCTION_MODULE_CATEGORY_CODE = "FUNCTION_MODULE";
 
     private final ArchiveExtFieldConfigMapper archiveExtFieldConfigMapper;
     private final DocumentTypeMapper documentTypeMapper;
+    private final DictionaryItemMapper dictionaryItemMapper;
 
     @Override
     public List<DocumentTypeExtFieldResponse> listDirect(String documentTypeCode) {
@@ -80,14 +84,19 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
     @Transactional
     public DocumentTypeExtFieldResponse create(String documentTypeCode, DocumentTypeExtFieldCreateCommand command) {
         DocumentType documentType = requireDocumentType(documentTypeCode);
-        validateCommand(command.getFieldType(), command.getRequiredFlag(), command.getEnabledFlag(), command.getQueryEnabledFlag(), command.getDictCategoryCode());
+        validateCommand(command.getFieldType(), command.getRequiredFlag(), command.getEnabledFlag(), command.getQueryEnabledFlag(),
+            command.getDictCategoryCode(), command.getUsageModule(), command.getRelatedModuleCode(), command.getRelatedField());
 
         ArchiveExtFieldConfig entity = new ArchiveExtFieldConfig();
         entity.setFieldCode(generateFieldCode(documentType.getTypeCode()));
         entity.setDocumentTypeCode(documentType.getTypeCode());
+        entity.setUsageModule(trimRequiredText(command.getUsageModule(), "usageModule"));
+        entity.setRelatedModuleCode(trimRequiredText(command.getRelatedModuleCode(), "relatedModuleCode"));
+        entity.setRelatedField(trimRequiredText(command.getRelatedField(), "relatedField"));
         entity.setFieldName(command.getFieldName().trim());
         entity.setFieldType(command.getFieldType().trim().toUpperCase());
         entity.setDictCategoryCode(trimToNull(command.getDictCategoryCode()));
+        entity.setSemanticCode(trimToNull(command.getSemanticCode()));
         entity.setRequiredFlag(normalizeFlag(command.getRequiredFlag(), "N"));
         entity.setEnabledFlag(normalizeFlag(command.getEnabledFlag(), "Y"));
         entity.setFormSortOrder(command.getFormSortOrder() == null ? 1 : command.getFormSortOrder());
@@ -106,11 +115,16 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
     @Transactional
     public DocumentTypeExtFieldResponse update(String documentTypeCode, String fieldCode, DocumentTypeExtFieldUpdateCommand command) {
         DocumentType documentType = requireDocumentType(documentTypeCode);
-        validateCommand(command.getFieldType(), command.getRequiredFlag(), command.getEnabledFlag(), command.getQueryEnabledFlag(), command.getDictCategoryCode());
+        validateCommand(command.getFieldType(), command.getRequiredFlag(), command.getEnabledFlag(), command.getQueryEnabledFlag(),
+            command.getDictCategoryCode(), command.getUsageModule(), command.getRelatedModuleCode(), command.getRelatedField());
         ArchiveExtFieldConfig entity = requireField(documentTypeCode, fieldCode);
+        entity.setUsageModule(trimRequiredText(command.getUsageModule(), "usageModule"));
+        entity.setRelatedModuleCode(trimRequiredText(command.getRelatedModuleCode(), "relatedModuleCode"));
+        entity.setRelatedField(trimRequiredText(command.getRelatedField(), "relatedField"));
         entity.setFieldName(command.getFieldName().trim());
         entity.setFieldType(command.getFieldType().trim().toUpperCase());
         entity.setDictCategoryCode(trimToNull(command.getDictCategoryCode()));
+        entity.setSemanticCode(trimToNull(command.getSemanticCode()));
         entity.setRequiredFlag(normalizeFlag(command.getRequiredFlag(), "N"));
         entity.setEnabledFlag(normalizeFlag(command.getEnabledFlag(), "Y"));
         entity.setFormSortOrder(command.getFormSortOrder() == null ? 1 : command.getFormSortOrder());
@@ -157,7 +171,8 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
         return field;
     }
 
-    private void validateCommand(String fieldType, String requiredFlag, String enabledFlag, String queryEnabledFlag, String dictCategoryCode) {
+    private void validateCommand(String fieldType, String requiredFlag, String enabledFlag, String queryEnabledFlag, String dictCategoryCode,
+                                 String usageModule, String relatedModuleCode, String relatedField) {
         String normalizedFieldType = fieldType == null ? "" : fieldType.trim().toUpperCase();
         if (!List.of("TEXT", "DICT").contains(normalizedFieldType)) {
             throw new BusinessException("fieldType only supports TEXT or DICT");
@@ -168,6 +183,9 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
         validateFlag(requiredFlag, "requiredFlag");
         validateFlag(enabledFlag, "enabledFlag");
         validateFlag(queryEnabledFlag, "queryEnabledFlag");
+        validateFunctionModuleItem(usageModule, "usageModule");
+        validateFunctionModuleItem(relatedModuleCode, "relatedModuleCode");
+        trimRequiredText(relatedField, "relatedField");
     }
 
     private void validateFlag(String flag, String fieldName) {
@@ -195,14 +213,37 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
         return StringUtils.hasText(value) ? value.trim() : null;
     }
 
+    private String trimRequiredText(String value, String fieldName) {
+        if (!StringUtils.hasText(value)) {
+            throw new BusinessException(fieldName + " cannot be blank");
+        }
+        return value.trim();
+    }
+
+    private void validateFunctionModuleItem(String itemCode, String fieldName) {
+        String normalizedItemCode = trimRequiredText(itemCode, fieldName);
+        long count = dictionaryItemMapper.selectCount(new LambdaQueryWrapper<DictionaryItem>()
+            .eq(DictionaryItem::getCategoryCode, FUNCTION_MODULE_CATEGORY_CODE)
+            .eq(DictionaryItem::getItemCode, normalizedItemCode)
+            .eq(DictionaryItem::getEnabledFlag, "Y")
+            .eq(DictionaryItem::getDeleteFlag, "N"));
+        if (count == 0) {
+            throw new BusinessException(fieldName + " must be an enabled dictionary item of FUNCTION_MODULE");
+        }
+    }
+
     private DocumentTypeExtFieldResponse toResponse(ArchiveExtFieldConfig item, Integer sourceLevel, String sourceDocumentTypeCode) {
         return DocumentTypeExtFieldResponse.builder()
             .fieldId(item.getFieldId())
             .fieldCode(item.getFieldCode())
             .documentTypeCode(item.getDocumentTypeCode())
+            .usageModule(item.getUsageModule())
+            .relatedModuleCode(item.getRelatedModuleCode())
+            .relatedField(item.getRelatedField())
             .fieldName(item.getFieldName())
             .fieldType(item.getFieldType())
             .dictCategoryCode(item.getDictCategoryCode())
+            .semanticCode(item.getSemanticCode())
             .requiredFlag(item.getRequiredFlag())
             .enabledFlag(item.getEnabledFlag())
             .formSortOrder(item.getFormSortOrder())

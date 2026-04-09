@@ -1,6 +1,11 @@
 package com.smartarchive.workflow.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smartarchive.archivemanage.domain.TransferApplication;
+import com.smartarchive.archivemanage.domain.TransferApplicationDetail;
+import com.smartarchive.archivemanage.mapper.TransferApplicationDetailMapper;
+import com.smartarchive.archivemanage.mapper.TransferApplicationExtMapper;
+import com.smartarchive.archivemanage.mapper.TransferApplicationMapper;
 import com.smartarchive.workflow.domain.WorkflowInstance;
 import com.smartarchive.workflow.domain.WorkflowTask;
 import com.smartarchive.workflow.dto.CompleteTaskCommand;
@@ -9,8 +14,10 @@ import com.smartarchive.workflow.dto.MergeProcessesCommand;
 import com.smartarchive.workflow.dto.RejectTaskCommand;
 import com.smartarchive.workflow.dto.SplitProcessCommand;
 import com.smartarchive.workflow.dto.StartProcessCommand;
+import com.smartarchive.workflow.dto.WorkflowTransferDetailResponse;
 import com.smartarchive.workflow.mapper.WorkflowInstanceMapper;
 import com.smartarchive.workflow.mapper.WorkflowTaskMapper;
+import com.smartarchive.archivemanage.support.TransferApplicationWorkflowHook;
 import com.smartarchive.workflow.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import org.flowable.engine.RuntimeService;
@@ -25,6 +32,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -38,6 +46,10 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final WorkflowInstanceMapper workflowInstanceMapper;
     private final WorkflowTaskMapper workflowTaskMapper;
     private final ObjectMapper objectMapper;
+    private final TransferApplicationWorkflowHook transferApplicationWorkflowHook;
+    private final TransferApplicationMapper transferApplicationMapper;
+    private final TransferApplicationDetailMapper transferApplicationDetailMapper;
+    private final TransferApplicationExtMapper transferApplicationExtMapper;
 
     @Override
     @Transactional
@@ -348,6 +360,85 @@ public class WorkflowServiceImpl implements WorkflowService {
         );
     }
 
+    @Override
+    public WorkflowTransferDetailResponse getTransferDetail(String processInstanceId) {
+        WorkflowTransferDetailResponse response = new WorkflowTransferDetailResponse();
+        WorkflowInstance instance = workflowInstanceMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WorkflowInstance>()
+                        .eq(WorkflowInstance::getProcessInstanceId, processInstanceId)
+                        .eq(WorkflowInstance::getDeleteFlag, "N")
+                        .last("limit 1")
+        );
+        if (instance == null || !"TRANSFER_APPLICATION".equals(instance.getBusinessType())) {
+            return response;
+        }
+        Long applicationId = parseTransferApplicationId(instance.getBusinessKey());
+        if (applicationId == null) {
+            return response;
+        }
+        TransferApplication application = transferApplicationMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TransferApplication>()
+                        .eq(TransferApplication::getApplicationId, applicationId)
+                        .eq(TransferApplication::getDeleteFlag, "N")
+                        .last("limit 1")
+        );
+        if (application == null) {
+            return response;
+        }
+
+        String initiatorName = instance.getInitiatorName();
+        if (initiatorName == null || initiatorName.isBlank()) {
+            initiatorName = application.getApplicant() == null ? "" : "用户-" + application.getApplicant();
+        }
+        response.setTransferorName(initiatorName);
+        response.setAssigneeId(application.getDocumentRecipient() == null ? "" : String.valueOf(application.getDocumentRecipient()));
+        response.setTransferMethod(application.getApplyMethod());
+        response.setLogisticsCompany(application.getExpressType());
+        response.setTrackingNumber(application.getExpressNumber());
+        response.setRemark(application.getApplicationDescription());
+        response.setApplicationNumber(application.getApplicationNumber());
+
+        List<TransferApplicationDetail> details = transferApplicationDetailMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TransferApplicationDetail>()
+                        .eq(TransferApplicationDetail::getApplicationId, applicationId)
+                        .eq(TransferApplicationDetail::getDeleteFlag, "N")
+                        .orderByAsc(TransferApplicationDetail::getApplicationDetailId)
+        );
+
+        List<Map<String, Object>> extRows = transferApplicationExtMapper.selectByMasterId(applicationId, application.getTenantid());
+        Map<Long, Map<String, String>> extByDetailId = new HashMap<>();
+        for (Map<String, Object> row : extRows) {
+            Object detailIdObj = row.get("object_id");
+            if (!(detailIdObj instanceof Number detailIdNumber)) {
+                continue;
+            }
+            Long detailId = detailIdNumber.longValue();
+            Map<String, String> extFields = extByDetailId.computeIfAbsent(detailId, key -> new HashMap<>());
+            for (Map.Entry<String, Object> entry : row.entrySet()) {
+                String key = entry.getKey();
+                if (key == null || !key.startsWith("attr")) {
+                    continue;
+                }
+                Object value = entry.getValue();
+                if (value != null) {
+                    extFields.put(key, String.valueOf(value));
+                }
+            }
+        }
+
+        List<WorkflowTransferDetailResponse.TransferDocumentItem> documents = details.stream().map(detail -> {
+            WorkflowTransferDetailResponse.TransferDocumentItem item =
+                    new WorkflowTransferDetailResponse.TransferDocumentItem();
+            item.setDocumentTypeCode(application.getDocumentTypeCode());
+            item.setBusinessCode(detail.getDocBusiNo());
+            item.setDocumentOrganizationCode(detail.getCompanyProjectCode());
+            item.setExtFields(extByDetailId.getOrDefault(detail.getApplicationDetailId(), Map.of()));
+            return item;
+        }).toList();
+        response.setDocuments(documents);
+        return response;
+    }
+
     private List<WorkflowTask> loadRuntimeTasksByAssignee(String userId) {
         return jdbcTemplate.query("""
                 select t.id_,
@@ -411,6 +502,18 @@ public class WorkflowServiceImpl implements WorkflowService {
         return workflowTask;
     }
 
+    private Long parseTransferApplicationId(String businessKey) {
+        final String prefix = "TRN-APP-";
+        if (businessKey == null || !businessKey.startsWith(prefix)) {
+            return null;
+        }
+        try {
+            return Long.valueOf(businessKey.substring(prefix.length()));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
     private void finalizeProcessInstance(String processInstanceId, String finalStatus) {
         if (processInstanceId == null) {
             return;
@@ -431,6 +534,8 @@ public class WorkflowServiceImpl implements WorkflowService {
         if (workflowInstance == null) {
             return;
         }
+
+        transferApplicationWorkflowHook.onProcessFinished(workflowInstance, finalStatus);
 
         workflowInstance.setStatus(finalStatus);
         workflowInstance.setEndTime(LocalDateTime.now());

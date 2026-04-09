@@ -1,6 +1,7 @@
 package com.smartarchive.workflow.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -19,6 +20,7 @@ public class WorkflowInstance {
     private String processDefinitionName;
     private String status;
     private String businessType;
+    @TableField(exist = false)
     private Long businessId;
     private String initiatorId;
     private String initiatorName;

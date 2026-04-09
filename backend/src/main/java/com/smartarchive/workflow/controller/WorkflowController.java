@@ -9,6 +9,7 @@ import com.smartarchive.workflow.dto.MergeProcessesCommand;
 import com.smartarchive.workflow.dto.RejectTaskCommand;
 import com.smartarchive.workflow.dto.SplitProcessCommand;
 import com.smartarchive.workflow.dto.StartProcessCommand;
+import com.smartarchive.workflow.dto.WorkflowTransferDetailResponse;
 import com.smartarchive.workflow.service.WorkflowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -98,5 +99,10 @@ public class WorkflowController {
     @GetMapping("/tasks/{taskId}")
     public ApiResponse<WorkflowTask> getTask(@PathVariable String taskId) {
         return ApiResponse.success(workflowService.getTask(taskId));
+    }
+
+    @GetMapping("/processes/{processInstanceId}/transfer-detail")
+    public ApiResponse<WorkflowTransferDetailResponse> getTransferDetail(@PathVariable String processInstanceId) {
+        return ApiResponse.success(workflowService.getTransferDetail(processInstanceId));
     }
 }

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="document-type-page">
     <div class="page-title">文档类型管理</div>
 
@@ -87,6 +87,9 @@
           </template>
           <el-table :data="extFields" size="small">
             <el-table-column prop="fieldCode" label="字段编码" width="220" />
+            <el-table-column prop="usageModule" label="使用模块" width="130" />
+            <el-table-column prop="relatedModuleCode" label="关联模块" width="130" />
+            <el-table-column prop="relatedField" label="关联字段" width="150" />
             <el-table-column prop="fieldName" label="字段名称" width="150" />
             <el-table-column prop="fieldType" label="字段类型" width="100" />
             <el-table-column prop="dictCategoryCode" label="字典对象" width="140" />
@@ -154,6 +157,17 @@
 
     <el-dialog v-model="fieldDialogVisible" :title="fieldDialogMode === 'create' ? '新增扩展字段' : '编辑扩展字段'" width="560px">
       <el-form :model="fieldForm" label-width="110px">
+        <el-form-item label="使用模块" required>
+          <el-select v-model="fieldForm.usageModule" placeholder="请选择使用模块">
+            <el-option v-for="item in functionModuleItems" :key="item.itemCode" :label="item.itemName" :value="item.itemCode" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="关联模块" required>
+          <el-select v-model="fieldForm.relatedModuleCode" placeholder="请选择关联模块">
+            <el-option v-for="item in functionModuleItems" :key="item.itemCode" :label="item.itemName" :value="item.itemCode" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="关联字段" required><el-input v-model="fieldForm.relatedField" /></el-form-item>
         <el-form-item label="字段名称" required><el-input v-model="fieldForm.fieldName" /></el-form-item>
         <el-form-item label="字段类型" required>
           <el-radio-group v-model="fieldForm.fieldType">
@@ -181,7 +195,7 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { fetchDictionaryCategories } from '../../api/modules/dictionary'
+import { fetchDictionaryCategories, fetchDictionaryItems } from '../../api/modules/dictionary'
 import CommonTreeSelect from '../../components/CommonTreeSelect.vue'
 import {
   createDocumentType,
@@ -199,13 +213,14 @@ import {
   updateDocumentTypeExtField,
   type DocumentTypeExtFieldCreateCommand
 } from '../../api/modules/archiveManagement'
-import type { AuditRecord, DictionaryCategory, DocumentTypeExtField, DocumentTypeTreeNode } from '../../types'
+import type { AuditRecord, DictionaryCategory, DictionaryItem, DocumentTypeExtField, DocumentTypeTreeNode } from '../../types'
 
 const treeData = ref<DocumentTypeTreeNode[]>([])
 const selectedNode = ref<DocumentTypeTreeNode>()
 const auditRecords = ref<AuditRecord[]>([])
 const extFields = ref<DocumentTypeExtField[]>([])
 const dictionaryCategories = ref<DictionaryCategory[]>([])
+const functionModuleItems = ref<DictionaryItem[]>([])
 const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const fieldDialogVisible = ref(false)
@@ -214,7 +229,19 @@ const treeProps = { label: 'typeName', children: 'children' }
 const selectedFieldCode = ref('')
 
 const form = reactive<DocumentTypeCreateCommand & DocumentTypeUpdateCommand>({ typeCode: '', typeName: '', description: '', enabledFlag: 'Y', parentCode: '' })
-const fieldForm = reactive<DocumentTypeExtFieldCreateCommand>({ fieldName: '', fieldType: 'TEXT', dictCategoryCode: '', requiredFlag: 'N', enabledFlag: 'Y', formSortOrder: 1, queryEnabledFlag: 'N', querySortOrder: 1 })
+const fieldForm = reactive<DocumentTypeExtFieldCreateCommand>({
+  usageModule: '',
+  relatedModuleCode: '',
+  relatedField: '',
+  fieldName: '',
+  fieldType: 'TEXT',
+  dictCategoryCode: '',
+  requiredFlag: 'N',
+  enabledFlag: 'Y',
+  formSortOrder: 1,
+  queryEnabledFlag: 'N',
+  querySortOrder: 1
+})
 
 const normalizeTree = (nodes: DocumentTypeTreeNode[]): DocumentTypeTreeNode[] => (Array.isArray(nodes) ? nodes : []).map(node => ({ ...node, children: normalizeTree(Array.isArray(node.children) ? node.children : []) }))
 const flattenNodes = (nodes: DocumentTypeTreeNode[]): DocumentTypeTreeNode[] => nodes.flatMap(node => [node, ...flattenNodes(node.children || [])])
@@ -230,6 +257,10 @@ const loadTree = async () => {
 }
 const loadAudits = async () => { auditRecords.value = await fetchModuleAudits('DOCUMENT_TYPE') }
 const loadDictionaryCategories = async () => { dictionaryCategories.value = await fetchDictionaryCategories() }
+const loadFunctionModules = async () => {
+  const items = await fetchDictionaryItems('FUNCTION_MODULE')
+  functionModuleItems.value = items.filter(item => item.enabledFlag === 'Y')
+}
 const loadExtFields = async () => { if (!selectedNode.value) return; extFields.value = await fetchDocumentTypeExtFields(selectedNode.value.typeCode) }
 const handleNodeSelect = async (node: DocumentTypeTreeNode) => { selectedNode.value = node; await loadExtFields() }
 const resetForm = () => { form.typeCode = ''; form.typeName = ''; form.description = ''; form.enabledFlag = 'Y'; form.parentCode = '' }
@@ -251,15 +282,56 @@ const handleDelete = async () => {
   if (!selectedNode.value) return ElMessage.warning('请先选择一个文档类型节点')
   try { await ElMessageBox.confirm(`确认删除文档类型 ${selectedNode.value.typeName} 吗？`, '提示', { type: 'warning' }); await deleteDocumentType(selectedNode.value.typeCode); selectedNode.value = undefined; extFields.value = []; await Promise.all([loadTree(), loadAudits()]); ElMessage.success('删除成功') } catch (error: any) { if (error !== 'cancel') ElMessage.error(error?.message || '删除失败') }
 }
-const resetFieldForm = () => { fieldForm.fieldName = ''; fieldForm.fieldType = 'TEXT'; fieldForm.dictCategoryCode = ''; fieldForm.requiredFlag = 'N'; fieldForm.enabledFlag = 'Y'; fieldForm.formSortOrder = 1; fieldForm.queryEnabledFlag = 'N'; fieldForm.querySortOrder = 1; selectedFieldCode.value = '' }
-const openFieldDialog = (field?: DocumentTypeExtField) => { if (!selectedNode.value) return ElMessage.warning('请先选择一个文档类型节点'); fieldDialogMode.value = field ? 'edit' : 'create'; resetFieldForm(); if (field) { selectedFieldCode.value = field.fieldCode; fieldForm.fieldName = field.fieldName; fieldForm.fieldType = field.fieldType; fieldForm.dictCategoryCode = field.dictCategoryCode || ''; fieldForm.requiredFlag = field.requiredFlag; fieldForm.enabledFlag = field.enabledFlag; fieldForm.formSortOrder = field.formSortOrder; fieldForm.queryEnabledFlag = field.queryEnabledFlag; fieldForm.querySortOrder = field.querySortOrder } fieldDialogVisible.value = true }
+const resetFieldForm = () => {
+  fieldForm.usageModule = ''
+  fieldForm.relatedModuleCode = ''
+  fieldForm.relatedField = ''
+  fieldForm.fieldName = ''
+  fieldForm.fieldType = 'TEXT'
+  fieldForm.dictCategoryCode = ''
+  fieldForm.requiredFlag = 'N'
+  fieldForm.enabledFlag = 'Y'
+  fieldForm.formSortOrder = 1
+  fieldForm.queryEnabledFlag = 'N'
+  fieldForm.querySortOrder = 1
+  selectedFieldCode.value = ''
+}
+const openFieldDialog = (field?: DocumentTypeExtField) => {
+  if (!selectedNode.value) return ElMessage.warning('请先选择一个文档类型节点')
+  fieldDialogMode.value = field ? 'edit' : 'create'
+  resetFieldForm()
+  if (field) {
+    selectedFieldCode.value = field.fieldCode
+    fieldForm.usageModule = field.usageModule || ''
+    fieldForm.relatedModuleCode = field.relatedModuleCode || ''
+    fieldForm.relatedField = field.relatedField || ''
+    fieldForm.fieldName = field.fieldName
+    fieldForm.fieldType = field.fieldType
+    fieldForm.dictCategoryCode = field.dictCategoryCode || ''
+    fieldForm.requiredFlag = field.requiredFlag
+    fieldForm.enabledFlag = field.enabledFlag
+    fieldForm.formSortOrder = field.formSortOrder
+    fieldForm.queryEnabledFlag = field.queryEnabledFlag
+    fieldForm.querySortOrder = field.querySortOrder
+  }
+  fieldDialogVisible.value = true
+}
 const submitFieldForm = async () => {
   if (!selectedNode.value) return
+  if (!fieldForm.usageModule) return ElMessage.warning('请选择使用模块')
+  if (!fieldForm.relatedModuleCode) return ElMessage.warning('请选择关联模块')
+  if (!fieldForm.relatedField.trim()) return ElMessage.warning('请输入关联字段')
   if (!fieldForm.fieldName.trim()) return ElMessage.warning('请输入字段名称')
   if (fieldForm.fieldType === 'DICT' && !fieldForm.dictCategoryCode?.trim()) return ElMessage.warning('请输入数据字典对象')
   try {
-    if (fieldDialogMode.value === 'create') await createDocumentTypeExtField(selectedNode.value.typeCode, { ...fieldForm, fieldName: fieldForm.fieldName.trim(), dictCategoryCode: fieldForm.dictCategoryCode?.trim() || undefined })
-    else await updateDocumentTypeExtField(selectedNode.value.typeCode, selectedFieldCode.value, { ...fieldForm, fieldName: fieldForm.fieldName.trim(), dictCategoryCode: fieldForm.dictCategoryCode?.trim() || undefined })
+    const payload = {
+      ...fieldForm,
+      relatedField: fieldForm.relatedField.trim(),
+      fieldName: fieldForm.fieldName.trim(),
+      dictCategoryCode: fieldForm.dictCategoryCode?.trim() || undefined
+    }
+    if (fieldDialogMode.value === 'create') await createDocumentTypeExtField(selectedNode.value.typeCode, payload)
+    else await updateDocumentTypeExtField(selectedNode.value.typeCode, selectedFieldCode.value, payload)
     fieldDialogVisible.value = false
     await loadExtFields()
     ElMessage.success('扩展字段保存成功')
@@ -271,7 +343,7 @@ const handleDeleteField = async (field: DocumentTypeExtField) => {
 }
 const formatTime = (value?: string) => value ? value.replace('T', ' ').slice(0, 19) : '-'
 
-onMounted(async () => { await Promise.all([loadTree(), loadAudits(), loadDictionaryCategories()]) })
+onMounted(async () => { await Promise.all([loadTree(), loadAudits(), loadDictionaryCategories(), loadFunctionModules()]) })
 </script>
 
 <style scoped>

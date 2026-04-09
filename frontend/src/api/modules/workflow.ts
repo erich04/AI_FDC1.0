@@ -54,6 +54,22 @@ interface MergeProcessesCommand {
   variables: Record<string, any>
 }
 
+export interface WorkflowTransferDetailResponse {
+  transferorName?: string
+  assigneeId?: string
+  transferMethod?: string
+  logisticsCompany?: string
+  trackingNumber?: string
+  remark?: string
+  applicationNumber?: string
+  documents?: Array<{
+    documentTypeCode?: string
+    businessCode?: string
+    documentOrganizationCode?: string
+    extFields?: Record<string, string>
+  }>
+}
+
 export async function startProcess(command: StartProcessCommand) {
   return apiRequest(http.post('/api/workflow/processes', command))
 }
@@ -104,4 +120,8 @@ export async function getTask(taskId: string) {
 
 export async function getProcessTasks(processInstanceId: string) {
   return apiRequest(http.get(`/api/workflow/processes/${processInstanceId}/tasks`))
+}
+
+export async function getProcessTransferDetail(processInstanceId: string) {
+  return apiRequest<WorkflowTransferDetailResponse>(http.get(`/api/workflow/processes/${processInstanceId}/transfer-detail`))
 }

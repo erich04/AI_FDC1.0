@@ -263,6 +263,7 @@ const allColumns = ref([
   { label: '文档类型', prop: 'documentTypeName', width: '160' },
   { label: '公司/项目', prop: 'companyProjectName', width: '180' },
   { label: '载体类型', prop: 'carrierTypeCode', width: '120' },
+  { label: '归档状态', prop: 'archiveStatus', width: '120' },
   { label: '责任人', prop: 'dutyPerson', width: '120' },
   { label: '附件数', prop: 'attachmentCount', width: '90' },
   { label: 'AI摘要', prop: 'aiArchiveSummary', minWidth: '280' },
@@ -278,6 +279,7 @@ const defaultVisibleColumns = [
   'documentTypeName',
   'companyProjectName',
   'carrierTypeCode',
+  'archiveStatus',
   'dutyPerson',
   'attachmentCount',
   'aiArchiveSummary'

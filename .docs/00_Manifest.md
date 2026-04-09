@@ -75,6 +75,8 @@ Lookup 快码: @.docs/06_Lookup.md (全局字典取值；库表仅存码值时�
 
 规则约束: @.cursorrules (全局开发风格限制)
 
+交互规范： @.docs/07_Interface.md（全局前端交互规范，包括页面布局、按钮规范、字段填写规范等）
+
 features输出模板: @.docs/features/Template.md
 
 5. 开发哲学 (AI Collaboration Policy)

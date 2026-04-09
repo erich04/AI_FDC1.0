@@ -31,6 +31,9 @@ public class ArchiveAttachment {
     private String parseStatus;
     private String vectorStatus;
     private String activeFlag;
+    private String bizDomain;
+    private Long applicationId;
+    private Long applicationDetailId;
     @TableLogic(value = "N", delval = "Y")
     private String deleteFlag;
     private Long createdBy;

@@ -14,6 +14,7 @@
           :default-active="activeMenu"
           class="menu"
           router
+          :unique-opened="true"
           :collapse="layout.collapsed"
           background-color="#0d2238"
           text-color="#adc4d8"
@@ -44,8 +45,13 @@
               <span>档案业务管理</span>
             </template>
             <el-menu-item index="/archive-management/create">发起归档</el-menu-item>
-            <el-menu-item index="/archive-management/transfer">发起移交</el-menu-item>
-            <el-menu-item index="/archive-management/transfer-query">移交记录查询</el-menu-item>
+            <el-sub-menu index="archive-management-doc-transfer">
+              <template #title>
+                <span>文档移交</span>
+              </template>
+              <el-menu-item index="/archive-management/transfer">移交申请提交</el-menu-item>
+              <el-menu-item index="/archive-management/transfer-query">移交申请查询</el-menu-item>
+            </el-sub-menu>
             <el-menu-item index="/archive-management/ai-search">AI+档案</el-menu-item>
             <el-menu-item index="/archive-management/query">档案查询</el-menu-item>
             <el-menu-item index="/archive-management/borrow">借阅文档</el-menu-item>
@@ -61,11 +67,29 @@
             <el-icon><List /></el-icon>
             <span>工作流管理</span>
           </el-menu-item>
+          <el-sub-menu index="/security">
+            <template #title>
+              <el-icon>
+                <svg viewBox="0 0 1024 1024" width="1em" height="1em" fill="currentColor" aria-hidden="true">
+                  <path d="M512 64l320 128v245.632c0 218.112-131.008 414.656-332.288 499.84L512 960l12.288-22.528C323.008 852.288 192 655.744 192 437.632V192L512 64zm0 69.056L256 235.328v202.304c0 187.136 109.44 356.352 280.48 432.064L512 884.736l-24.48-15.04C316.48 793.984 256 624.768 256 437.632V235.328l256-102.272z"/>
+                </svg>
+              </el-icon>
+              <span>档案安全管理</span>
+            </template>
+            <el-sub-menu index="/security/four-properties">
+              <template #title>
+                <span>四性检测</span>
+              </template>
+              <el-menu-item index="/security/four-properties/config">四性检测配置</el-menu-item>
+              <el-menu-item index="/security/four-properties/execution">四性检测执行</el-menu-item>
+              <el-menu-item index="/security/four-properties/report">四性检测报告</el-menu-item>
+            </el-sub-menu>
+          </el-sub-menu>
         </el-menu>
       </el-scrollbar>
     </el-aside>
 
-    <el-container>
+    <el-container class="console-content">
       <el-header class="console-header">
         <div class="console-header__left">
           <el-button text class="icon-button" @click="layout.toggle()">
@@ -257,6 +281,12 @@ const pageDescription = computed(() => {
       return '统一管理档案借阅申请、审批、借出与归还过程。'
     case '/governance':
       return '集中查看流程、规则、AI 能力与安全策略配置。'
+    case '/security/four-properties/config':
+      return '配置档案四性检测规则、适用范围与执行策略。'
+    case '/security/four-properties/execution':
+      return '执行四性检测任务并跟踪运行过程与结果。'
+    case '/security/four-properties/report':
+      return '查看四性检测报告，定位问题并跟踪整改。'
     default:
       return '围绕统一档案对象模型建设可扩展、可治理、可落地的现代化档案系统。'
   }
@@ -292,7 +322,8 @@ const openMessage = (path: string) => {
 
 <style scoped>
 .console-layout {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .console-aside {
@@ -300,6 +331,10 @@ const openMessage = (path: string) => {
     radial-gradient(circle at top, rgba(76, 141, 196, 0.26), transparent 26%),
     linear-gradient(180deg, #10243a 0%, #0a1727 100%);
   transition: width 0.2s ease;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  flex-shrink: 0;
 }
 
 .brand {
@@ -342,6 +377,11 @@ const openMessage = (path: string) => {
 
 .menu-scroll {
   height: calc(100vh - 68px);
+}
+
+.console-content {
+  height: 100vh;
+  overflow: hidden;
 }
 
 .menu {
@@ -459,6 +499,8 @@ const openMessage = (path: string) => {
 
 .console-main {
   padding: 20px;
+  height: calc(100vh - 72px);
+  overflow-y: auto;
 }
 
 .page-head {

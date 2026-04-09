@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartarchive.archivemanage.mapper.TransferApplicationMapper">
+
+    <sql id="applicationRecordWhere">
+        <where>
+            a.delete_flag = 'N'
+            AND a.enable_flag = 'Y'
+            AND a.tenantid = #{tenantid}
+            <if test="f.companyProjectCode != null and f.companyProjectCode != ''">
+                AND EXISTS (
+                    SELECT 1 FROM fdc_application_detail_t d
+                    WHERE d.application_id = a.application_id
+                      AND d.delete_flag = 'N' AND d.enable_flag = 'Y' AND d.tenantid = #{tenantid}
+                      AND d.company_project_code = #{f.companyProjectCode}
+                )
+            </if>
+            <if test="f.applicant != null">
+                AND a.applicant = #{f.applicant}
+            </if>
+            <if test="f.applicationNumber != null and f.applicationNumber != ''">
+                AND a.application_number LIKE CONCAT('%', #{f.applicationNumber}, '%')
+            </if>
+            <if test="f.applicationDateStart != null">
+                AND a.application_date &gt;= #{f.applicationDateStart}
+            </if>
+            <if test="f.applicationDateEnd != null">
+                AND a.application_date &lt;= #{f.applicationDateEnd}
+            </if>
+            <if test="f.applicationStatus != null and f.applicationStatus != ''">
+                AND a.application_status = #{f.applicationStatus}
+            </if>
+            <if test="f.carrierType != null and f.carrierType != ''">
+                AND a.carrier_type = #{f.carrierType}
+            </if>
+            <if test="f.diffReasonCode != null and f.diffReasonCode != ''">
+                AND a.diff_reason_code = #{f.diffReasonCode}
+            </if>
+            <if test="f.applyMethod != null and f.applyMethod != ''">
+                AND a.apply_method = #{f.applyMethod}
+            </if>
+            <if test="f.expressType != null and f.expressType != ''">
+                AND a.express_type = #{f.expressType}
+            </if>
+            <if test="f.expressNumber != null and f.expressNumber != ''">
+                AND a.express_number LIKE CONCAT('%', #{f.expressNumber}, '%')
+            </if>
+            <if test="f.documentRecipient != null">
+                AND a.document_recipient = #{f.documentRecipient}
+            </if>
+            <if test="f.docBusiNo != null and f.docBusiNo != ''">
+                AND EXISTS (
+                    SELECT 1 FROM fdc_application_detail_t d
+                    WHERE d.application_id = a.application_id
+                      AND d.delete_flag = 'N' AND d.enable_flag = 'Y' AND d.tenantid = #{tenantid}
+                      AND d.doc_busi_no LIKE CONCAT('%', #{f.docBusiNo}, '%')
+                )
+            </if>
+            <if test="f.busiModuleCode != null and f.busiModuleCode != ''">
+                AND EXISTS (
+                    SELECT 1 FROM fdc_application_detail_t d
+                    WHERE d.application_id = a.application_id
+                      AND d.delete_flag = 'N' AND d.enable_flag = 'Y' AND d.tenantid = #{tenantid}
+                      AND d.busi_module_code = #{f.busiModuleCode}
+                )
+            </if>
+            <if test="f.archPeriodStart != null and f.archPeriodEnd != null">
+                AND EXISTS (
+                    SELECT 1 FROM fdc_application_detail_t d
+                    WHERE d.application_id = a.application_id
+                      AND d.delete_flag = 'N' AND d.enable_flag = 'Y' AND d.tenantid = #{tenantid}
+                      AND (d.start_arch_period IS NULL OR d.start_arch_period &lt;= #{f.archPeriodEnd})
+                      AND (d.end_arch_period IS NULL OR d.end_arch_period &gt;= #{f.archPeriodStart})
+                )
+            </if>
+            <if test="f.catalogVolumeNo != null and f.catalogVolumeNo != ''">
+                AND EXISTS (
+                    SELECT 1 FROM fdc_application_detail_t d
+                    WHERE d.application_id = a.application_id
+                      AND d.delete_flag = 'N' AND d.enable_flag = 'Y' AND d.tenantid = #{tenantid}
+                      AND d.catalog_volume_no LIKE CONCAT('%', #{f.catalogVolumeNo}, '%')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="countTransferApplicationRecords" resultType="long">
+        SELECT COUNT(*) FROM fdc_application_t a
+        <include refid="applicationRecordWhere"/>
+    </select>
+
+    <select id="selectTransferApplicationRecordPage" resultType="com.smartarchive.archivemanage.domain.TransferApplication">
+        SELECT a.*
+        FROM fdc_application_t a
+        <include refid="applicationRecordWhere"/>
+        ORDER BY a.application_date DESC NULLS LAST, a.application_id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+</mapper>

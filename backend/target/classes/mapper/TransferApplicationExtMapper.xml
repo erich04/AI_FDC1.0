@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartarchive.archivemanage.mapper.TransferApplicationExtMapper">
+
+    <insert id="insertExtRow">
+        INSERT INTO fdc_application_ext_t (
+            object_id, master_id,
+            <foreach collection="attrValues" index="key" item="value" separator=",">
+                ${key}
+            </foreach>,
+            enable_flag, delete_flag,
+            created_by, creation_date, last_updated_by, last_update_date,
+            last_update_version, tenantid
+        )
+        VALUES (
+            #{objectId}, #{masterId},
+            <foreach collection="attrValues" index="key" item="value" separator=",">
+                #{value}
+            </foreach>,
+            'Y', 'N',
+            #{operatorId}, CURRENT_TIMESTAMP, #{operatorId}, CURRENT_TIMESTAMP,
+            0, #{tenantid}
+        )
+    </insert>
+
+    <select id="selectByMasterId" resultType="map">
+        SELECT *
+        FROM fdc_application_ext_t
+        WHERE master_id = #{masterId}
+          AND tenantid = #{tenantid}
+          AND delete_flag = 'N'
+        ORDER BY ext_id ASC
+    </select>
+</mapper>

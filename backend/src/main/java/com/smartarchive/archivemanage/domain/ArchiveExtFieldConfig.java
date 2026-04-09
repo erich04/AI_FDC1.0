@@ -19,6 +19,9 @@ public class ArchiveExtFieldConfig {
     private String fieldType;
     private String dictCategoryCode;
     private String semanticCode;
+    private String usageModule;
+    private String relatedModuleCode;
+    private String relatedField;
     private String requiredFlag;
     @TableField("enable_flag")
     private String enabledFlag;

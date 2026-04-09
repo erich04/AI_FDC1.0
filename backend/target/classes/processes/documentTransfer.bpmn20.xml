@@ -13,7 +13,7 @@
     <bpmn2:startEvent id="StartEvent_1" name="开始" />
     <bpmn2:userTask
       id="UserTask_1"
-      name="签收文档"
+      name="审批移交"
       flowable:assignee="${assigneeId}" />
     <bpmn2:endEvent id="EndEvent_1" name="结束" />
     <bpmn2:sequenceFlow id="SequenceFlow_1" sourceRef="StartEvent_1" targetRef="UserTask_1" />

@@ -17,6 +17,8 @@ public class ArchiveSummaryResponse {
     private String documentTypeName;
     private String companyProjectCode;
     private String companyProjectName;
+    private String beginPeriod;
+    private String endPeriod;
     private String documentName;
     private String businessCode;
     private String dutyPerson;
@@ -27,6 +29,7 @@ public class ArchiveSummaryResponse {
     private String archiveDestination;
     private String originPlace;
     private String carrierTypeCode;
+    private String remark;
     private String aiArchiveSummary;
     private String documentOrganizationCode;
     private Integer retentionPeriodYears;

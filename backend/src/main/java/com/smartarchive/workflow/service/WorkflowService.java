@@ -2,6 +2,7 @@ package com.smartarchive.workflow.service;
 
 import com.smartarchive.workflow.domain.WorkflowInstance;
 import com.smartarchive.workflow.domain.WorkflowTask;
+import com.smartarchive.workflow.dto.WorkflowTransferDetailResponse;
 import com.smartarchive.workflow.dto.*;
 import java.util.List;
 
@@ -44,4 +45,7 @@ public interface WorkflowService {
 
     // 获取流程实例列表
     List<WorkflowInstance> listProcesses(String processDefinitionKey);
+
+    // 获取移交流程详情
+    WorkflowTransferDetailResponse getTransferDetail(String processInstanceId);
 }

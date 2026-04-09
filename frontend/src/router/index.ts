@@ -15,6 +15,9 @@ import DocumentTypeManagementView from '../views/base-data/DocumentTypeManagemen
 import BorrowingView from '../views/borrowing/BorrowingView.vue'
 import DashboardView from '../views/dashboard/DashboardView.vue'
 import GovernanceView from '../views/governance/GovernanceView.vue'
+import FourPropertiesConfigView from '../views/security/FourPropertiesConfigView.vue'
+import FourPropertiesExecutionView from '../views/security/FourPropertiesExecutionView.vue'
+import FourPropertiesReportView from '../views/security/FourPropertiesReportView.vue'
 import WorkflowManagementView from '../views/workflow/WorkflowManagementView.vue'
 
 const router = createRouter({
@@ -76,8 +79,8 @@ const router = createRouter({
           name: 'archive-management-transfer',
           component: () => import('../views/receiving/TransferManagementView.vue'),
           meta: {
-            title: '文档移交管理',
-            breadcrumb: ['档案业务管理', '文档移交管理']
+            title: '移交申请提交',
+            breadcrumb: ['档案业务管理', '文档移交', '移交申请提交']
           }
         },
         {
@@ -85,8 +88,8 @@ const router = createRouter({
           name: 'archive-management-transfer-query',
           component: () => import('../views/receiving/TransferQueryView.vue'),
           meta: {
-            title: '移交记录查询',
-            breadcrumb: ['档案业务管理', '移交记录查询']
+            title: '移交申请查询',
+            breadcrumb: ['档案业务管理', '文档移交', '移交申请查询']
           }
         },
         {
@@ -134,6 +137,33 @@ const router = createRouter({
           meta: {
             title: '工作流管理',
             breadcrumb: ['平台治理', '工作流管理']
+          }
+        },
+        {
+          path: 'security/four-properties/config',
+          name: 'security-four-properties-config',
+          component: FourPropertiesConfigView,
+          meta: {
+            title: '四性检测配置',
+            breadcrumb: ['档案安全管理', '四性检测', '四性检测配置']
+          }
+        },
+        {
+          path: 'security/four-properties/execution',
+          name: 'security-four-properties-execution',
+          component: FourPropertiesExecutionView,
+          meta: {
+            title: '四性检测执行',
+            breadcrumb: ['档案安全管理', '四性检测', '四性检测执行']
+          }
+        },
+        {
+          path: 'security/four-properties/report',
+          name: 'security-four-properties-report',
+          component: FourPropertiesReportView,
+          meta: {
+            title: '四性检测报告',
+            breadcrumb: ['档案安全管理', '四性检测', '四性检测报告']
           }
         }
       ]
