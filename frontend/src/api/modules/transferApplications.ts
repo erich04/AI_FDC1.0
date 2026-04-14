@@ -34,8 +34,8 @@ export interface TransferApplicationRecordPageCommand {
 export interface TransferApplicationRecordRow {
   applicationId: number
   applicationNumber: string
-  documentTypeCode: string | null
-  documentTypeName: string | null
+  busiModuleCode: string | null
+  busiModuleName: string | null
   applicant: number | null
   applicantName: string
   applicationDate: string | null
@@ -81,7 +81,7 @@ export interface TransferApplicationDetailPayload {
   applicant?: number | null
   applicationDate?: string | null
   department?: string
-  documentTypeCode?: string
+  busiModuleCode?: string
   applyMethod?: string
   expressType?: string
   expressNumber?: string

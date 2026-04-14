@@ -14,7 +14,7 @@ public class ArchiveFlowRule {
     @TableId(value = "archive_rule_id", type = IdType.AUTO)
     private Long id;
     private String companyProjectCode;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String customRule;
     private String archiveDestination;
     private String documentOrganizationCode;

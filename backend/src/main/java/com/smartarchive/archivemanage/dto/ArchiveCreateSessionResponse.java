@@ -12,7 +12,7 @@ public class ArchiveCreateSessionResponse {
     private String sessionCode;
     private String createMode;
     private String sessionStatus;
-    private String documentTypeCodeGuess;
+    private String busiModuleCodeGuess;
     private String carrierTypeCodeGuess;
     private String parseStatus;
     private String aiSummarySnapshot;

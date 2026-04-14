@@ -86,14 +86,14 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
                 .eq(TransferApplication::getDeleteFlag, "N")
                 .orderByDesc(TransferApplication::getLastUpdateDate))
             .stream()
-            .map(item -> toResponse(item, loadDetails(item.getApplicationId(), item.getDocumentTypeCode(), item.getTenantid())))
+            .map(item -> toResponse(item, loadDetails(item.getApplicationId(), item.getBusiModuleCode(), item.getTenantid())))
             .toList();
     }
 
     @Override
     public TransferApplicationResponse detail(Long applicationId) {
         TransferApplication application = requireApplication(applicationId);
-        return toResponse(application, loadDetails(applicationId, application.getDocumentTypeCode(), application.getTenantid()));
+        return toResponse(application, loadDetails(applicationId, application.getBusiModuleCode(), application.getTenantid()));
     }
 
     @Override
@@ -122,7 +122,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
 
         afterPersistStartWorkflowIfSubmitted(application, command);
 
-        return toResponse(application, loadDetails(application.getApplicationId(), application.getDocumentTypeCode(), application.getTenantid()));
+        return toResponse(application, loadDetails(application.getApplicationId(), application.getBusiModuleCode(), application.getTenantid()));
     }
 
     @Override
@@ -170,7 +170,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
 
         afterPersistStartWorkflowIfSubmitted(application, command);
 
-        return toResponse(application, loadDetails(application.getApplicationId(), application.getDocumentTypeCode(), application.getTenantid()));
+        return toResponse(application, loadDetails(application.getApplicationId(), application.getBusiModuleCode(), application.getTenantid()));
     }
 
     @Override
@@ -186,8 +186,8 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
         List<TransferApplication> rows =
             transferApplicationMapper.selectTransferApplicationRecordPage(tenantid, filter, offset, pageSize);
         int pages = pageSize <= 0 ? 0 : (int) Math.ceil((double) total / pageSize);
-        Map<String, String> documentTypeNameMap = rows.stream()
-            .map(TransferApplication::getDocumentTypeCode)
+        Map<String, String> busiModuleNameMap = rows.stream()
+            .map(TransferApplication::getBusiModuleCode)
             .filter(StringUtils::hasText)
             .distinct()
             .collect(Collectors.collectingAndThen(Collectors.toList(), codes -> {
@@ -201,7 +201,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
                     .collect(Collectors.toMap(DocumentType::getTypeCode, DocumentType::getTypeName, (left, right) -> left));
             }));
         List<TransferApplicationRecordRowResponse> records = rows.stream()
-            .map(item -> toRecordRow(item, documentTypeNameMap))
+            .map(item -> toRecordRow(item, busiModuleNameMap))
             .toList();
         return TransferApplicationRecordPageResponse.builder()
             .records(records)
@@ -244,12 +244,12 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
         throw new BusinessException("archPeriod must be yyyy-MM");
     }
 
-    private TransferApplicationRecordRowResponse toRecordRow(TransferApplication item, Map<String, String> documentTypeNameMap) {
+    private TransferApplicationRecordRowResponse toRecordRow(TransferApplication item, Map<String, String> busiModuleNameMap) {
         return TransferApplicationRecordRowResponse.builder()
             .applicationId(item.getApplicationId())
             .applicationNumber(item.getApplicationNumber())
-            .documentTypeCode(item.getDocumentTypeCode())
-            .documentTypeName(documentTypeNameMap.getOrDefault(item.getDocumentTypeCode(), item.getDocumentTypeCode()))
+            .busiModuleCode(item.getBusiModuleCode())
+            .busiModuleName(busiModuleNameMap.getOrDefault(item.getBusiModuleCode(), item.getBusiModuleCode()))
             .applicant(item.getApplicant())
             .applicantName(formatUserDisplay(item.getApplicant()))
             .applicationDate(item.getApplicationDate())
@@ -408,13 +408,13 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
         }
     }
 
-    private List<TransferApplicationDetailResponse> loadDetails(Long applicationId, String documentTypeCode, Long tenantid) {
+    private List<TransferApplicationDetailResponse> loadDetails(Long applicationId, String busiModuleCode, Long tenantid) {
         List<TransferApplicationDetail> details = transferApplicationDetailMapper.selectList(new LambdaQueryWrapper<TransferApplicationDetail>()
                 .eq(TransferApplicationDetail::getApplicationId, applicationId)
                 .eq(TransferApplicationDetail::getDeleteFlag, "N")
                 .orderByAsc(TransferApplicationDetail::getApplicationDetailId));
         Map<Long, List<TransferApplicationExtValueResponse>> detailExtValues =
-            loadExtValuesByDetail(applicationId, documentTypeCode, tenantid);
+            loadExtValuesByDetail(applicationId, busiModuleCode, tenantid);
         Map<Long, List<TransferApplicationDetailAttachmentResponse>> detailAttachments = loadAttachmentsByDetail(applicationId);
         return details.stream()
             .map(item -> TransferApplicationDetailResponse.builder()
@@ -537,14 +537,14 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
     }
 
     private Map<Long, List<TransferApplicationExtValueResponse>> loadExtValuesByDetail(Long applicationId,
-                                                                                        String documentTypeCode,
+                                                                                        String busiModuleCode,
                                                                                         Long tenantid) {
         List<Map<String, Object>> extRows = transferApplicationExtMapper.selectByMasterId(applicationId, tenantid);
         if (extRows.isEmpty()) {
             return Map.of();
         }
         List<ArchiveExtFieldConfig> configs = archiveExtFieldConfigMapper.selectList(new LambdaQueryWrapper<ArchiveExtFieldConfig>()
-            .eq(ArchiveExtFieldConfig::getDocumentTypeCode, documentTypeCode)
+            .eq(ArchiveExtFieldConfig::getBusiModuleCode, busiModuleCode)
             .eq(ArchiveExtFieldConfig::getDeleteFlag, "N")
             .eq(ArchiveExtFieldConfig::getEnabledFlag, "Y"));
         Map<String, String> columnToFieldCode = new HashMap<>();
@@ -619,7 +619,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
             .applicant(item.getApplicant())
             .applicationDate(item.getApplicationDate())
             .department(item.getDepartment())
-            .documentTypeCode(item.getDocumentTypeCode())
+            .busiModuleCode(item.getBusiModuleCode())
             .applyMethod(item.getApplyMethod())
             .expressType(item.getExpressType())
             .expressNumber(item.getExpressNumber())
@@ -648,7 +648,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
         application.setApplicant(command.getApplicant());
         application.setApplicationDate(now);
         application.setDepartment(trimToNull(command.getDepartment()));
-        application.setDocumentTypeCode(requireText(command.getDocumentTypeCode(), "documentTypeCode"));
+        application.setBusiModuleCode(requireText(command.getBusiModuleCode(), "busiModuleCode"));
         application.setApplyMethod(requireText(command.getApplyMethod(), "applyMethod"));
         application.setExpressType(trimToNull(command.getExpressType()));
         application.setExpressNumber(trimToNull(command.getExpressNumber()));
@@ -669,7 +669,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
             return;
         }
         List<DocumentTypeExtFieldResponse> extFieldConfigs =
-            documentTypeExtFieldService.listEffective(application.getDocumentTypeCode());
+            documentTypeExtFieldService.listEffective(application.getBusiModuleCode());
         Map<String, DocumentTypeExtFieldResponse> extFieldConfigMap = extFieldConfigs.stream()
             .collect(HashMap::new, (m, v) -> m.put(v.getFieldCode(), v), HashMap::putAll);
         for (TransferApplicationDetailCommand item : details) {

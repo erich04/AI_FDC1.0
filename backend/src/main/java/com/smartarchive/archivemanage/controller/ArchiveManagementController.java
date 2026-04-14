@@ -57,10 +57,10 @@ public class ArchiveManagementController {
 
     @GetMapping("/create/defaults")
     public ApiResponse<ArchiveDefaultResolveResponse> resolveDefaults(@RequestParam String companyProjectCode,
-                                                                      @RequestParam String documentTypeCode,
+                                                                      @RequestParam String busiModuleCode,
                                                                       @RequestParam(required = false) String customRule,
                                                                       @RequestParam(required = false) String archiveDestination) {
-        return ApiResponse.success(archiveManagementService.resolveDefaults(companyProjectCode, documentTypeCode, customRule, archiveDestination));
+        return ApiResponse.success(archiveManagementService.resolveDefaults(companyProjectCode, busiModuleCode, customRule, archiveDestination));
     }
 
     @PostMapping("/create/sessions")

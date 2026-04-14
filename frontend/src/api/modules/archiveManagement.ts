@@ -37,7 +37,7 @@ export interface DocumentTypeExtFieldCreateCommand {
 export interface ArchiveCreateCommand {
   sessionCode?: string
   createMode?: 'AUTO' | 'MANUAL'
-  documentTypeCode: string
+  busiModuleCode: string
   companyProjectCode: string
   beginPeriod: string
   endPeriod: string
@@ -68,7 +68,7 @@ export interface ArchiveCreateCommand {
 
 export interface ArchiveQueryCommand {
   keyword?: string
-  documentTypeCode?: string
+  busiModuleCode?: string
   companyProjectCode?: string
   archiveTypeCode?: string
   carrierTypeCode?: string
@@ -87,7 +87,7 @@ export interface ArchiveQueryCommand {
 
 export interface ArchiveAskCommand {
   question: string
-  documentTypeCode?: string
+  busiModuleCode?: string
   companyProjectCode?: string
 }
 
@@ -114,7 +114,7 @@ export interface ArchiveTransferResponse {
 export interface BindPreviewCommand {
   bindMode: 'BUSINESS_CODE' | 'PERIOD' | 'MANUAL'
   keyword?: string
-  documentTypeCode?: string
+  busiModuleCode?: string
   companyProjectCode?: string
   archiveIds?: number[]
 }
@@ -169,24 +169,24 @@ export interface StorageLedgerQueryCommand {
   resultStatus?: string
 }
 
-export function fetchDocumentTypeExtFields(documentTypeCode: string) {
-  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/document-types/${documentTypeCode}/ext-fields`))
+export function fetchDocumentTypeExtFields(busiModuleCode: string) {
+  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/document-types/${busiModuleCode}/ext-fields`))
 }
 
-export function fetchEffectiveDocumentTypeExtFields(documentTypeCode: string) {
-  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/document-types/${documentTypeCode}/ext-fields/effective`))
+export function fetchEffectiveDocumentTypeExtFields(busiModuleCode: string) {
+  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/document-types/${busiModuleCode}/ext-fields/effective`))
 }
 
-export function createDocumentTypeExtField(documentTypeCode: string, data: DocumentTypeExtFieldCreateCommand) {
-  return apiRequest<DocumentTypeExtField>(http.post(`/api/base-data/document-types/${documentTypeCode}/ext-fields`, data))
+export function createDocumentTypeExtField(busiModuleCode: string, data: DocumentTypeExtFieldCreateCommand) {
+  return apiRequest<DocumentTypeExtField>(http.post(`/api/base-data/document-types/${busiModuleCode}/ext-fields`, data))
 }
 
-export function updateDocumentTypeExtField(documentTypeCode: string, fieldCode: string, data: DocumentTypeExtFieldCreateCommand) {
-  return apiRequest<DocumentTypeExtField>(http.put(`/api/base-data/document-types/${documentTypeCode}/ext-fields/${fieldCode}`, data))
+export function updateDocumentTypeExtField(busiModuleCode: string, fieldCode: string, data: DocumentTypeExtFieldCreateCommand) {
+  return apiRequest<DocumentTypeExtField>(http.put(`/api/base-data/document-types/${busiModuleCode}/ext-fields/${fieldCode}`, data))
 }
 
-export function deleteDocumentTypeExtField(documentTypeCode: string, fieldCode: string) {
-  return apiRequest<void>(http.delete(`/api/base-data/document-types/${documentTypeCode}/ext-fields/${fieldCode}`))
+export function deleteDocumentTypeExtField(busiModuleCode: string, fieldCode: string) {
+  return apiRequest<void>(http.delete(`/api/base-data/document-types/${busiModuleCode}/ext-fields/${fieldCode}`))
 }
 
 export function fetchArchiveCreateOptions() {
@@ -195,7 +195,7 @@ export function fetchArchiveCreateOptions() {
 
 export function resolveArchiveDefaults(params: {
   companyProjectCode: string
-  documentTypeCode: string
+  busiModuleCode: string
   customRule?: string
   archiveDestination?: string
 }) {

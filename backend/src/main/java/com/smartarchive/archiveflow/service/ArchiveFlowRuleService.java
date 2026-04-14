@@ -12,7 +12,7 @@ import java.util.List;
 public interface ArchiveFlowRuleService {
     List<ArchiveFlowRuleSummaryResponse> list(String keyword,
                                               String companyProjectCode,
-                                              String documentTypeCode,
+                                              String busiModuleCode,
                                               String documentOrganizationCode,
                                               String enabledFlag);
 

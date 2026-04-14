@@ -429,7 +429,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         List<WorkflowTransferDetailResponse.TransferDocumentItem> documents = details.stream().map(detail -> {
             WorkflowTransferDetailResponse.TransferDocumentItem item =
                     new WorkflowTransferDetailResponse.TransferDocumentItem();
-            item.setDocumentTypeCode(application.getDocumentTypeCode());
+            item.setBusiModuleCode(application.getBusiModuleCode());
             item.setBusinessCode(detail.getDocBusiNo());
             item.setDocumentOrganizationCode(detail.getCompanyProjectCode());
             item.setExtFields(extByDetailId.getOrDefault(detail.getApplicationDetailId(), Map.of()));

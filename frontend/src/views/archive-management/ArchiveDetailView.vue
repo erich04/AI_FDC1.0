@@ -39,8 +39,8 @@
         <el-card shadow="never" class="sub-card">
           <template #header><div class="sub-card__title">文档基本信息</div></template>
           <div class="form-grid form-grid--4">
-            <el-form-item label="文档类型" class="span-2">
-              <el-input :model-value="archiveDetail.documentTypeName" disabled />
+            <el-form-item label="业务模块" class="span-2">
+              <el-input :model-value="archiveDetail.busiModuleName" disabled />
             </el-form-item>
             <el-form-item label="公司/项目">
               <el-input :model-value="archiveDetail.companyProjectName" disabled />
@@ -231,8 +231,8 @@ const loadArchiveDetail = async () => {
     const result = await getArchiveDetail(archiveId)
     archiveDetail.value = result
     extFieldNameMap.value = {}
-    if (result.documentTypeCode) {
-      const fields = await fetchEffectiveDocumentTypeExtFields(result.documentTypeCode).catch(() => [])
+    if (result.busiModuleCode) {
+      const fields = await fetchEffectiveDocumentTypeExtFields(result.busiModuleCode).catch(() => [])
       extFieldNameMap.value = Object.fromEntries(
         (fields || []).map(item => [item.fieldCode, item.fieldName || item.fieldCode])
       )

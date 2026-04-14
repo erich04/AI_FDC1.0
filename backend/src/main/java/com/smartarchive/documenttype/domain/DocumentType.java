@@ -11,7 +11,7 @@ import lombok.Data;
 @Data
 @TableName("fdc_document_type_t")
 public class DocumentType {
-    @TableId(value = "document_type_id", type = IdType.AUTO)
+    @TableId(value = "busi_module_id", type = IdType.AUTO)
     private Long id;
     private String typeCode;
     private String typeName;

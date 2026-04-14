@@ -63,7 +63,7 @@ export interface WorkflowTransferDetailResponse {
   remark?: string
   applicationNumber?: string
   documents?: Array<{
-    documentTypeCode?: string
+    busiModuleCode?: string
     businessCode?: string
     documentOrganizationCode?: string
     extFields?: Record<string, string>

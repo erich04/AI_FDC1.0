@@ -6,8 +6,9 @@ import lombok.Data;
 @Data
 public class ArchiveQueryCommand {
     private String keyword;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String companyProjectCode;
+    private String busiModuleCode;
     private String archiveTypeCode;
     private String carrierTypeCode;
     private String securityLevelCode;

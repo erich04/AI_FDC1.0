@@ -9,7 +9,7 @@ import lombok.Data;
 public class DocumentTypeExtFieldResponse {
     private Long fieldId;
     private String fieldCode;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String usageModule;
     private String relatedModuleCode;
     private String relatedField;
@@ -23,6 +23,6 @@ public class DocumentTypeExtFieldResponse {
     private String queryEnabledFlag;
     private Integer querySortOrder;
     private Integer sourceLevel;
-    private String sourceDocumentTypeCode;
+    private String sourceBusiModuleCode;
     private LocalDateTime lastUpdateDate;
 }

@@ -7,7 +7,7 @@ import lombok.Data;
 public class ArchiveFlowRuleDetailResponse {
     private Long id;
     private String companyProjectCode;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String customRule;
     private String archiveDestination;
     private String documentOrganizationCode;

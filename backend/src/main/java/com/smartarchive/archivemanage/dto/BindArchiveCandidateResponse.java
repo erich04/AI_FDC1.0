@@ -9,7 +9,7 @@ public class BindArchiveCandidateResponse {
     private Long archiveId;
     private String archiveCode;
     private String documentName;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String companyProjectCode;
     private String businessCode;
     private String beginPeriod;

@@ -31,10 +31,10 @@ public class ArchiveFlowRuleController {
     @GetMapping
     public ApiResponse<List<ArchiveFlowRuleSummaryResponse>> list(@RequestParam(required = false) String keyword,
                                                                   @RequestParam(required = false) String companyProjectCode,
-                                                                  @RequestParam(required = false) String documentTypeCode,
+                                                                  @RequestParam(required = false) String busiModuleCode,
                                                                   @RequestParam(required = false) String documentOrganizationCode,
                                                                   @RequestParam(required = false) String enabledFlag) {
-        return ApiResponse.success(archiveFlowRuleService.list(keyword, companyProjectCode, documentTypeCode, documentOrganizationCode, enabledFlag));
+        return ApiResponse.success(archiveFlowRuleService.list(keyword, companyProjectCode, busiModuleCode, documentOrganizationCode, enabledFlag));
     }
 
     @GetMapping("/options/company-projects")

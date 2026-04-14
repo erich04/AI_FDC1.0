@@ -17,9 +17,9 @@
             <el-form-item label="申请日期" prop="applicationDate">
               <el-input :model-value="headerForm.applicationDate" class="input-w180" disabled />
             </el-form-item>
-            <el-form-item label="文档类型" prop="documentTypeCode">
+            <el-form-item label="业务模块" prop="busiModuleCode">
               <CommonTreeSelect
-                v-model="headerForm.documentTypeCode"
+                v-model="headerForm.busiModuleCode"
                 :data="documentTypeTree"
                 :props="{ label: 'typeName', value: 'typeCode' }"
                 class="input-w180"
@@ -76,31 +76,79 @@
           </el-table-column>
           <el-table-column label="公司" min-width="160">
             <template #default="{ row }">
-              <el-select v-model="row.companyProjectCode" filterable clearable><el-option v-for="o in companyOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select>
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ optionLabel(companyOptions, row.companyProjectCode) }}</span>
+              <el-select v-else v-model="row.companyProjectCode" filterable clearable><el-option v-for="o in companyOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select>
             </template>
           </el-table-column>
-          <el-table-column label="文档业务编码" min-width="160"><template #default="{ row }"><el-input v-model="row.docBusiNo" /></template></el-table-column>
-          <el-table-column label="文档名称" min-width="180"><template #default="{ row }"><el-input v-model="row.docName" /></template></el-table-column>
+          <el-table-column label="文档业务编码" min-width="160">
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.docBusiNo || '—' }}</span>
+              <el-input v-else v-model="row.docBusiNo" />
+            </template>
+          </el-table-column>
+          <el-table-column label="文档名称" min-width="180">
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.docName || '—' }}</span>
+              <el-input v-else v-model="row.docName" />
+            </template>
+          </el-table-column>
           <el-table-column label="业务模块" min-width="160">
-            <template #default="{ row }"><el-select v-model="row.busiModuleCode" filterable clearable><el-option v-for="o in busiModuleOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select></template>
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ optionLabel(busiModuleOptions, row.busiModuleCode) }}</span>
+              <el-select v-else v-model="row.busiModuleCode" filterable clearable><el-option v-for="o in busiModuleOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select>
+            </template>
           </el-table-column>
           <el-table-column label="归档地" min-width="160"><template #default="{ row }"><el-input v-model="row.archPlaceAlpha2Code" /></template></el-table-column>
-          <el-table-column label="开始档期" min-width="150"><template #default="{ row }"><el-date-picker v-model="row.startArchPeriod" type="month" value-format="YYYY-MM" /></template></el-table-column>
-          <el-table-column label="结束档期" min-width="150"><template #default="{ row }"><el-date-picker v-model="row.endArchPeriod" type="month" value-format="YYYY-MM" /></template></el-table-column>
-          <el-table-column label="文档生成日期" min-width="150"><template #default="{ row }"><el-date-picker v-model="row.docGenerationDate" type="date" value-format="YYYY-MM-DD" /></template></el-table-column>
+          <el-table-column label="开始档期" min-width="150">
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.startArchPeriod || '—' }}</span>
+              <el-date-picker v-else v-model="row.startArchPeriod" type="month" value-format="YYYY-MM" />
+            </template>
+          </el-table-column>
+          <el-table-column label="结束档期" min-width="150">
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.endArchPeriod || '—' }}</span>
+              <el-date-picker v-else v-model="row.endArchPeriod" type="month" value-format="YYYY-MM" />
+            </template>
+          </el-table-column>
+          <el-table-column label="文档生成日期" min-width="150">
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.docGenerationDate || '—' }}</span>
+              <el-date-picker v-else v-model="row.docGenerationDate" type="date" value-format="YYYY-MM-DD" />
+            </template>
+          </el-table-column>
           <el-table-column label="载体类型" min-width="140">
             <template #default="{ row }">
-              <el-select v-model="row.carrierType" clearable>
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ optionLabel(carrierTypeOptions, row.carrierType) }}</span>
+              <el-select v-else v-model="row.carrierType" clearable>
                 <el-option v-for="o in carrierTypeOptions" :key="o.code" :label="o.name" :value="o.code" />
               </el-select>
             </template>
           </el-table-column>
           <el-table-column v-for="f in extFields" :key="f.fieldCode" :label="f.fieldName" min-width="150">
-            <template #default="{ row }"><el-input v-model="row.extValues[f.fieldCode]" /></template>
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.extValues[f.fieldCode] || '—' }}</span>
+              <el-input v-else v-model="row.extValues[f.fieldCode]" />
+            </template>
           </el-table-column>
-          <el-table-column label="份数" min-width="120"><template #default="{ row }"><el-input-number v-model="row.archCopies" :min="1" :precision="0" /></template></el-table-column>
-          <el-table-column label="备注" min-width="150"><template #default="{ row }"><el-input v-model="row.remark" /></template></el-table-column>
-          <el-table-column label="描述" min-width="180"><template #default="{ row }"><el-input v-model="row.description" type="textarea" :rows="1" /></template></el-table-column>
+          <el-table-column label="份数" min-width="120">
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.archCopies }}</span>
+              <el-input-number v-else v-model="row.archCopies" :min="1" :precision="0" />
+            </template>
+          </el-table-column>
+          <el-table-column label="备注" min-width="150">
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.remark || '—' }}</span>
+              <el-input v-else v-model="row.remark" />
+            </template>
+          </el-table-column>
+          <el-table-column label="描述" min-width="180">
+            <template #default="{ row }">
+              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.description || '—' }}</span>
+              <el-input v-else v-model="row.description" type="textarea" :rows="1" />
+            </template>
+          </el-table-column>
           </el-table>
         </el-collapse-item>
       </el-collapse>
@@ -114,7 +162,7 @@
 
     <el-dialog v-model="pickerVisible" title="添加待归档数据" width="80%">
       <el-form :inline="true" :model="pickerFilter" class="picker-form">
-        <el-form-item label="文档类型"><el-input :model-value="headerForm.documentTypeCode" class="picker-input" disabled /></el-form-item>
+        <el-form-item label="业务模块"><el-input :model-value="headerForm.busiModuleCode" class="picker-input" disabled /></el-form-item>
         <el-form-item label="文档名称"><el-input v-model="pickerFilter.documentName" /></el-form-item>
         <el-form-item label="业务编码"><el-input v-model="pickerFilter.businessCode" /></el-form-item>
         <el-form-item label="公司"><el-select v-model="pickerFilter.companyProjectCode" class="picker-input" clearable><el-option v-for="o in companyOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select></el-form-item>
@@ -125,7 +173,7 @@
         <el-table-column prop="businessCode" label="文档业务编码" min-width="160" />
         <el-table-column prop="documentName" label="文档名称" min-width="180" />
         <el-table-column prop="companyProjectCode" label="公司" min-width="120" />
-        <el-table-column prop="archiveTypeCode" label="文档类型" min-width="120" />
+        <el-table-column prop="archiveTypeCode" label="业务模块" min-width="120" />
       </el-table>
       <template #footer>
         <el-button @click="pickerVisible = false">取消</el-button>
@@ -182,6 +230,8 @@ import type {
 interface LabelOption { code: string; name: string }
 interface TransferDetailRow {
   applicationDetailId?: number
+  /** 通过「添加待归档数据」加入的行：除归档地外仅展示不可改 */
+  fromPendingArchive?: boolean
   companyProjectCode: string
   docBusiNo: string
   docName: string
@@ -231,7 +281,7 @@ const currentUserName = ref('张三')
 const currentUserDept = ref('财务部')
 const headerForm = reactive({
   applicationDate: '',
-  documentTypeCode: '',
+  busiModuleCode: '',
   applyMethod: 'DIRECT',
   expressType: '',
   expressNumber: '',
@@ -247,7 +297,7 @@ const pickerFilter = reactive({
 })
 
 const headerRules: FormRules = {
-  documentTypeCode: [{ required: true, message: '请选择文档类型', trigger: 'change' }],
+  busiModuleCode: [{ required: true, message: '请选择业务模块', trigger: 'change' }],
   applyMethod: [{ required: true, message: '请选择移交方式', trigger: 'change' }],
   documentRecipient: [{ required: true, message: '请选择文档接收人', trigger: 'change' }],
   expressType: [{ validator: (_r, v, cb) => (headerForm.applyMethod === 'MAIL' && !v ? cb(new Error('邮寄方式必填')) : cb()), trigger: 'change' }],
@@ -266,10 +316,21 @@ function findDocumentTypeNameByCode(nodes: DocumentTypeTreeNode[], code: string)
 }
 
 const selectedDocumentTypeName = computed(() =>
-  findDocumentTypeNameByCode(documentTypeTree.value, headerForm.documentTypeCode)
+  findDocumentTypeNameByCode(documentTypeTree.value, headerForm.busiModuleCode)
 )
 
 const showHandoverFormField = computed(() => selectedDocumentTypeName.value === SPECIAL_DOCUMENT_TYPE_NAME)
+
+function isPendingArchiveRow(row: TransferDetailRow): boolean {
+  return row.fromPendingArchive === true
+}
+
+function optionLabel(options: LabelOption[], code: string): string {
+  const c = String(code ?? '').trim()
+  if (!c) return '—'
+  const found = options.find((o) => o.code === c)
+  return found?.name ?? c
+}
 
 function addRow() {
   detailRows.value.push({
@@ -359,11 +420,11 @@ async function handleHeaderDocTypeChange() {
   if (!showHandoverFormField.value) {
     headerForm.handoverForm = ''
   }
-  if (!headerForm.documentTypeCode) {
+  if (!headerForm.busiModuleCode) {
     extFields.value = []
     return
   }
-  extFields.value = (await fetchEffectiveDocumentTypeExtFields(headerForm.documentTypeCode))
+  extFields.value = (await fetchEffectiveDocumentTypeExtFields(headerForm.busiModuleCode))
     .sort((a, b) => (a.formSortOrder ?? 0) - (b.formSortOrder ?? 0))
   detailRows.value.forEach((r) => {
     extFields.value.forEach((f) => { r.extValues[f.fieldCode] = '' })
@@ -375,7 +436,7 @@ async function loadForEdit(applicationId: number) {
   savedApplicationId.value = detail.applicationId
   applicationNumber.value = detail.applicationNumber || applicationNumber.value
   headerForm.applicationDate = detail.applicationDate ? String(detail.applicationDate).slice(0, 10) : headerForm.applicationDate
-  headerForm.documentTypeCode = detail.documentTypeCode || ''
+  headerForm.busiModuleCode = detail.busiModuleCode || ''
   headerForm.applyMethod = detail.applyMethod || 'DIRECT'
   headerForm.expressType = detail.expressType || ''
   headerForm.expressNumber = detail.expressNumber || ''
@@ -421,7 +482,7 @@ function validateDetails(): boolean {
   }
   for (const [idx, row] of detailRows.value.entries()) {
     if (!row.companyProjectCode || !row.docBusiNo || !row.docName || !row.busiModuleCode || !row.archPlaceAlpha2Code ||
-      !row.startArchPeriod || !row.endArchPeriod || !headerForm.documentTypeCode || !row.archCopies || !row.carrierType) {
+      !row.startArchPeriod || !row.endArchPeriod || !headerForm.busiModuleCode || !row.archCopies || !row.carrierType) {
       ElMessage.error(`第${idx + 1}行存在必填项未填写`)
       return false
     }
@@ -442,7 +503,7 @@ function toCreateCommand(applicationStatus: string): TransferApplicationCreateCo
     applicant: currentUserId.value,
     applicationDate: `${headerForm.applicationDate}T00:00:00`,
     department: currentUserDept.value,
-    documentTypeCode: headerForm.documentTypeCode,
+    busiModuleCode: headerForm.busiModuleCode,
     applyMethod: headerForm.applyMethod,
     expressType: headerForm.expressType || undefined,
     expressNumber: headerForm.expressNumber || undefined,
@@ -459,7 +520,7 @@ function toCreateCommand(applicationStatus: string): TransferApplicationCreateCo
       archPlaceAlpha2Code: row.archPlaceAlpha2Code,
       endArchPeriod: row.endArchPeriod,
       startArchPeriod: row.startArchPeriod,
-      archTypeCode: headerForm.documentTypeCode,
+      archTypeCode: headerForm.busiModuleCode,
       carrierType: row.carrierType,
       docGenerationDate: row.docGenerationDate || undefined,
       archCopies: Number(row.archCopies),
@@ -514,12 +575,12 @@ function cancel() {
 }
 
 async function queryPicker() {
-  if (!headerForm.documentTypeCode) {
-    ElMessage.warning('请先选择申请头文档类型')
+  if (!headerForm.busiModuleCode) {
+    ElMessage.warning('请先选择申请头业务模块')
     return
   }
   const res = await queryArchives({
-    documentTypeCode: headerForm.documentTypeCode,
+    busiModuleCode: headerForm.busiModuleCode,
     documentName: pickerFilter.documentName || undefined,
     businessCode: pickerFilter.businessCode || undefined,
     companyProjectCode: pickerFilter.companyProjectCode || undefined,
@@ -566,13 +627,16 @@ function addFromPicker() {
     if (!businessCode || addedBusinessCodes.has(businessCode)) {
       return
     }
+    const busiFromArchive = String((item as { busiModuleCode?: string }).busiModuleCode ?? '').trim()
+    const carrierFromArchive = String((item as { carrierTypeCode?: string }).carrierTypeCode ?? '').trim()
     const row: TransferDetailRow = {
+      fromPendingArchive: true,
       companyProjectCode: item.companyProjectCode ?? '',
       docBusiNo: businessCode,
       docName: item.documentName ?? '',
-      busiModuleCode: '',
+      busiModuleCode: busiFromArchive,
       archPlaceAlpha2Code: item.archiveDestination ?? '',
-      carrierType: carrierTypeOptions.value[0]?.code || '',
+      carrierType: carrierFromArchive || carrierTypeOptions.value[0]?.code || '',
       startArchPeriod: item.beginPeriod ?? '',
       endArchPeriod: item.endPeriod ?? '',
       docGenerationDate: item.documentDate ?? '',
@@ -671,4 +735,5 @@ onMounted(async () => {
 .picker-form { width: 100%; }
 .picker-input { width: 180px; }
 .picker-query-item { margin-left: auto; }
+.detail-cell-readonly { display: inline-block; max-width: 100%; color: var(--el-text-color-regular); word-break: break-word; }
 </style>

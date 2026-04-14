@@ -13,7 +13,7 @@ public class TransferApplicationResponse {
     private Long applicant;
     private LocalDateTime applicationDate;
     private String department;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String applyMethod;
     private String expressType;
     private String expressNumber;

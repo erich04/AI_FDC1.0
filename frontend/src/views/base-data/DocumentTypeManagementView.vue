@@ -1,13 +1,13 @@
 <template>
   <div class="document-type-page">
-    <div class="page-title">文档类型管理</div>
+    <div class="page-title">业务模块管理</div>
 
     <div class="document-type-grid">
       <el-card shadow="never" class="tree-panel">
         <template #header>
           <div class="panel-header">
             <div>
-              <strong>文档类型树</strong>
+              <strong>业务模块树</strong>
               <span>支持最多 5 层配置</span>
             </div>
             <el-button type="primary" size="small" @click="openCreateDialog()">新建</el-button>
@@ -37,7 +37,7 @@
             </div>
           </template>
         </el-tree>
-        <el-empty v-else description="暂无文档类型数据" />
+        <el-empty v-else description="暂无业务模块数据" />
       </el-card>
 
       <div class="content-panel">
@@ -128,7 +128,7 @@
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新建文档类型' : '编辑文档类型'" width="520px">
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新建业务模块' : '编辑业务模块'" width="520px">
       <el-form :model="form" label-width="100px">
         <el-form-item label="上级编码">
           <CommonTreeSelect v-model="form.parentCode" :data="parentTreeOptions" placeholder="ROOT 根节点" label-key="typeName" value-key="typeCode" children-key="children" />
@@ -265,11 +265,11 @@ const loadExtFields = async () => { if (!selectedNode.value) return; extFields.v
 const handleNodeSelect = async (node: DocumentTypeTreeNode) => { selectedNode.value = node; await loadExtFields() }
 const resetForm = () => { form.typeCode = ''; form.typeName = ''; form.description = ''; form.enabledFlag = 'Y'; form.parentCode = '' }
 const openCreateDialog = (parentCode?: string) => { dialogMode.value = 'create'; resetForm(); form.parentCode = parentCode || ''; dialogVisible.value = true }
-const openEditDialog = () => { if (!selectedNode.value) return ElMessage.warning('请先选择一个文档类型节点'); dialogMode.value = 'edit'; form.typeCode = selectedNode.value.typeCode; form.typeName = selectedNode.value.typeName; form.description = selectedNode.value.description || ''; form.enabledFlag = selectedNode.value.enabledFlag; form.parentCode = selectedNode.value.parentCode || ''; dialogVisible.value = true }
+const openEditDialog = () => { if (!selectedNode.value) return ElMessage.warning('请先选择一个业务模块节点'); dialogMode.value = 'edit'; form.typeCode = selectedNode.value.typeCode; form.typeName = selectedNode.value.typeName; form.description = selectedNode.value.description || ''; form.enabledFlag = selectedNode.value.enabledFlag; form.parentCode = selectedNode.value.parentCode || ''; dialogVisible.value = true }
 const submitForm = async () => {
   const trimmedTypeCode = form.typeCode.trim(); const trimmedTypeName = form.typeName.trim();
-  if (!trimmedTypeName) return ElMessage.warning('请输入文档类型名称')
-  if (dialogMode.value === 'create' && !trimmedTypeCode) return ElMessage.warning('请输入文档类型编码')
+  if (!trimmedTypeName) return ElMessage.warning('请输入业务模块名称')
+  if (dialogMode.value === 'create' && !trimmedTypeCode) return ElMessage.warning('请输入业务模块编码')
   try {
     if (dialogMode.value === 'create') selectedNode.value = await createDocumentType({ typeCode: trimmedTypeCode, typeName: trimmedTypeName, description: form.description.trim(), enabledFlag: form.enabledFlag, parentCode: form.parentCode || undefined })
     else if (selectedNode.value) selectedNode.value = await updateDocumentType(selectedNode.value.typeCode, { typeName: trimmedTypeName, description: form.description.trim(), enabledFlag: form.enabledFlag, parentCode: form.parentCode || undefined })
@@ -279,8 +279,8 @@ const submitForm = async () => {
   } catch (error: any) { ElMessage.error(error?.message || '保存失败') }
 }
 const handleDelete = async () => {
-  if (!selectedNode.value) return ElMessage.warning('请先选择一个文档类型节点')
-  try { await ElMessageBox.confirm(`确认删除文档类型 ${selectedNode.value.typeName} 吗？`, '提示', { type: 'warning' }); await deleteDocumentType(selectedNode.value.typeCode); selectedNode.value = undefined; extFields.value = []; await Promise.all([loadTree(), loadAudits()]); ElMessage.success('删除成功') } catch (error: any) { if (error !== 'cancel') ElMessage.error(error?.message || '删除失败') }
+  if (!selectedNode.value) return ElMessage.warning('请先选择一个业务模块节点')
+  try { await ElMessageBox.confirm(`确认删除业务模块 ${selectedNode.value.typeName} 吗？`, '提示', { type: 'warning' }); await deleteDocumentType(selectedNode.value.typeCode); selectedNode.value = undefined; extFields.value = []; await Promise.all([loadTree(), loadAudits()]); ElMessage.success('删除成功') } catch (error: any) { if (error !== 'cancel') ElMessage.error(error?.message || '删除失败') }
 }
 const resetFieldForm = () => {
   fieldForm.usageModule = ''
@@ -297,7 +297,7 @@ const resetFieldForm = () => {
   selectedFieldCode.value = ''
 }
 const openFieldDialog = (field?: DocumentTypeExtField) => {
-  if (!selectedNode.value) return ElMessage.warning('请先选择一个文档类型节点')
+  if (!selectedNode.value) return ElMessage.warning('请先选择一个业务模块节点')
   fieldDialogMode.value = field ? 'edit' : 'create'
   resetFieldForm()
   if (field) {

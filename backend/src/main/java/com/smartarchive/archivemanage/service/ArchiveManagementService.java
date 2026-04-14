@@ -33,7 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface ArchiveManagementService {
     ArchiveCreateOptionsResponse loadCreateOptions();
-    ArchiveDefaultResolveResponse resolveDefaults(String companyProjectCode, String documentTypeCode, String customRule, String archiveDestination);
+    ArchiveDefaultResolveResponse resolveDefaults(String companyProjectCode, String busiModuleCode, String customRule, String archiveDestination);
     ArchiveCreateSessionResponse createSession(ArchiveCreateSessionCommand command);
     ArchiveCreateSessionResponse getSession(String sessionCode);
     ArchiveAttachmentResponse uploadAttachment(String sessionCode, String attachmentRole, String attachmentTypeCode, String remark, MultipartFile file);

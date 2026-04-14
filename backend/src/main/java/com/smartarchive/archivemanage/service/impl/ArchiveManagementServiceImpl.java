@@ -185,7 +185,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     public ArchiveCreateOptionsResponse loadCreateOptions() {
         return ArchiveCreateOptionsResponse.builder()
             .companyProjects(listEnabledCompanyProjects())
-            .documentTypes(listEnabledDocumentTypes())
+            .busiModules(listEnabledDocumentTypes())
             .archiveDestinations(listEnabledCities())
             .documentOrganizations(listEnabledDocumentOrganizations())
             .securityLevels(listSecurityLevels())
@@ -197,12 +197,12 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     }
 
     @Override
-    public ArchiveDefaultResolveResponse resolveDefaults(String companyProjectCode, String documentTypeCode, String customRule, String archiveDestination) {
+    public ArchiveDefaultResolveResponse resolveDefaults(String companyProjectCode, String busiModuleCode, String customRule, String archiveDestination) {
         CompanyProject companyProject = requireCompanyProject(companyProjectCode);
-        requireDocumentType(documentTypeCode);
+        requireDocumentType(busiModuleCode);
         List<ArchiveFlowRule> rules = archiveFlowRuleMapper.selectList(new LambdaQueryWrapper<ArchiveFlowRule>()
             .eq(ArchiveFlowRule::getCompanyProjectCode, companyProjectCode)
-            .eq(ArchiveFlowRule::getDocumentTypeCode, documentTypeCode)
+            .eq(ArchiveFlowRule::getBusiModuleCode, busiModuleCode)
             .eq(ArchiveFlowRule::getDeleteFlag, "N")
             .eq(ArchiveFlowRule::getEnabledFlag, "Y"));
         ArchiveFlowRule bestMatch = rules.stream().max(Comparator.comparingInt(rule -> scoreRule(rule, customRule, archiveDestination))).orElse(null);
@@ -285,7 +285,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         attachment.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
         attachment.setLastUpdateDate(LocalDateTime.now());
         archiveAttachmentMapper.insert(attachment);
-        session.setDocumentTypeCodeGuess(trimToNull(parsed.suggestedDocumentTypeCode()));
+        session.setBusiModuleCodeGuess(trimToNull(parsed.suggestedBusiModuleCode()));
         session.setCarrierTypeCodeGuess("ELECTRONIC");
         session.setParseStatus("SUCCESS");
         session.setAiSummarySnapshot(parsed.summary());
@@ -319,9 +319,9 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     @Transactional
     public ArchiveSummaryResponse createArchive(ArchiveCreateCommand command) {
         validateRequired(command);
-        String documentTypeCode = requireText(command.getDocumentTypeCode(), "documentTypeCode");
+        String busiModuleCode = requireText(command.getBusiModuleCode(), "busiModuleCode");
         CompanyProject companyProject = requireCompanyProject(command.getCompanyProjectCode());
-        requireDocumentType(documentTypeCode);
+        requireDocumentType(busiModuleCode);
         ArchiveCreateSession session = StringUtils.hasText(command.getSessionCode()) ? requireSession(command.getSessionCode()) : null;
         List<ArchiveAttachment> sessionAttachments = session == null ? List.of() : listSessionAttachments(session.getSessionId());
         List<ArchiveAttachment> electronicAttachments = sessionAttachments.stream().filter(item -> "ELECTRONIC".equals(item.getAttachmentRole())).toList();
@@ -332,8 +332,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         if (requiresPaper(command.getCarrierTypeCode()) && (command.getPaperInfo() == null || command.getPaperInfo().getPlannedCopyCount() == null || command.getPaperInfo().getActualCopyCount() == null)) {
             throw new BusinessException("Paper archive information is required");
         }
-        List<DocumentTypeExtFieldResponse> effectiveFields = documentTypeExtFieldService.listEffective(documentTypeCode);
-        ParsedAttachment combinedParse = buildCombinedParseResult(electronicAttachments, documentTypeCode);
+        List<DocumentTypeExtFieldResponse> effectiveFields = documentTypeExtFieldService.listEffective(busiModuleCode);
+        ParsedAttachment combinedParse = buildCombinedParseResult(electronicAttachments, busiModuleCode);
         Map<String, String> resolvedExtValues = resolveExtValues(command.getExtValues(), effectiveFields, combinedParse);
         validateExtValues(effectiveFields, resolvedExtValues);
         ArchiveRecord archive = new ArchiveRecord();
@@ -341,8 +341,9 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         archive.setArchiveFilingCode(generateCode("FILE"));
         archive.setCreateMode(StringUtils.hasText(command.getCreateMode()) ? normalizeCreateMode(command.getCreateMode()) : (session == null ? "MANUAL" : session.getCreateMode()));
         archive.setArchiveStatus("CREATED");
-        archive.setDocumentTypeCode(documentTypeCode);
+        archive.setBusiModuleCode(busiModuleCode);
         archive.setCompanyProjectCode(command.getCompanyProjectCode().trim());
+        archive.setBusiModuleCode(command.getBusiModuleCode().trim());
         archive.setBeginPeriod(command.getBeginPeriod().trim());
         archive.setEndPeriod(command.getEndPeriod().trim());
         archive.setBusinessCode(trimToNull(command.getBusinessCode()));
@@ -406,8 +407,9 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     public ArchiveQueryResponse queryArchives(ArchiveQueryCommand command) {
         LambdaQueryWrapper<ArchiveRecord> wrapper = new LambdaQueryWrapper<ArchiveRecord>()
             .eq(ArchiveRecord::getDeleteFlag, "N")
-            .eq(StringUtils.hasText(command.getDocumentTypeCode()), ArchiveRecord::getDocumentTypeCode, trimToNull(command.getDocumentTypeCode()))
+            .eq(StringUtils.hasText(command.getBusiModuleCode()), ArchiveRecord::getBusiModuleCode, trimToNull(command.getBusiModuleCode()))
             .eq(StringUtils.hasText(command.getCompanyProjectCode()), ArchiveRecord::getCompanyProjectCode, trimToNull(command.getCompanyProjectCode()))
+            .eq(StringUtils.hasText(command.getBusiModuleCode()), ArchiveRecord::getBusiModuleCode, trimToNull(command.getBusiModuleCode()))
             .eq(StringUtils.hasText(command.getArchiveTypeCode()), ArchiveRecord::getArchiveTypeCode, trimToNull(command.getArchiveTypeCode()))
             .eq(StringUtils.hasText(command.getCarrierTypeCode()), ArchiveRecord::getCarrierTypeCode, trimToNull(command.getCarrierTypeCode()))
             .eq(StringUtils.hasText(command.getSecurityLevelCode()), ArchiveRecord::getSecurityLevelCode, trimToNull(command.getSecurityLevelCode()))
@@ -497,7 +499,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         Map<Long, List<ArchiveAttachment>> attachmentMap = loadAttachmentMap(paginatedArchiveIds);
         Map<Long, Map<String, String>> finalExtValueMap = extValueMap;
         Map<Long, List<ArchiveAttachment>> finalAttachmentMap = attachmentMap;
-        List<DocumentTypeExtFieldResponse> queryFields = StringUtils.hasText(command.getDocumentTypeCode()) ? documentTypeExtFieldService.listEffective(command.getDocumentTypeCode()).stream().filter(item -> "Y".equals(item.getQueryEnabledFlag())).toList() : List.of();
+        List<DocumentTypeExtFieldResponse> queryFields = StringUtils.hasText(command.getBusiModuleCode()) ? documentTypeExtFieldService.listEffective(command.getBusiModuleCode()).stream().filter(item -> "Y".equals(item.getQueryEnabledFlag())).toList() : List.of();
 
         return ArchiveQueryResponse.builder()
             .records(paginatedRecords.stream().map(item -> buildArchiveSummary(item, finalExtValueMap.getOrDefault(item.getArchiveId(), Map.of()), finalAttachmentMap.getOrDefault(item.getArchiveId(), List.of()))).toList())
@@ -581,8 +583,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 item.put("archiveCode", archive.getArchiveCode());
                 item.put("archiveFilingCode", archive.getArchiveFilingCode());
                 item.put("documentName", archive.getDocumentName());
-                item.put("documentTypeCode", archive.getDocumentTypeCode());
-                item.put("documentTypeName", typeNameMap.getOrDefault(archive.getDocumentTypeCode(), archive.getDocumentTypeCode()));
+                item.put("busiModuleCode", archive.getBusiModuleCode());
+                item.put("busiModuleName", typeNameMap.getOrDefault(archive.getBusiModuleCode(), archive.getBusiModuleCode()));
                 item.put("businessCode", archive.getBusinessCode());
                 item.put("documentOrganizationCode", archive.getDocumentOrganizationCode());
                 item.put("extFields", extValueMap.getOrDefault(archive.getArchiveId(), Map.of()));
@@ -626,7 +628,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             receipt.setReceiptCode("REC-" + archive.getArchiveFilingCode());
             receipt.setSourceDept(trimToNull(archive.getDutyDepartment()));
             receipt.setArchiveTitle(archive.getDocumentName());
-            receipt.setArchiveType(typeNameMap.getOrDefault(archive.getDocumentTypeCode(), archive.getDocumentTypeCode()));
+            receipt.setArchiveType(typeNameMap.getOrDefault(archive.getBusiModuleCode(), archive.getBusiModuleCode()));
             receipt.setSecurityLevel(archive.getSecurityLevelCode());
             receipt.setReceiveStatus("PENDING_REVIEW");
             receipt.setWorkflowInstanceCode(workflowInstance.getProcessInstanceId());
@@ -672,7 +674,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     @Override
     public BindPreviewResponse previewBind(BindPreviewCommand command) {
         String bindMode = normalizeBindMode(command.getBindMode());
-        List<ArchiveRecord> archives = loadBindCandidateArchives(command.getArchiveIds(), command.getKeyword(), command.getDocumentTypeCode(), command.getCompanyProjectCode());
+        List<ArchiveRecord> archives = loadBindCandidateArchives(command.getArchiveIds(), command.getKeyword(), command.getBusiModuleCode(), command.getCompanyProjectCode());
         List<BindVolumeResponse> groups = buildPreviewGroups(bindMode, archives);
         return BindPreviewResponse.builder()
             .bindMode(bindMode)
@@ -940,16 +942,16 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         return jdbcTemplate.query("select item_code, item_name from fdc_dict_item_t where category_code = ? and enable_flag = 'Y' and delete_flag = 'N' order by sort_order, item_code", (rs, rowNum) -> option(rs.getString(1), rs.getString(2)), categoryCode);
     }
 
-    private List<BindArchiveCandidateResponse> listBindableArchiveCandidates(String keyword, String documentTypeCode, String companyProjectCode) {
-        return loadBindCandidateArchives(null, keyword, documentTypeCode, companyProjectCode).stream().map(this::toBindArchiveCandidateResponse).toList();
+    private List<BindArchiveCandidateResponse> listBindableArchiveCandidates(String keyword, String busiModuleCode, String companyProjectCode) {
+        return loadBindCandidateArchives(null, keyword, busiModuleCode, companyProjectCode).stream().map(this::toBindArchiveCandidateResponse).toList();
     }
 
-    private List<ArchiveRecord> loadBindCandidateArchives(List<Long> archiveIds, String keyword, String documentTypeCode, String companyProjectCode) {
+    private List<ArchiveRecord> loadBindCandidateArchives(List<Long> archiveIds, String keyword, String busiModuleCode, String companyProjectCode) {
         LambdaQueryWrapper<ArchiveRecord> wrapper = new LambdaQueryWrapper<ArchiveRecord>()
             .eq(ArchiveRecord::getDeleteFlag, "N")
             .ne(ArchiveRecord::getArchiveStatus, "STORED")
             .isNull(ArchiveRecord::getBindVolumeCode)
-            .eq(StringUtils.hasText(documentTypeCode), ArchiveRecord::getDocumentTypeCode, trimToNull(documentTypeCode))
+            .eq(StringUtils.hasText(busiModuleCode), ArchiveRecord::getBusiModuleCode, trimToNull(busiModuleCode))
             .eq(StringUtils.hasText(companyProjectCode), ArchiveRecord::getCompanyProjectCode, trimToNull(companyProjectCode))
             .and(StringUtils.hasText(keyword), query -> query
                 .like(ArchiveRecord::getDocumentName, trimToNull(keyword))
@@ -971,7 +973,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             return List.of();
         }
         List<ArchiveRecord> sortedArchives = archives.stream()
-            .sorted(Comparator.comparing(ArchiveRecord::getDocumentTypeCode, Comparator.nullsLast(String::compareTo))
+            .sorted(Comparator.comparing(ArchiveRecord::getBusiModuleCode, Comparator.nullsLast(String::compareTo))
                 .thenComparing(ArchiveRecord::getBusinessCode, Comparator.nullsLast(String::compareTo))
                 .thenComparing(ArchiveRecord::getBeginPeriod, Comparator.nullsLast(String::compareTo))
                 .thenComparing(ArchiveRecord::getArchiveCode))
@@ -981,13 +983,13 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             grouped = Map.of("MANUAL", sortedArchives);
         } else if ("BUSINESS_CODE".equals(bindMode)) {
             grouped = sortedArchives.stream().collect(Collectors.groupingBy(
-                archive -> archive.getDocumentTypeCode() + "|" + Objects.toString(trimToNull(archive.getBusinessCode()), "NO_BUSINESS_CODE"),
+                archive -> archive.getBusiModuleCode() + "|" + Objects.toString(trimToNull(archive.getBusinessCode()), "NO_BUSINESS_CODE"),
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
         } else {
             grouped = sortedArchives.stream().collect(Collectors.groupingBy(
-                archive -> archive.getDocumentTypeCode() + "|" + archive.getBeginPeriod() + "~" + archive.getEndPeriod(),
+                archive -> archive.getBusiModuleCode() + "|" + archive.getBeginPeriod() + "~" + archive.getEndPeriod(),
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
@@ -1092,7 +1094,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             .archiveId(archive.getArchiveId())
             .archiveCode(archive.getArchiveCode())
             .documentName(archive.getDocumentName())
-            .documentTypeCode(archive.getDocumentTypeCode())
+            .busiModuleCode(archive.getBusiModuleCode())
             .companyProjectCode(archive.getCompanyProjectCode())
             .businessCode(archive.getBusinessCode())
             .beginPeriod(archive.getBeginPeriod())
@@ -1441,8 +1443,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         return session;
     }
 
-    private DocumentType requireDocumentType(String documentTypeCode) {
-        DocumentType type = documentTypeMapper.selectOne(new LambdaQueryWrapper<DocumentType>().eq(DocumentType::getTypeCode, documentTypeCode).eq(DocumentType::getDeleteFlag, "N").eq(DocumentType::getEnabledFlag, "Y").last("limit 1"));
+    private DocumentType requireDocumentType(String busiModuleCode) {
+        DocumentType type = documentTypeMapper.selectOne(new LambdaQueryWrapper<DocumentType>().eq(DocumentType::getTypeCode, busiModuleCode).eq(DocumentType::getDeleteFlag, "N").eq(DocumentType::getEnabledFlag, "Y").last("limit 1"));
         if (type == null) {
             throw new BusinessException("Document type does not exist or is disabled");
         }
@@ -1467,7 +1469,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     }
 
     private void validateRequired(ArchiveCreateCommand command) {
-        requireText(command.getDocumentTypeCode(), "documentTypeCode");
+        requireText(command.getBusiModuleCode(), "busiModuleCode");
         requireText(command.getCompanyProjectCode(), "companyProjectCode");
         requireText(command.getBeginPeriod(), "beginPeriod");
         requireText(command.getEndPeriod(), "endPeriod");
@@ -1478,6 +1480,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         requireText(command.getSecurityLevelCode(), "securityLevelCode");
         requireText(command.getCarrierTypeCode(), "carrierTypeCode");
         requireText(command.getDocumentOrganizationCode(), "documentOrganizationCode");
+        requireText(command.getBusiModuleCode(), "busiModuleCode");
         if (command.getRetentionPeriodYears() == null) throw new BusinessException("retentionPeriodYears is required");
         requireText(command.getArchiveTypeCode(), "archiveTypeCode");
     }
@@ -1606,13 +1609,13 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     }
 
     private ArchiveCreateSessionResponse buildSessionResponse(ArchiveCreateSession session, List<ArchiveAttachment> attachments, ArchiveAiParseResult parseResult) {
-        return ArchiveCreateSessionResponse.builder().sessionId(session.getSessionId()).sessionCode(session.getSessionCode()).createMode(session.getCreateMode()).sessionStatus(session.getSessionStatus()).documentTypeCodeGuess(session.getDocumentTypeCodeGuess()).carrierTypeCodeGuess(session.getCarrierTypeCodeGuess()).parseStatus(session.getParseStatus()).aiSummarySnapshot(session.getAiSummarySnapshot()).expireTime(session.getExpireTime()).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).aiParseResult(parseResult).build();
+        return ArchiveCreateSessionResponse.builder().sessionId(session.getSessionId()).sessionCode(session.getSessionCode()).createMode(session.getCreateMode()).sessionStatus(session.getSessionStatus()).busiModuleCodeGuess(session.getBusiModuleCodeGuess()).carrierTypeCodeGuess(session.getCarrierTypeCodeGuess()).parseStatus(session.getParseStatus()).aiSummarySnapshot(session.getAiSummarySnapshot()).expireTime(session.getExpireTime()).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).aiParseResult(parseResult).build();
     }
 
     private ArchiveSummaryResponse buildArchiveSummary(ArchiveRecord archive, Map<String, String> extValues, List<ArchiveAttachment> attachments) {
         Map<String, String> typeNameMap = documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>().eq(DocumentType::getDeleteFlag, "N")).stream().collect(Collectors.toMap(DocumentType::getTypeCode, DocumentType::getTypeName, (left, right) -> left));
         Map<String, String> companyNameMap = companyProjectMapper.selectList(new LambdaQueryWrapper<CompanyProject>().eq(CompanyProject::getDeleteFlag, "N")).stream().collect(Collectors.toMap(CompanyProject::getCompanyProjectCode, CompanyProject::getCompanyProjectName, (left, right) -> left));
-        return ArchiveSummaryResponse.builder().archiveId(archive.getArchiveId()).archiveCode(archive.getArchiveCode()).archiveFilingCode(archive.getArchiveFilingCode()).documentTypeCode(archive.getDocumentTypeCode()).documentTypeName(typeNameMap.getOrDefault(archive.getDocumentTypeCode(), archive.getDocumentTypeCode())).companyProjectCode(archive.getCompanyProjectCode()).companyProjectName(companyNameMap.getOrDefault(archive.getCompanyProjectCode(), archive.getCompanyProjectCode())).beginPeriod(archive.getBeginPeriod()).endPeriod(archive.getEndPeriod()).documentName(archive.getDocumentName()).businessCode(archive.getBusinessCode()).dutyPerson(archive.getDutyPerson()).dutyDepartment(archive.getDutyDepartment()).documentDate(archive.getDocumentDate()).securityLevelCode(archive.getSecurityLevelCode()).sourceSystem(archive.getSourceSystem()).archiveDestination(archive.getArchiveDestination()).originPlace(archive.getOriginPlace()).carrierTypeCode(archive.getCarrierTypeCode()).remark(archive.getRemark()).aiArchiveSummary(archive.getAiArchiveSummary()).documentOrganizationCode(archive.getDocumentOrganizationCode()).retentionPeriodYears(archive.getRetentionPeriodYears()).archiveTypeCode(archive.getArchiveTypeCode()).archiveStatus(archive.getArchiveStatus()).parseStatus(archive.getParseStatus()).vectorStatus(archive.getVectorStatus()).lastUpdateDate(archive.getLastUpdateDate()).attachmentCount(attachments.size()).extValues(extValues).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).build();
+        return ArchiveSummaryResponse.builder().archiveId(archive.getArchiveId()).archiveCode(archive.getArchiveCode()).archiveFilingCode(archive.getArchiveFilingCode()).busiModuleCode(archive.getBusiModuleCode()).busiModuleName(typeNameMap.getOrDefault(archive.getBusiModuleCode(), archive.getBusiModuleCode())).companyProjectCode(archive.getCompanyProjectCode()).companyProjectName(companyNameMap.getOrDefault(archive.getCompanyProjectCode(), archive.getCompanyProjectCode())).beginPeriod(archive.getBeginPeriod()).endPeriod(archive.getEndPeriod()).documentName(archive.getDocumentName()).businessCode(archive.getBusinessCode()).dutyPerson(archive.getDutyPerson()).dutyDepartment(archive.getDutyDepartment()).documentDate(archive.getDocumentDate()).securityLevelCode(archive.getSecurityLevelCode()).sourceSystem(archive.getSourceSystem()).archiveDestination(archive.getArchiveDestination()).originPlace(archive.getOriginPlace()).carrierTypeCode(archive.getCarrierTypeCode()).remark(archive.getRemark()).aiArchiveSummary(archive.getAiArchiveSummary()).documentOrganizationCode(archive.getDocumentOrganizationCode()).retentionPeriodYears(archive.getRetentionPeriodYears()).archiveTypeCode(archive.getArchiveTypeCode()).archiveStatus(archive.getArchiveStatus()).parseStatus(archive.getParseStatus()).vectorStatus(archive.getVectorStatus()).lastUpdateDate(archive.getLastUpdateDate()).attachmentCount(attachments.size()).extValues(extValues).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).build();
     }
 
     private List<ArchiveAttachment> listSessionAttachments(Long sessionId) {
@@ -1897,7 +1900,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             return new ParsedAttachment(
                 effectiveText,
                 summarizeText(originalFilename, effectiveText),
-                guessDocumentTypeCode(originalFilename, effectiveText, fallback.docType()),
+                guessBusiModuleCode(originalFilename, effectiveText, fallback.docType()),
                 guessBusinessCode(effectiveText),
                 companyProjectMatch.companyProjectCode(),
                 companyProjectMatch.companyProjectName(),
@@ -1928,15 +1931,15 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         }
     }
 
-    private ParsedAttachment buildCombinedParseResult(List<ArchiveAttachment> attachments, String documentTypeCode) {
+    private ParsedAttachment buildCombinedParseResult(List<ArchiveAttachment> attachments, String busiModuleCode) {
         String allText = attachments.stream()
             .map(item -> parseStoredFile(Paths.get(item.getStoragePath()), item.getFileName(), item.getMimeType()).fullText())
             .filter(StringUtils::hasText)
             .collect(Collectors.joining("\n"));
         return new ParsedAttachment(
             allText,
-            summarizeText(documentTypeCode, allText),
-            documentTypeCode,
+            summarizeText(busiModuleCode, allText),
+            busiModuleCode,
             guessBusinessCode(allText),
             null,
             null,
@@ -1953,7 +1956,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private ArchiveAiParseResult buildParseResult(ArchiveCreateSession session, ArchiveAttachment attachment) {
         ParsedAttachment parsed = parseStoredFile(Paths.get(attachment.getStoragePath()), attachment.getFileName(), attachment.getMimeType());
         return ArchiveAiParseResult.builder()
-            .suggestedDocumentTypeCode(Optional.ofNullable(session.getDocumentTypeCodeGuess()).orElse(parsed.suggestedDocumentTypeCode()))
+            .suggestedBusiModuleCode(Optional.ofNullable(session.getBusiModuleCodeGuess()).orElse(parsed.suggestedBusiModuleCode()))
             .suggestedCarrierTypeCode(Optional.ofNullable(session.getCarrierTypeCodeGuess()).orElse("ELECTRONIC"))
             .documentName(stripExtension(attachment.getFileName()))
             .businessCode(parsed.businessCode())
@@ -1980,7 +1983,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         return "《" + stripExtension(title) + "》内容摘要：" + excerpt;
     }
 
-    private String guessDocumentTypeCode(String filename, String text, String fallbackDocType) {
+    private String guessBusiModuleCode(String filename, String text, String fallbackDocType) {
         String combined = (filename + " " + Objects.toString(text, "") + " " + Objects.toString(fallbackDocType, "")).toLowerCase(Locale.ROOT);
         return documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>()
                 .eq(DocumentType::getDeleteFlag, "N")
@@ -2305,23 +2308,23 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private List<ArchiveSummaryResponse> searchAskReferences(ArchiveAskCommand command, AiModelConfig chatModel) {
         List<ArchiveSummaryResponse> semanticMatches;
         try {
-            semanticMatches = findSemanticMatches(command.getQuestion(), command.getDocumentTypeCode(), command.getCompanyProjectCode(), chatModel);
+            semanticMatches = findSemanticMatches(command.getQuestion(), command.getBusiModuleCode(), command.getCompanyProjectCode(), chatModel);
         } catch (Exception exception) {
             semanticMatches = List.of();
         }
         if (!semanticMatches.isEmpty()) return semanticMatches;
         ArchiveQueryCommand queryCommand = new ArchiveQueryCommand();
         queryCommand.setKeyword(command.getQuestion());
-        queryCommand.setDocumentTypeCode(command.getDocumentTypeCode());
+        queryCommand.setBusiModuleCode(command.getBusiModuleCode());
         queryCommand.setCompanyProjectCode(command.getCompanyProjectCode());
         return queryArchives(queryCommand).getRecords().stream().limit(resolveReferenceLimit(chatModel)).toList();
     }
 
-    private List<ArchiveSummaryResponse> findSemanticMatches(String question, String documentTypeCode, String companyProjectCode, AiModelConfig chatModel) {
+    private List<ArchiveSummaryResponse> findSemanticMatches(String question, String busiModuleCode, String companyProjectCode, AiModelConfig chatModel) {
         String embeddingModelCode = findEmbeddingModelCode();
         int limit = Math.max(resolveReferenceLimit(chatModel), 3);
         List<Double> vector = archiveTextVectorService.embed(question);
-        String normalizedDocumentTypeCode = trimToNull(documentTypeCode);
+        String normalizedBusiModuleCode = trimToNull(busiModuleCode);
         String normalizedCompanyProjectCode = trimToNull(companyProjectCode);
         StringBuilder sql = new StringBuilder("""
                 select distinct on (a.archive_id)
@@ -2337,9 +2340,9 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         List<Object> params = new ArrayList<>();
         params.add(archiveTextVectorService.toPgVectorLiteral(vector));
         params.add(embeddingModelCode);
-        if (normalizedDocumentTypeCode != null) {
-            sql.append(" and a.document_type_code = ?");
-            params.add(normalizedDocumentTypeCode);
+        if (normalizedBusiModuleCode != null) {
+            sql.append(" and a.busi_module_code = ?");
+            params.add(normalizedBusiModuleCode);
         }
         if (normalizedCompanyProjectCode != null) {
             sql.append(" and a.company_project_code = ?");
@@ -2420,7 +2423,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private record ParsedAttachment(
         String fullText,
         String summary,
-        String suggestedDocumentTypeCode,
+        String suggestedBusiModuleCode,
         String businessCode,
         String companyProjectCode,
         String companyProjectName,

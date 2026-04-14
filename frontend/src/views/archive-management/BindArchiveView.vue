@@ -24,8 +24,8 @@
 
       <div class="filter-grid">
         <el-input v-model="filters.keyword" clearable placeholder="档案编号/题名/业务编号" />
-        <el-select v-model="filters.documentTypeCode" clearable filterable placeholder="文档类型">
-          <el-option v-for="item in createOptions.documentTypes" :key="item.code" :label="item.name" :value="item.code" />
+        <el-select v-model="filters.busiModuleCode" clearable filterable placeholder="业务模块">
+          <el-option v-for="item in createOptions.busiModules" :key="item.code" :label="item.name" :value="item.code" />
         </el-select>
         <el-select v-model="filters.companyProjectCode" clearable filterable placeholder="公司/项目">
           <el-option v-for="item in createOptions.companyProjects" :key="item.code" :label="item.name" :value="item.code" />
@@ -45,7 +45,7 @@
         <el-table-column type="selection" width="48" />
         <el-table-column prop="archiveCode" label="档案编号" width="180" />
         <el-table-column prop="documentName" label="档案题名" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="documentTypeCode" label="文档类型" width="150" />
+        <el-table-column prop="busiModuleCode" label="业务模块" width="150" />
         <el-table-column prop="companyProjectCode" label="公司/项目" width="140" />
         <el-table-column prop="businessCode" label="业务编号" width="160" />
         <el-table-column label="期间" width="170">
@@ -139,7 +139,7 @@ const selectedRows = ref<BindArchiveCandidate[]>([])
 
 const createOptions = ref<ArchiveCreateOptions>({
   companyProjects: [],
-  documentTypes: [],
+  busiModules: [],
   archiveDestinations: [],
   documentOrganizations: [],
   securityLevels: [],
@@ -154,7 +154,7 @@ const createdBatch = ref<BindBatch>()
 
 const filters = reactive({
   keyword: '',
-  documentTypeCode: '',
+  busiModuleCode: '',
   companyProjectCode: ''
 })
 
@@ -164,7 +164,7 @@ const filteredCandidates = computed(() => bindOptions.value.candidates.filter(it
     const matched = [item.archiveCode, item.documentName, item.businessCode].some(value => String(value || '').toLowerCase().includes(keyword))
     if (!matched) return false
   }
-  if (filters.documentTypeCode && item.documentTypeCode !== filters.documentTypeCode) return false
+  if (filters.busiModuleCode && item.busiModuleCode !== filters.busiModuleCode) return false
   if (filters.companyProjectCode && item.companyProjectCode !== filters.companyProjectCode) return false
   return true
 }))
@@ -192,7 +192,7 @@ async function handlePreview() {
     previewResult.value = await previewBind({
       bindMode: bindMode.value,
       keyword: filters.keyword || undefined,
-      documentTypeCode: filters.documentTypeCode || undefined,
+      busiModuleCode: filters.busiModuleCode || undefined,
       companyProjectCode: filters.companyProjectCode || undefined,
       archiveIds: selectedRows.value.length ? selectedRows.value.map(item => item.archiveId) : undefined
     })

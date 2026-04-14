@@ -120,7 +120,7 @@
               </template>
             </el-table-column>
             <el-table-column prop="applicationNumber" label="申请单号" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="documentTypeName" label="文档类型" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="busiModuleName" label="业务模块" min-width="140" show-overflow-tooltip />
             <el-table-column prop="applicantName" label="申请人" width="120" show-overflow-tooltip />
             <el-table-column label="申请日期" width="170">
               <template #default="{ row }">{{ formatDateTime(row.applicationDate) }}</template>
@@ -175,7 +175,7 @@
             <el-descriptions-item label="申请状态">{{ labelOf(statusOptions, detailData.applicationStatus) }}</el-descriptions-item>
             <el-descriptions-item label="申请人">{{ formatUser(detailData.applicant) }}</el-descriptions-item>
             <el-descriptions-item label="申请日期">{{ formatDateTime(detailData.applicationDate) }}</el-descriptions-item>
-            <el-descriptions-item label="文档类型">{{ detailData.documentTypeCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="业务模块">{{ detailData.busiModuleCode || '-' }}</el-descriptions-item>
             <el-descriptions-item label="移交方式">{{ labelOf(applyMethodOptions, detailData.applyMethod) }}</el-descriptions-item>
             <el-descriptions-item label="载体类型">{{ labelOf(carrierTypeOptions, detailData.carrierType) }}</el-descriptions-item>
             <el-descriptions-item label="邮寄方式">{{ labelOf(expressTypeOptions, detailData.expressType) }}</el-descriptions-item>

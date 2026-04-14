@@ -6,9 +6,9 @@ import com.smartarchive.archivemanage.dto.DocumentTypeExtFieldUpdateCommand;
 import java.util.List;
 
 public interface DocumentTypeExtFieldService {
-    List<DocumentTypeExtFieldResponse> listDirect(String documentTypeCode);
-    List<DocumentTypeExtFieldResponse> listEffective(String documentTypeCode);
-    DocumentTypeExtFieldResponse create(String documentTypeCode, DocumentTypeExtFieldCreateCommand command);
-    DocumentTypeExtFieldResponse update(String documentTypeCode, String fieldCode, DocumentTypeExtFieldUpdateCommand command);
-    void delete(String documentTypeCode, String fieldCode);
+    List<DocumentTypeExtFieldResponse> listDirect(String busiModuleCode);
+    List<DocumentTypeExtFieldResponse> listEffective(String busiModuleCode);
+    DocumentTypeExtFieldResponse create(String busiModuleCode, DocumentTypeExtFieldCreateCommand command);
+    DocumentTypeExtFieldResponse update(String busiModuleCode, String fieldCode, DocumentTypeExtFieldUpdateCommand command);
+    void delete(String busiModuleCode, String fieldCode);
 }

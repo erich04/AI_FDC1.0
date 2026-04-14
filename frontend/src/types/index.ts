@@ -438,6 +438,14 @@ export interface OrgCategoryDictionaryItem {
 }
 
 
+export interface CountryRegionItem {
+  regionLevel: 'COUNTRY' | 'PROVINCE' | 'CITY'
+  regionCode: string
+  regionName: string
+  shortName?: string
+  parentRegionCode?: string
+}
+
 export interface ArchiveFlowRuleOption {
   code: string
   name: string
@@ -452,8 +460,8 @@ export interface ArchiveFlowRuleSummary {
   id: number
   companyProjectCode: string
   companyProjectName: string
-  documentTypeCode: string
-  documentTypeName: string
+  busiModuleCode: string
+  busiModuleName: string
   customRule?: string
   archiveDestination?: string
   archiveDestinationName?: string
@@ -471,7 +479,7 @@ export interface ArchiveFlowRuleSummary {
 export interface ArchiveFlowRuleDetail {
   id: number
   companyProjectCode: string
-  documentTypeCode: string
+  busiModuleCode: string
   customRule?: string
   archiveDestination?: string
   documentOrganizationCode: string
@@ -494,7 +502,7 @@ export interface LabelValueOption {
 export interface DocumentTypeExtField {
   fieldId: number
   fieldCode: string
-  documentTypeCode: string
+  busiModuleCode: string
   usageModule: string
   relatedModuleCode: string
   relatedField: string
@@ -513,7 +521,7 @@ export interface DocumentTypeExtField {
 
 export interface ArchiveCreateOptions {
   companyProjects: LabelValueOption[]
-  documentTypes: LabelValueOption[]
+  busiModules: LabelValueOption[]
   archiveDestinations: LabelValueOption[]
   documentOrganizations: LabelValueOption[]
   securityLevels: LabelValueOption[]
@@ -570,7 +578,7 @@ export interface ArchiveCreateSession {
   sessionCode: string
   createMode: 'AUTO' | 'MANUAL'
   sessionStatus: string
-  documentTypeCodeGuess?: string
+  busiModuleCodeGuess?: string
   carrierTypeCodeGuess?: string
   parseStatus: string
   aiSummarySnapshot?: string
@@ -583,8 +591,8 @@ export interface ArchiveRecordSummary {
   archiveId: number
   archiveCode: string
   archiveFilingCode: string
-  documentTypeCode: string
-  documentTypeName?: string
+  busiModuleCode: string
+  busiModuleName?: string
   companyProjectCode: string
   companyProjectName?: string
   beginPeriod?: string
@@ -691,7 +699,7 @@ export interface BindArchiveCandidate {
   archiveId: number
   archiveCode: string
   documentName: string
-  documentTypeCode: string
+  busiModuleCode: string
   companyProjectCode: string
   businessCode?: string
   beginPeriod?: string
@@ -845,7 +853,7 @@ export interface TransferApplicationCreateCommand {
   applicant: number
   applicationDate: string
   department: string
-  documentTypeCode: string
+  busiModuleCode: string
   applyMethod: string
   expressType?: string
   expressNumber?: string

@@ -37,10 +37,10 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
     private final DictionaryItemMapper dictionaryItemMapper;
 
     @Override
-    public List<DocumentTypeExtFieldResponse> listDirect(String documentTypeCode) {
-        DocumentType documentType = requireDocumentType(documentTypeCode);
+    public List<DocumentTypeExtFieldResponse> listDirect(String busiModuleCode) {
+        DocumentType documentType = requireDocumentType(busiModuleCode);
         return archiveExtFieldConfigMapper.selectList(new LambdaQueryWrapper<ArchiveExtFieldConfig>()
-                .eq(ArchiveExtFieldConfig::getDocumentTypeCode, documentType.getTypeCode())
+                .eq(ArchiveExtFieldConfig::getBusiModuleCode, documentType.getTypeCode())
                 .eq(ArchiveExtFieldConfig::getDeleteFlag, "N")
                 .orderByAsc(ArchiveExtFieldConfig::getFormSortOrder)
                 .orderByAsc(ArchiveExtFieldConfig::getFieldCode))
@@ -50,8 +50,8 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
     }
 
     @Override
-    public List<DocumentTypeExtFieldResponse> listEffective(String documentTypeCode) {
-        DocumentType current = requireDocumentType(documentTypeCode);
+    public List<DocumentTypeExtFieldResponse> listEffective(String busiModuleCode) {
+        DocumentType current = requireDocumentType(busiModuleCode);
         List<String> typeCodes = new ArrayList<>();
         if (StringUtils.hasText(current.getAncestorPath())) {
             typeCodes.addAll(List.of(current.getAncestorPath().split("/")));
@@ -64,32 +64,32 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
             .collect(Collectors.toMap(DocumentType::getTypeCode, Function.identity(), (left, right) -> left));
 
         return archiveExtFieldConfigMapper.selectList(new LambdaQueryWrapper<ArchiveExtFieldConfig>()
-                .in(ArchiveExtFieldConfig::getDocumentTypeCode, typeCodes)
+                .in(ArchiveExtFieldConfig::getBusiModuleCode, typeCodes)
                 .eq(ArchiveExtFieldConfig::getDeleteFlag, "N")
                 .eq(ArchiveExtFieldConfig::getEnabledFlag, "Y")
                 .orderByAsc(ArchiveExtFieldConfig::getFormSortOrder)
                 .orderByAsc(ArchiveExtFieldConfig::getFieldCode))
             .stream()
-            .sorted(Comparator.comparing((ArchiveExtFieldConfig item) -> typeMap.get(item.getDocumentTypeCode()).getLevelNum())
+            .sorted(Comparator.comparing((ArchiveExtFieldConfig item) -> typeMap.get(item.getBusiModuleCode()).getLevelNum())
                 .thenComparing(ArchiveExtFieldConfig::getFormSortOrder)
                 .thenComparing(ArchiveExtFieldConfig::getFieldCode))
             .map(item -> {
-                DocumentType source = typeMap.get(item.getDocumentTypeCode());
-                return toResponse(item, source == null ? null : source.getLevelNum(), item.getDocumentTypeCode());
+                DocumentType source = typeMap.get(item.getBusiModuleCode());
+                return toResponse(item, source == null ? null : source.getLevelNum(), item.getBusiModuleCode());
             })
             .toList();
     }
 
     @Override
     @Transactional
-    public DocumentTypeExtFieldResponse create(String documentTypeCode, DocumentTypeExtFieldCreateCommand command) {
-        DocumentType documentType = requireDocumentType(documentTypeCode);
+    public DocumentTypeExtFieldResponse create(String busiModuleCode, DocumentTypeExtFieldCreateCommand command) {
+        DocumentType documentType = requireDocumentType(busiModuleCode);
         validateCommand(command.getFieldType(), command.getRequiredFlag(), command.getEnabledFlag(), command.getQueryEnabledFlag(),
             command.getDictCategoryCode(), command.getUsageModule(), command.getRelatedModuleCode(), command.getRelatedField());
 
         ArchiveExtFieldConfig entity = new ArchiveExtFieldConfig();
         entity.setFieldCode(generateFieldCode(documentType.getTypeCode()));
-        entity.setDocumentTypeCode(documentType.getTypeCode());
+        entity.setBusiModuleCode(documentType.getTypeCode());
         entity.setUsageModule(trimRequiredText(command.getUsageModule(), "usageModule"));
         entity.setRelatedModuleCode(trimRequiredText(command.getRelatedModuleCode(), "relatedModuleCode"));
         entity.setRelatedField(trimRequiredText(command.getRelatedField(), "relatedField"));
@@ -113,11 +113,11 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
 
     @Override
     @Transactional
-    public DocumentTypeExtFieldResponse update(String documentTypeCode, String fieldCode, DocumentTypeExtFieldUpdateCommand command) {
-        DocumentType documentType = requireDocumentType(documentTypeCode);
+    public DocumentTypeExtFieldResponse update(String busiModuleCode, String fieldCode, DocumentTypeExtFieldUpdateCommand command) {
+        DocumentType documentType = requireDocumentType(busiModuleCode);
         validateCommand(command.getFieldType(), command.getRequiredFlag(), command.getEnabledFlag(), command.getQueryEnabledFlag(),
             command.getDictCategoryCode(), command.getUsageModule(), command.getRelatedModuleCode(), command.getRelatedField());
-        ArchiveExtFieldConfig entity = requireField(documentTypeCode, fieldCode);
+        ArchiveExtFieldConfig entity = requireField(busiModuleCode, fieldCode);
         entity.setUsageModule(trimRequiredText(command.getUsageModule(), "usageModule"));
         entity.setRelatedModuleCode(trimRequiredText(command.getRelatedModuleCode(), "relatedModuleCode"));
         entity.setRelatedField(trimRequiredText(command.getRelatedField(), "relatedField"));
@@ -138,9 +138,9 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
 
     @Override
     @Transactional
-    public void delete(String documentTypeCode, String fieldCode) {
-        requireDocumentType(documentTypeCode);
-        ArchiveExtFieldConfig entity = requireField(documentTypeCode, fieldCode);
+    public void delete(String busiModuleCode, String fieldCode) {
+        requireDocumentType(busiModuleCode);
+        ArchiveExtFieldConfig entity = requireField(busiModuleCode, fieldCode);
         archiveExtFieldConfigMapper.update(null, new LambdaUpdateWrapper<ArchiveExtFieldConfig>()
             .eq(ArchiveExtFieldConfig::getFieldId, entity.getFieldId())
             .set(ArchiveExtFieldConfig::getDeleteFlag, "Y")
@@ -148,9 +148,9 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
             .set(ArchiveExtFieldConfig::getLastUpdateDate, LocalDateTime.now()));
     }
 
-    private DocumentType requireDocumentType(String documentTypeCode) {
+    private DocumentType requireDocumentType(String busiModuleCode) {
         DocumentType documentType = documentTypeMapper.selectOne(new LambdaQueryWrapper<DocumentType>()
-            .eq(DocumentType::getTypeCode, documentTypeCode)
+            .eq(DocumentType::getTypeCode, busiModuleCode)
             .eq(DocumentType::getDeleteFlag, "N")
             .last("limit 1"));
         if (documentType == null) {
@@ -159,9 +159,9 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
         return documentType;
     }
 
-    private ArchiveExtFieldConfig requireField(String documentTypeCode, String fieldCode) {
+    private ArchiveExtFieldConfig requireField(String busiModuleCode, String fieldCode) {
         ArchiveExtFieldConfig field = archiveExtFieldConfigMapper.selectOne(new LambdaQueryWrapper<ArchiveExtFieldConfig>()
-            .eq(ArchiveExtFieldConfig::getDocumentTypeCode, documentTypeCode)
+            .eq(ArchiveExtFieldConfig::getBusiModuleCode, busiModuleCode)
             .eq(ArchiveExtFieldConfig::getFieldCode, fieldCode)
             .eq(ArchiveExtFieldConfig::getDeleteFlag, "N")
             .last("limit 1"));
@@ -202,9 +202,9 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
         return flag.trim().toUpperCase();
     }
 
-    private String generateFieldCode(String documentTypeCode) {
+    private String generateFieldCode(String busiModuleCode) {
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
-        String prefix = documentTypeCode.replaceAll("[^A-Za-z0-9]", "");
+        String prefix = busiModuleCode.replaceAll("[^A-Za-z0-9]", "");
         prefix = prefix.length() > 12 ? prefix.substring(0, 12) : prefix;
         return "EXT_" + prefix + "_" + suffix;
     }
@@ -232,11 +232,11 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
         }
     }
 
-    private DocumentTypeExtFieldResponse toResponse(ArchiveExtFieldConfig item, Integer sourceLevel, String sourceDocumentTypeCode) {
+    private DocumentTypeExtFieldResponse toResponse(ArchiveExtFieldConfig item, Integer sourceLevel, String sourceBusiModuleCode) {
         return DocumentTypeExtFieldResponse.builder()
             .fieldId(item.getFieldId())
             .fieldCode(item.getFieldCode())
-            .documentTypeCode(item.getDocumentTypeCode())
+            .busiModuleCode(item.getBusiModuleCode())
             .usageModule(item.getUsageModule())
             .relatedModuleCode(item.getRelatedModuleCode())
             .relatedField(item.getRelatedField())
@@ -250,7 +250,7 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
             .queryEnabledFlag(item.getQueryEnabledFlag())
             .querySortOrder(item.getQuerySortOrder())
             .sourceLevel(sourceLevel)
-            .sourceDocumentTypeCode(sourceDocumentTypeCode)
+            .sourceBusiModuleCode(sourceBusiModuleCode)
             .lastUpdateDate(item.getLastUpdateDate())
             .build();
     }

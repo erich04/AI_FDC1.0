@@ -19,8 +19,10 @@ public class ArchiveRecord {
     private String archiveFilingCode;
     private String createMode;
     private String archiveStatus;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String companyProjectCode;
+    /** 业务模块编码（字典 BUSINESS_MOUDLE 等） */
+    private String busiModuleCode;
     private String beginPeriod;
     private String endPeriod;
     private String businessCode;

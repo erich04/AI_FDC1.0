@@ -10,8 +10,8 @@ import lombok.Data;
 public class TransferApplicationRecordRowResponse {
     private Long applicationId;
     private String applicationNumber;
-    private String documentTypeCode;
-    private String documentTypeName;
+    private String busiModuleCode;
+    private String busiModuleName;
     private Long applicant;
     /** 申请人展示名（无用户中心时占位） */
     private String applicantName;

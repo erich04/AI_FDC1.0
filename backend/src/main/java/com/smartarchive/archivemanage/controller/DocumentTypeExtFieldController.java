@@ -18,37 +18,37 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/base-data/document-types/{documentTypeCode}/ext-fields")
+@RequestMapping("/api/base-data/document-types/{busiModuleCode}/ext-fields")
 @RequiredArgsConstructor
 public class DocumentTypeExtFieldController {
     private final DocumentTypeExtFieldService documentTypeExtFieldService;
 
     @GetMapping
-    public ApiResponse<List<DocumentTypeExtFieldResponse>> listDirect(@PathVariable String documentTypeCode) {
-        return ApiResponse.success(documentTypeExtFieldService.listDirect(documentTypeCode));
+    public ApiResponse<List<DocumentTypeExtFieldResponse>> listDirect(@PathVariable String busiModuleCode) {
+        return ApiResponse.success(documentTypeExtFieldService.listDirect(busiModuleCode));
     }
 
     @GetMapping("/effective")
-    public ApiResponse<List<DocumentTypeExtFieldResponse>> listEffective(@PathVariable String documentTypeCode) {
-        return ApiResponse.success(documentTypeExtFieldService.listEffective(documentTypeCode));
+    public ApiResponse<List<DocumentTypeExtFieldResponse>> listEffective(@PathVariable String busiModuleCode) {
+        return ApiResponse.success(documentTypeExtFieldService.listEffective(busiModuleCode));
     }
 
     @PostMapping
-    public ApiResponse<DocumentTypeExtFieldResponse> create(@PathVariable String documentTypeCode,
+    public ApiResponse<DocumentTypeExtFieldResponse> create(@PathVariable String busiModuleCode,
                                                             @Valid @RequestBody DocumentTypeExtFieldCreateCommand command) {
-        return ApiResponse.success(documentTypeExtFieldService.create(documentTypeCode, command));
+        return ApiResponse.success(documentTypeExtFieldService.create(busiModuleCode, command));
     }
 
     @PutMapping("/{fieldCode}")
-    public ApiResponse<DocumentTypeExtFieldResponse> update(@PathVariable String documentTypeCode,
+    public ApiResponse<DocumentTypeExtFieldResponse> update(@PathVariable String busiModuleCode,
                                                             @PathVariable String fieldCode,
                                                             @Valid @RequestBody DocumentTypeExtFieldUpdateCommand command) {
-        return ApiResponse.success(documentTypeExtFieldService.update(documentTypeCode, fieldCode, command));
+        return ApiResponse.success(documentTypeExtFieldService.update(busiModuleCode, fieldCode, command));
     }
 
     @DeleteMapping("/{fieldCode}")
-    public ApiResponse<Void> delete(@PathVariable String documentTypeCode, @PathVariable String fieldCode) {
-        documentTypeExtFieldService.delete(documentTypeCode, fieldCode);
+    public ApiResponse<Void> delete(@PathVariable String busiModuleCode, @PathVariable String fieldCode) {
+        documentTypeExtFieldService.delete(busiModuleCode, fieldCode);
         return ApiResponse.success(null);
     }
 }

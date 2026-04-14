@@ -80,11 +80,11 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         if (details.isEmpty()) {
             throw new BusinessException("移交申请无有效明细，无法写入档案");
         }
-        String documentTypeCode = application.getDocumentTypeCode();
-        List<DocumentTypeExtFieldResponse> effectiveFields = documentTypeExtFieldService.listEffective(documentTypeCode);
+        String busiModuleCode = application.getBusiModuleCode();
+        List<DocumentTypeExtFieldResponse> effectiveFields = documentTypeExtFieldService.listEffective(busiModuleCode);
         List<Map<String, Object>> extRows =
             transferApplicationExtMapper.selectByMasterId(applicationId, application.getTenantid());
-        Map<Long, Map<String, String>> extByDetailId = decodeExtRows(extRows, documentTypeCode);
+        Map<Long, Map<String, String>> extByDetailId = decodeExtRows(extRows, busiModuleCode);
 
         for (TransferApplicationDetail detail : details) {
             insertArchiveForDetail(application, detail, extByDetailId.getOrDefault(detail.getApplicationDetailId(), Map.of()), effectiveFields);
@@ -147,7 +147,7 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         CompanyProject project = requireCompanyProject(detail.getCompanyProjectCode());
         ArchiveDefaultResolveResponse defaults = resolveDefaultsForDetail(
             detail.getCompanyProjectCode(),
-            application.getDocumentTypeCode(),
+            application.getBusiModuleCode(),
             trimToNull(detail.getBusiModuleCode()),
             trimToNull(detail.getArchPlaceAlpha2Code()));
 
@@ -161,7 +161,7 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         String beginPeriod = toYearMonthPeriod(detail.getStartArchPeriod(), docDate);
         String endPeriod = toYearMonthPeriod(detail.getEndArchPeriod(), docDate);
         String carrierType = resolveCarrierType(firstNonBlank(detail.getCarrierType(), application.getCarrierType()));
-        String archiveTypeCode = firstNonBlank(detail.getArchTypeCode(), application.getDocumentTypeCode());
+        String archiveTypeCode = firstNonBlank(detail.getArchTypeCode(), application.getBusiModuleCode());
         String dutyPerson = application.getApplicant() != null ? "用户-" + application.getApplicant() : "—";
         String dutyDepartment = firstNonBlank(application.getDepartment(), "—");
         String remark = buildRemark(application, detail);
@@ -171,8 +171,9 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         archive.setArchiveFilingCode(generateCode("FILE"));
         archive.setCreateMode("MANUAL");
         archive.setArchiveStatus("TRANSFERRED");
-        archive.setDocumentTypeCode(application.getDocumentTypeCode());
+        archive.setBusiModuleCode(application.getBusiModuleCode());
         archive.setCompanyProjectCode(detail.getCompanyProjectCode().trim());
+        archive.setBusiModuleCode(trimToNull(detail.getBusiModuleCode()));
         archive.setBeginPeriod(beginPeriod);
         archive.setEndPeriod(endPeriod);
         archive.setBusinessCode(businessCode);
@@ -218,12 +219,12 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         }
     }
 
-    private Map<Long, Map<String, String>> decodeExtRows(List<Map<String, Object>> extRows, String documentTypeCode) {
+    private Map<Long, Map<String, String>> decodeExtRows(List<Map<String, Object>> extRows, String busiModuleCode) {
         if (extRows == null || extRows.isEmpty()) {
             return Map.of();
         }
         List<ArchiveExtFieldConfig> configs = archiveExtFieldConfigMapper.selectList(new LambdaQueryWrapper<ArchiveExtFieldConfig>()
-            .eq(ArchiveExtFieldConfig::getDocumentTypeCode, documentTypeCode)
+            .eq(ArchiveExtFieldConfig::getBusiModuleCode, busiModuleCode)
             .eq(ArchiveExtFieldConfig::getDeleteFlag, "N")
             .eq(ArchiveExtFieldConfig::getEnabledFlag, "Y"));
         Map<String, String> columnToFieldCode = new HashMap<>();
@@ -293,13 +294,13 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
     }
 
     private ArchiveDefaultResolveResponse resolveDefaultsForDetail(String companyProjectCode,
-                                                                   String documentTypeCode,
+                                                                   String busiModuleCode,
                                                                    String customRule,
                                                                    String archiveDestination) {
         CompanyProject companyProject = requireCompanyProject(companyProjectCode);
         List<ArchiveFlowRule> rules = archiveFlowRuleMapper.selectList(new LambdaQueryWrapper<ArchiveFlowRule>()
             .eq(ArchiveFlowRule::getCompanyProjectCode, companyProjectCode)
-            .eq(ArchiveFlowRule::getDocumentTypeCode, documentTypeCode)
+            .eq(ArchiveFlowRule::getBusiModuleCode, busiModuleCode)
             .eq(ArchiveFlowRule::getDeleteFlag, "N")
             .eq(ArchiveFlowRule::getEnabledFlag, "Y"));
         ArchiveFlowRule bestMatch = rules.stream()

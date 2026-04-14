@@ -8,7 +8,7 @@ import lombok.Data;
 @Builder
 public class ArchiveCreateOptionsResponse {
     private List<LabelValueOption> companyProjects;
-    private List<LabelValueOption> documentTypes;
+    private List<LabelValueOption> busiModules;
     private List<LabelValueOption> archiveDestinations;
     private List<LabelValueOption> documentOrganizations;
     private List<LabelValueOption> securityLevels;

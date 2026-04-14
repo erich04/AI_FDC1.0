@@ -13,8 +13,8 @@ public class ArchiveSummaryResponse {
     private Long archiveId;
     private String archiveCode;
     private String archiveFilingCode;
-    private String documentTypeCode;
-    private String documentTypeName;
+    private String busiModuleCode;
+    private String busiModuleName;
     private String companyProjectCode;
     private String companyProjectName;
     private String beginPeriod;

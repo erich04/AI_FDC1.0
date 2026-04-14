@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @Builder
 public class ArchiveAiParseResult {
-    private String suggestedDocumentTypeCode;
+    private String suggestedBusiModuleCode;
     private String suggestedCarrierTypeCode;
     private String documentName;
     private String businessCode;

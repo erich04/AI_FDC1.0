@@ -7,7 +7,7 @@ import lombok.Data;
 public class BindPreviewCommand {
     private String bindMode;
     private String keyword;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String companyProjectCode;
     private List<Long> archiveIds;
 }

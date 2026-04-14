@@ -18,7 +18,7 @@ public class WorkflowTransferDetailResponse {
 
     @Data
     public static class TransferDocumentItem {
-        private String documentTypeCode;
+        private String busiModuleCode;
         private String businessCode;
         private String documentOrganizationCode;
         private Map<String, String> extFields;

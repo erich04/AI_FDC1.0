@@ -14,7 +14,7 @@ public class ArchiveExtFieldConfig {
     @TableId(value = "doc_field_config_id", type = IdType.AUTO)
     private Long fieldId;
     private String fieldCode;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String fieldName;
     private String fieldType;
     private String dictCategoryCode;

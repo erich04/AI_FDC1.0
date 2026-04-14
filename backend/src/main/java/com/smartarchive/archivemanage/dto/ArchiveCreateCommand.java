@@ -10,8 +10,9 @@ import lombok.Data;
 public class ArchiveCreateCommand {
     private String sessionCode;
     private String createMode;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String companyProjectCode;
+    private String busiModuleCode;
     private String beginPeriod;
     private String endPeriod;
     private String businessCode;

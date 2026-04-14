@@ -32,7 +32,7 @@
             </template>
             <el-menu-item index="/base-data/company-projects">公司/项目管理</el-menu-item>
             <el-menu-item index="/base-data/document-organizations">文档组织管理</el-menu-item>
-            <el-menu-item index="/base-data/document-types">文档类型管理</el-menu-item>
+            <el-menu-item index="/base-data/document-types">业务模块管理</el-menu-item>
             <el-menu-item index="/base-data/archive-flow-rules">归档规则管理</el-menu-item>
             <el-menu-item index="/base-data/warehouse">库房管理</el-menu-item>
             <el-menu-item index="/base-data/company-project-dictionaries">公司/项目字典</el-menu-item>

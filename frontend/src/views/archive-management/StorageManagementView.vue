@@ -54,7 +54,7 @@
         <el-table-column type="selection" width="48" />
         <el-table-column prop="archiveCode" label="档案编号" width="180" />
         <el-table-column prop="documentName" label="档案题名" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="documentTypeCode" label="文档类型" width="150" />
+        <el-table-column prop="busiModuleCode" label="业务模块" width="150" />
         <el-table-column prop="archiveStatus" label="状态" width="110" />
       </el-table>
       <div class="submit-bar">

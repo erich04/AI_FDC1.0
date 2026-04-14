@@ -4,14 +4,14 @@ import type { ArchiveFlowRuleDetail, ArchiveFlowRuleOption, ArchiveFlowRuleSumma
 export interface ArchiveFlowRuleQuery {
   keyword?: string
   companyProjectCode?: string
-  documentTypeCode?: string
+  busiModuleCode?: string
   documentOrganizationCode?: string
   enabledFlag?: string
 }
 
 export interface ArchiveFlowRuleCreateCommand {
   companyProjectCode: string
-  documentTypeCode: string
+  busiModuleCode: string
   customRule?: string
   archiveDestination?: string
   documentOrganizationCode: string
@@ -22,7 +22,7 @@ export interface ArchiveFlowRuleCreateCommand {
 }
 
 export interface ArchiveFlowRuleUpdateCommand {
-  documentTypeCode: string
+  busiModuleCode: string
   customRule?: string
   archiveDestination?: string
   documentOrganizationCode: string
@@ -58,10 +58,6 @@ export function fetchArchiveFlowCompanyProjectOptions() {
 
 export function fetchArchiveFlowDocumentOrganizationOptions() {
   return apiRequest<ArchiveFlowRuleOption[]>(http.get('/api/base-data/archive-flow-rules/options/document-organizations'))
-}
-
-export function fetchArchiveFlowCityOptions() {
-  return apiRequest<ArchiveFlowRuleOption[]>(http.get('/api/base-data/archive-flow-rules/options/cities'))
 }
 
 export function fetchArchiveFlowSecurityLevels() {

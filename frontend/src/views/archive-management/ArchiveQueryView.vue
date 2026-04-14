@@ -20,9 +20,9 @@
 
         <div class="form-grid form-grid--4">
           <el-form-item label="关键字"><el-input v-model="query.keyword" clearable /></el-form-item>
-          <el-form-item label="文档类型">
-            <el-select v-model="query.documentTypeCode" clearable filterable @change="handleQueryTypeChange">
-              <el-option v-for="item in options.documentTypes" :key="item.code" :label="item.name" :value="item.code" />
+          <el-form-item label="业务模块">
+            <el-select v-model="query.busiModuleCode" clearable filterable @change="handleQueryTypeChange">
+              <el-option v-for="item in options.busiModules" :key="item.code" :label="item.name" :value="item.code" />
             </el-select>
           </el-form-item>
           <el-form-item label="公司/项目">
@@ -194,7 +194,7 @@ const route = useRoute()
 const router = useRouter()
 const options = reactive<ArchiveCreateOptions>({
   companyProjects: [],
-  documentTypes: [],
+  busiModules: [],
   archiveDestinations: [],
   documentOrganizations: [],
   securityLevels: [],
@@ -206,7 +206,7 @@ const options = reactive<ArchiveCreateOptions>({
 
 const query = reactive<ArchiveQueryCommand>({
   keyword: '',
-  documentTypeCode: '',
+  busiModuleCode: '',
   companyProjectCode: '',
   archiveTypeCode: '',
   carrierTypeCode: '',
@@ -260,7 +260,7 @@ const columnSettingVisible = ref(false)
 const allColumns = ref([
   { label: '归档编码', prop: 'archiveFilingCode', width: '180' },
   { label: '文档名称', prop: 'documentName', minWidth: '220' },
-  { label: '文档类型', prop: 'documentTypeName', width: '160' },
+  { label: '业务模块', prop: 'busiModuleName', width: '160' },
   { label: '公司/项目', prop: 'companyProjectName', width: '180' },
   { label: '载体类型', prop: 'carrierTypeCode', width: '120' },
   { label: '归档状态', prop: 'archiveStatus', width: '120' },
@@ -276,7 +276,7 @@ const allColumns = ref([
 const defaultVisibleColumns = [
   'archiveFilingCode',
   'documentName',
-  'documentTypeName',
+  'busiModuleName',
   'companyProjectName',
   'carrierTypeCode',
   'archiveStatus',
@@ -316,7 +316,7 @@ const runQuery = async () => {
 const resetFilters = async () => {
   Object.assign(query, {
     keyword: '',
-    documentTypeCode: '',
+    busiModuleCode: '',
     companyProjectCode: '',
     archiveTypeCode: '',
     carrierTypeCode: '',

@@ -7,6 +7,6 @@ import lombok.Data;
 public class ArchiveAskCommand {
     @NotBlank
     private String question;
-    private String documentTypeCode;
+    private String busiModuleCode;
     private String companyProjectCode;
 }

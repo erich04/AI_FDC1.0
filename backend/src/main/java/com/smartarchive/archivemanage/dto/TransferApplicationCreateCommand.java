@@ -17,7 +17,7 @@ public class TransferApplicationCreateCommand {
     private LocalDateTime applicationDate;
     private String department;
     @NotBlank
-    private String documentTypeCode;
+    private String busiModuleCode;
     @NotBlank
     private String applyMethod;
     private String expressType;

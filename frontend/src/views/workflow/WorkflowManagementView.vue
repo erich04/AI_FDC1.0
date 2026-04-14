@@ -241,12 +241,12 @@
               <template #header>
                 <div class="card-head">
                   <strong>移交文档</strong>
-                  <span>文档类型和文档组织均展示名称，便于审批人直接核对。</span>
+                  <span>业务模块和文档组织均展示名称，便于审批人直接核对。</span>
                 </div>
               </template>
               <el-table :data="transferDetail.documents" border class="document-table">
                 <el-table-column type="index" label="#" width="54" />
-                <el-table-column prop="documentTypeName" label="文档类型" min-width="180" />
+                <el-table-column prop="busiModuleName" label="业务模块" min-width="180" />
                 <el-table-column prop="businessCode" label="业务编码" min-width="140" />
                 <el-table-column prop="documentOrganizationName" label="文档组织" min-width="180" />
                 <el-table-column label="扩展字段" min-width="300">
@@ -369,8 +369,8 @@ interface WorkflowProcessItem {
 }
 
 interface TransferDocumentView {
-  documentTypeCode: string
-  documentTypeName: string
+  busiModuleCode: string
+  busiModuleName: string
   businessCode: string
   documentOrganizationCode: string
   documentOrganizationName: string
@@ -469,7 +469,7 @@ const normalizeTask = (task: WorkflowTaskItem, updatedAt?: string): WorkflowTask
   displayUpdatedAt: formatDateTime(updatedAt || task.completeTime || task.createTime)
 })
 
-const resolveOptionName = (key: 'documentTypes' | 'documentOrganizations', code?: string) => {
+const resolveOptionName = (key: 'busiModules' | 'documentOrganizations', code?: string) => {
   if (!code) return '-'
   const options = archiveOptions.value?.[key] ?? []
   return options.find(option => option.code === code)?.name ?? code
@@ -621,11 +621,11 @@ const buildTransferDetailFromVariables = (): TransferDetailView => {
     remark: form.remark ?? '',
     applicationNumber: String(parsed.applicationNumber ?? ''),
     documents: documents.map((document: Record<string, unknown>) => {
-      const documentTypeCode = String(document.documentTypeCode ?? '')
+      const busiModuleCode = String(document.busiModuleCode ?? '')
       const documentOrganizationCode = String(document.documentOrganizationCode ?? '')
       return {
-        documentTypeCode,
-        documentTypeName: resolveOptionName('documentTypes', documentTypeCode),
+        busiModuleCode,
+        busiModuleName: resolveOptionName('busiModules', busiModuleCode),
         businessCode: String(document.businessCode ?? ''),
         documentOrganizationCode,
         documentOrganizationName: resolveOptionName('documentOrganizations', documentOrganizationCode),
@@ -654,11 +654,11 @@ const buildTransferDetailFromApi = (payload?: WorkflowTransferDetailResponse | n
     remark: payload.remark ?? '',
     applicationNumber: payload.applicationNumber ?? '',
     documents: apiDocuments.map(document => {
-      const documentTypeCode = String(document.documentTypeCode ?? '')
+      const busiModuleCode = String(document.busiModuleCode ?? '')
       const documentOrganizationCode = String(document.documentOrganizationCode ?? '')
       return {
-        documentTypeCode,
-        documentTypeName: resolveOptionName('documentTypes', documentTypeCode),
+        busiModuleCode,
+        busiModuleName: resolveOptionName('busiModules', busiModuleCode),
         businessCode: String(document.businessCode ?? ''),
         documentOrganizationCode,
         documentOrganizationName: resolveOptionName('documentOrganizations', documentOrganizationCode),

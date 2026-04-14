@@ -8,8 +8,8 @@ public class ArchiveFlowRuleSummaryResponse {
     private Long id;
     private String companyProjectCode;
     private String companyProjectName;
-    private String documentTypeCode;
-    private String documentTypeName;
+    private String busiModuleCode;
+    private String busiModuleName;
     private String customRule;
     private String archiveDestination;
     private String archiveDestinationName;
