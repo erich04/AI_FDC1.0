@@ -3,68 +3,106 @@
 BEGIN;
 
 -- ========== 1) Rename tables ==========
-ALTER TABLE doc_document_type RENAME TO fdc_document_type_t;
-ALTER TABLE com_operation_audit RENAME TO fdc_operation_audit_log_t;
-ALTER TABLE md_document_organization RENAME TO fdc_document_organization_t;
-ALTER TABLE md_document_organization_city RENAME TO fdc_document_organization_city_t;
-ALTER TABLE md_country RENAME TO fdc_country_t;
-ALTER TABLE md_company_project RENAME TO fdc_company_project_t;
-ALTER TABLE md_company_project_line RENAME TO fdc_company_project_line_t;
-ALTER TABLE md_company_project_org_category RENAME TO fdc_company_project_org_category_t;
-ALTER TABLE md_security_level RENAME TO fdc_security_level_t;
-ALTER TABLE md_archive_flow_rule RENAME TO fdc_archive_rule_t;
-ALTER TABLE md_dict_category RENAME TO fdc_dict_category_t;
-ALTER TABLE md_dict_item RENAME TO fdc_dict_item_t;
-ALTER TABLE arc_ext_field_config RENAME TO fdc_doc_field_config_t;
-ALTER TABLE arc_archive_create_session RENAME TO fdc_archive_create_session_t;
-ALTER TABLE arc_archive RENAME TO fdc_arch_t;
-ALTER TABLE arc_archive_ext_value RENAME TO fdc_doc_ext_t;
-ALTER TABLE arc_archive_attachment RENAME TO fdc_arch_attachment_t;
-ALTER TABLE arc_archive_paper RENAME TO fdc_arch_paper_t;
-ALTER TABLE arc_archive_content RENAME TO fdc_arch_content_t;
-ALTER TABLE arc_archive_content_chunk RENAME TO fdc_arch_content_chunk_t;
-ALTER TABLE arc_archive_chunk_vector RENAME TO fdc_arch_chunk_vector_t;
-ALTER TABLE arc_archive_ai_task RENAME TO fdc_arch_ai_task_t;
-ALTER TABLE ai_model_config RENAME TO fdc_ai_model_config_t;
-ALTER TABLE wh_warehouse RENAME TO fdc_warehouse_t;
-ALTER TABLE wh_area RENAME TO fdc_warehouse_area_t;
-ALTER TABLE wh_rack RENAME TO fdc_warehouse_rack_t;
-ALTER TABLE wh_location RENAME TO fdc_warehouse_location_t;
-ALTER TABLE arc_archive_object RENAME TO fdc_archive_object_t;
-ALTER TABLE arc_archive_receipt RENAME TO fdc_archive_receipt_t;
-ALTER TABLE arc_catalog_task RENAME TO fdc_catalog_task_t;
-ALTER TABLE wf_workflow_instance RENAME TO fdc_workflow_instance_t;
-ALTER TABLE wf_workflow_task RENAME TO fdc_workflow_task_t;
-ALTER TABLE wf_workflow_history RENAME TO fdc_workflow_history_t;
-ALTER TABLE arc_borrow_record RENAME TO fdc_borrow_record_t;
-ALTER TABLE arc_inventory_task RENAME TO fdc_inventory_task_t;
-ALTER TABLE arc_disposal_record RENAME TO fdc_disposal_record_t;
-ALTER TABLE arc_bind_batch RENAME TO fdc_bind_batch_t;
-ALTER TABLE arc_bind_volume RENAME TO fdc_bind_volume_t;
-ALTER TABLE arc_bind_volume_item RENAME TO fdc_bind_volume_item_t;
-ALTER TABLE arc_storage_batch RENAME TO fdc_storage_batch_t;
-ALTER TABLE arc_storage_batch_item RENAME TO fdc_storage_batch_item_t;
-ALTER TABLE arc_storage_ledger RENAME TO fdc_storage_ledger_t;
-ALTER TABLE kg_matching_rule_version RENAME TO fdc_kg_matching_rule_version_t;
-ALTER TABLE kg_rebuild_task RENAME TO fdc_kg_rebuild_task_t;
-ALTER TABLE kg_graph_node RENAME TO fdc_kg_graph_node_t;
-ALTER TABLE kg_graph_edge RENAME TO fdc_kg_graph_edge_t;
-ALTER TABLE kg_procurement_conversation RENAME TO fdc_procurement_conversation_t;
-ALTER TABLE kg_procurement_conversation_message RENAME TO fdc_procurement_conversation_message_t;
-ALTER TABLE kg_procurement_context_snapshot RENAME TO fdc_procurement_context_snapshot_t;
+DO $$
+DECLARE
+    pair RECORD;
+BEGIN
+    FOR pair IN
+        SELECT * FROM (VALUES
+            ('doc_document_type', 'fdc_document_type_t'),
+            ('com_operation_audit', 'fdc_operation_audit_log_t'),
+            ('md_document_organization', 'fdc_document_organization_t'),
+            ('md_document_organization_city', 'fdc_document_organization_city_t'),
+            ('md_country', 'fdc_country_t'),
+            ('md_company_project', 'fdc_company_project_t'),
+            ('md_company_project_line', 'fdc_company_project_line_t'),
+            ('md_company_project_org_category', 'fdc_company_project_org_category_t'),
+            ('md_security_level', 'fdc_security_level_t'),
+            ('md_archive_flow_rule', 'fdc_archive_rule_t'),
+            ('md_dict_category', 'fdc_dict_category_t'),
+            ('md_dict_item', 'fdc_dict_item_t'),
+            ('arc_ext_field_config', 'fdc_doc_field_config_t'),
+            ('arc_archive_create_session', 'fdc_archive_create_session_t'),
+            ('arc_archive', 'fdc_arch_t'),
+            ('arc_archive_ext_value', 'fdc_doc_ext_t'),
+            ('arc_archive_attachment', 'fdc_arch_attachment_t'),
+            ('arc_archive_paper', 'fdc_arch_paper_t'),
+            ('arc_archive_content', 'fdc_arch_content_t'),
+            ('arc_archive_content_chunk', 'fdc_arch_content_chunk_t'),
+            ('arc_archive_chunk_vector', 'fdc_arch_chunk_vector_t'),
+            ('arc_archive_ai_task', 'fdc_arch_ai_task_t'),
+            ('ai_model_config', 'fdc_ai_model_config_t'),
+            ('wh_warehouse', 'fdc_warehouse_t'),
+            ('wh_area', 'fdc_warehouse_area_t'),
+            ('wh_rack', 'fdc_warehouse_rack_t'),
+            ('wh_location', 'fdc_warehouse_location_t'),
+            ('arc_archive_object', 'fdc_archive_object_t'),
+            ('arc_archive_receipt', 'fdc_archive_receipt_t'),
+            ('arc_catalog_task', 'fdc_catalog_task_t'),
+            ('wf_workflow_instance', 'fdc_workflow_instance_t'),
+            ('wf_workflow_task', 'fdc_workflow_task_t'),
+            ('wf_workflow_history', 'fdc_workflow_history_t'),
+            ('arc_borrow_record', 'fdc_borrow_record_t'),
+            ('arc_inventory_task', 'fdc_inventory_task_t'),
+            ('arc_disposal_record', 'fdc_disposal_record_t'),
+            ('arc_bind_batch', 'fdc_bind_batch_t'),
+            ('arc_bind_volume', 'fdc_bind_volume_t'),
+            ('arc_bind_volume_item', 'fdc_bind_volume_item_t'),
+            ('arc_storage_batch', 'fdc_storage_batch_t'),
+            ('arc_storage_batch_item', 'fdc_storage_batch_item_t'),
+            ('arc_storage_ledger', 'fdc_storage_ledger_t'),
+            ('kg_matching_rule_version', 'fdc_kg_matching_rule_version_t'),
+            ('kg_rebuild_task', 'fdc_kg_rebuild_task_t'),
+            ('kg_graph_node', 'fdc_kg_graph_node_t'),
+            ('kg_graph_edge', 'fdc_kg_graph_edge_t'),
+            ('kg_procurement_conversation', 'fdc_procurement_conversation_t'),
+            ('kg_procurement_conversation_message', 'fdc_procurement_conversation_message_t'),
+            ('kg_procurement_context_snapshot', 'fdc_procurement_context_snapshot_t')
+        ) AS v(src, dst)
+    LOOP
+        IF to_regclass('public.' || pair.src) IS NOT NULL
+           AND to_regclass('public.' || pair.dst) IS NULL THEN
+            EXECUTE format('ALTER TABLE %I RENAME TO %I', pair.src, pair.dst);
+        END IF;
+    END LOOP;
+END $$;
 
 -- ========== 2) enabled_flag -> enable_flag ==========
-ALTER TABLE fdc_document_type_t RENAME COLUMN enabled_flag TO enable_flag;
-
-ALTER TABLE fdc_document_organization_t RENAME COLUMN enabled_flag TO enable_flag;
-ALTER TABLE fdc_document_organization_city_t RENAME COLUMN enabled_flag TO enable_flag;
-
-ALTER TABLE fdc_country_t RENAME COLUMN enabled_flag TO enable_flag;
-
-ALTER TABLE fdc_company_project_t RENAME COLUMN enabled_flag TO enable_flag;
-ALTER TABLE fdc_company_project_org_category_t RENAME COLUMN enabled_flag TO enable_flag;
-
-ALTER TABLE fdc_security_level_t RENAME COLUMN enabled_flag TO enable_flag;
+DO $$
+DECLARE
+    pair RECORD;
+BEGIN
+    FOR pair IN
+        SELECT * FROM (VALUES
+            ('fdc_document_type_t', 'enabled_flag', 'enable_flag'),
+            ('fdc_document_organization_t', 'enabled_flag', 'enable_flag'),
+            ('fdc_document_organization_city_t', 'enabled_flag', 'enable_flag'),
+            ('fdc_country_t', 'enabled_flag', 'enable_flag'),
+            ('fdc_company_project_t', 'enabled_flag', 'enable_flag'),
+            ('fdc_company_project_org_category_t', 'enabled_flag', 'enable_flag'),
+            ('fdc_security_level_t', 'enabled_flag', 'enable_flag')
+        ) AS v(tbl, src, dst)
+    LOOP
+        IF to_regclass('public.' || pair.tbl) IS NOT NULL
+           AND EXISTS (
+                SELECT 1
+                  FROM information_schema.columns
+                 WHERE table_schema = 'public'
+                   AND table_name = pair.tbl
+                   AND column_name = pair.src
+           )
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM information_schema.columns
+                 WHERE table_schema = 'public'
+                   AND table_name = pair.tbl
+                   AND column_name = pair.dst
+           )
+        THEN
+            EXECUTE format('ALTER TABLE %I RENAME COLUMN %I TO %I', pair.tbl, pair.src, pair.dst);
+        END IF;
+    END LOOP;
+END $$;
 
 DROP INDEX IF EXISTS idx_md_archive_flow_rule_enabled;
 ALTER TABLE fdc_archive_rule_t RENAME COLUMN enabled_flag TO enable_flag;
@@ -95,94 +133,125 @@ ALTER TABLE fdc_ai_model_config_t RENAME COLUMN enabled_flag TO enable_flag;
 ALTER TABLE fdc_ai_model_config_t ADD CONSTRAINT ck_fdc_ai_model_config_t_enable CHECK (enable_flag IN ('Y', 'N'));
 
 ALTER TABLE fdc_kg_matching_rule_version_t DROP CONSTRAINT IF EXISTS ck_kg_matching_rule_enabled;
-ALTER TABLE fdc_kg_matching_rule_version_t RENAME COLUMN enabled_flag TO enable_flag;
+DO $$
+BEGIN
+    IF to_regclass('public.fdc_kg_matching_rule_version_t') IS NOT NULL
+       AND EXISTS (
+            SELECT 1
+              FROM information_schema.columns
+             WHERE table_schema = 'public'
+               AND table_name = 'fdc_kg_matching_rule_version_t'
+               AND column_name = 'enabled_flag'
+       )
+       AND NOT EXISTS (
+            SELECT 1
+              FROM information_schema.columns
+             WHERE table_schema = 'public'
+               AND table_name = 'fdc_kg_matching_rule_version_t'
+               AND column_name = 'enable_flag'
+       )
+    THEN
+        EXECUTE 'ALTER TABLE fdc_kg_matching_rule_version_t RENAME COLUMN enabled_flag TO enable_flag';
+    END IF;
+END $$;
 ALTER TABLE fdc_kg_matching_rule_version_t ADD CONSTRAINT ck_fdc_kg_matching_rule_version_t_enable CHECK (enable_flag IN ('Y', 'N'));
 
 -- ========== 3) Semantic PK + sequences (tables without cross-FK on PK renames) ==========
+DO $$
+DECLARE
+    col_pair RECORD;
+    seq_pair RECORD;
+BEGIN
+    FOR col_pair IN
+        SELECT * FROM (VALUES
+            ('fdc_document_type_t', 'id', 'document_type_id'),
+            ('fdc_operation_audit_log_t', 'id', 'operation_audit_log_id'),
+            ('fdc_document_organization_t', 'id', 'document_organization_id'),
+            ('fdc_document_organization_city_t', 'id', 'document_organization_city_id'),
+            ('fdc_country_t', 'id', 'country_id'),
+            ('fdc_company_project_t', 'id', 'company_project_id'),
+            ('fdc_company_project_line_t', 'id', 'company_project_line_id'),
+            ('fdc_company_project_org_category_t', 'id', 'company_project_org_category_id'),
+            ('fdc_security_level_t', 'id', 'security_level_id'),
+            ('fdc_archive_rule_t', 'id', 'archive_rule_id'),
+            ('fdc_dict_category_t', 'id', 'dict_category_id'),
+            ('fdc_dict_item_t', 'id', 'dict_item_id'),
+            ('fdc_doc_field_config_t', 'field_id', 'doc_field_config_id'),
+            ('fdc_doc_ext_t', 'value_id', 'doc_ext_id'),
+            ('fdc_ai_model_config_t', 'model_config_id', 'ai_model_config_id'),
+            ('fdc_warehouse_t', 'id', 'warehouse_id'),
+            ('fdc_warehouse_area_t', 'id', 'warehouse_area_id'),
+            ('fdc_warehouse_rack_t', 'id', 'warehouse_rack_id'),
+            ('fdc_warehouse_location_t', 'id', 'warehouse_location_id'),
+            ('fdc_archive_object_t', 'id', 'archive_object_id'),
+            ('fdc_archive_receipt_t', 'id', 'archive_receipt_id'),
+            ('fdc_catalog_task_t', 'id', 'catalog_task_id'),
+            ('fdc_workflow_instance_t', 'id', 'workflow_instance_id'),
+            ('fdc_workflow_task_t', 'id', 'workflow_task_id'),
+            ('fdc_workflow_history_t', 'id', 'workflow_history_id'),
+            ('fdc_borrow_record_t', 'id', 'borrow_record_id'),
+            ('fdc_inventory_task_t', 'id', 'inventory_task_id'),
+            ('fdc_disposal_record_t', 'id', 'disposal_record_id')
+        ) AS v(tbl, src, dst)
+    LOOP
+        IF to_regclass('public.' || col_pair.tbl) IS NOT NULL
+           AND EXISTS (
+                SELECT 1
+                  FROM information_schema.columns
+                 WHERE table_schema = 'public'
+                   AND table_name = col_pair.tbl
+                   AND column_name = col_pair.src
+           )
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM information_schema.columns
+                 WHERE table_schema = 'public'
+                   AND table_name = col_pair.tbl
+                   AND column_name = col_pair.dst
+           )
+        THEN
+            EXECUTE format('ALTER TABLE %I RENAME COLUMN %I TO %I', col_pair.tbl, col_pair.src, col_pair.dst);
+        END IF;
+    END LOOP;
 
-ALTER TABLE fdc_document_type_t RENAME COLUMN id TO document_type_id;
-ALTER SEQUENCE doc_document_type_id_seq RENAME TO fdc_document_type_t_document_type_id_seq;
-
-ALTER TABLE fdc_operation_audit_log_t RENAME COLUMN id TO operation_audit_log_id;
-ALTER SEQUENCE com_operation_audit_id_seq RENAME TO fdc_operation_audit_log_t_operation_audit_log_id_seq;
-
-ALTER TABLE fdc_document_organization_t RENAME COLUMN id TO document_organization_id;
-ALTER SEQUENCE md_document_organization_id_seq RENAME TO fdc_document_organization_t_document_organization_id_seq;
-
-ALTER TABLE fdc_document_organization_city_t RENAME COLUMN id TO document_organization_city_id;
-ALTER SEQUENCE md_document_organization_city_id_seq RENAME TO fdc_document_organization_city_t_document_organization_city_id_seq;
-
-ALTER TABLE fdc_country_t RENAME COLUMN id TO country_id;
-ALTER SEQUENCE md_country_id_seq RENAME TO fdc_country_t_country_id_seq;
-
-ALTER TABLE fdc_company_project_t RENAME COLUMN id TO company_project_id;
-ALTER SEQUENCE md_company_project_id_seq RENAME TO fdc_company_project_t_company_project_id_seq;
-
-ALTER TABLE fdc_company_project_line_t RENAME COLUMN id TO company_project_line_id;
-ALTER SEQUENCE md_company_project_line_id_seq RENAME TO fdc_company_project_line_t_company_project_line_id_seq;
-
-ALTER TABLE fdc_company_project_org_category_t RENAME COLUMN id TO company_project_org_category_id;
-ALTER SEQUENCE md_company_project_org_category_id_seq RENAME TO fdc_company_project_org_category_t_company_project_org_category_id_seq;
-
-ALTER TABLE fdc_security_level_t RENAME COLUMN id TO security_level_id;
-ALTER SEQUENCE md_security_level_id_seq RENAME TO fdc_security_level_t_security_level_id_seq;
-
-ALTER TABLE fdc_archive_rule_t RENAME COLUMN id TO archive_rule_id;
-ALTER SEQUENCE md_archive_flow_rule_id_seq RENAME TO fdc_archive_rule_t_archive_rule_id_seq;
-
-ALTER TABLE fdc_dict_category_t RENAME COLUMN id TO dict_category_id;
-ALTER SEQUENCE md_dict_category_id_seq RENAME TO fdc_dict_category_t_dict_category_id_seq;
-
-ALTER TABLE fdc_dict_item_t RENAME COLUMN id TO dict_item_id;
-ALTER SEQUENCE md_dict_item_id_seq RENAME TO fdc_dict_item_t_dict_item_id_seq;
-
-ALTER TABLE fdc_doc_field_config_t RENAME COLUMN field_id TO doc_field_config_id;
-ALTER SEQUENCE arc_ext_field_config_field_id_seq RENAME TO fdc_doc_field_config_t_doc_field_config_id_seq;
-
-ALTER TABLE fdc_doc_ext_t RENAME COLUMN value_id TO doc_ext_id;
-ALTER SEQUENCE arc_archive_ext_value_value_id_seq RENAME TO fdc_doc_ext_t_doc_ext_id_seq;
-
-ALTER TABLE fdc_ai_model_config_t RENAME COLUMN model_config_id TO ai_model_config_id;
-ALTER SEQUENCE ai_model_config_model_config_id_seq RENAME TO fdc_ai_model_config_t_ai_model_config_id_seq;
-
-ALTER TABLE fdc_warehouse_t RENAME COLUMN id TO warehouse_id;
-ALTER SEQUENCE wh_warehouse_id_seq RENAME TO fdc_warehouse_t_warehouse_id_seq;
-
-ALTER TABLE fdc_warehouse_area_t RENAME COLUMN id TO warehouse_area_id;
-ALTER SEQUENCE wh_area_id_seq RENAME TO fdc_warehouse_area_t_warehouse_area_id_seq;
-
-ALTER TABLE fdc_warehouse_rack_t RENAME COLUMN id TO warehouse_rack_id;
-ALTER SEQUENCE wh_rack_id_seq RENAME TO fdc_warehouse_rack_t_warehouse_rack_id_seq;
-
-ALTER TABLE fdc_warehouse_location_t RENAME COLUMN id TO warehouse_location_id;
-ALTER SEQUENCE wh_location_id_seq RENAME TO fdc_warehouse_location_t_warehouse_location_id_seq;
-
-ALTER TABLE fdc_archive_object_t RENAME COLUMN id TO archive_object_id;
-ALTER SEQUENCE arc_archive_object_id_seq RENAME TO fdc_archive_object_t_archive_object_id_seq;
-
-ALTER TABLE fdc_archive_receipt_t RENAME COLUMN id TO archive_receipt_id;
-ALTER SEQUENCE arc_archive_receipt_id_seq RENAME TO fdc_archive_receipt_t_archive_receipt_id_seq;
-
-ALTER TABLE fdc_catalog_task_t RENAME COLUMN id TO catalog_task_id;
-ALTER SEQUENCE arc_catalog_task_id_seq RENAME TO fdc_catalog_task_t_catalog_task_id_seq;
-
-ALTER TABLE fdc_workflow_instance_t RENAME COLUMN id TO workflow_instance_id;
-ALTER SEQUENCE wf_workflow_instance_id_seq RENAME TO fdc_workflow_instance_t_workflow_instance_id_seq;
-
-ALTER TABLE fdc_workflow_task_t RENAME COLUMN id TO workflow_task_id;
-ALTER SEQUENCE wf_workflow_task_id_seq RENAME TO fdc_workflow_task_t_workflow_task_id_seq;
-
-ALTER TABLE fdc_workflow_history_t RENAME COLUMN id TO workflow_history_id;
-ALTER SEQUENCE wf_workflow_history_id_seq RENAME TO fdc_workflow_history_t_workflow_history_id_seq;
-
-ALTER TABLE fdc_borrow_record_t RENAME COLUMN id TO borrow_record_id;
-ALTER SEQUENCE arc_borrow_record_id_seq RENAME TO fdc_borrow_record_t_borrow_record_id_seq;
-
-ALTER TABLE fdc_inventory_task_t RENAME COLUMN id TO inventory_task_id;
-ALTER SEQUENCE arc_inventory_task_id_seq RENAME TO fdc_inventory_task_t_inventory_task_id_seq;
-
-ALTER TABLE fdc_disposal_record_t RENAME COLUMN id TO disposal_record_id;
-ALTER SEQUENCE arc_disposal_record_id_seq RENAME TO fdc_disposal_record_t_disposal_record_id_seq;
+    FOR seq_pair IN
+        SELECT * FROM (VALUES
+            ('doc_document_type_id_seq', 'fdc_document_type_t_document_type_id_seq'),
+            ('com_operation_audit_id_seq', 'fdc_operation_audit_log_t_operation_audit_log_id_seq'),
+            ('md_document_organization_id_seq', 'fdc_document_organization_t_document_organization_id_seq'),
+            ('md_document_organization_city_id_seq', 'fdc_document_organization_city_t_document_organization_city_id_seq'),
+            ('md_country_id_seq', 'fdc_country_t_country_id_seq'),
+            ('md_company_project_id_seq', 'fdc_company_project_t_company_project_id_seq'),
+            ('md_company_project_line_id_seq', 'fdc_company_project_line_t_company_project_line_id_seq'),
+            ('md_company_project_org_category_id_seq', 'fdc_company_project_org_category_t_company_project_org_category_id_seq'),
+            ('md_security_level_id_seq', 'fdc_security_level_t_security_level_id_seq'),
+            ('md_archive_flow_rule_id_seq', 'fdc_archive_rule_t_archive_rule_id_seq'),
+            ('md_dict_category_id_seq', 'fdc_dict_category_t_dict_category_id_seq'),
+            ('md_dict_item_id_seq', 'fdc_dict_item_t_dict_item_id_seq'),
+            ('arc_ext_field_config_field_id_seq', 'fdc_doc_field_config_t_doc_field_config_id_seq'),
+            ('arc_archive_ext_value_value_id_seq', 'fdc_doc_ext_t_doc_ext_id_seq'),
+            ('ai_model_config_model_config_id_seq', 'fdc_ai_model_config_t_ai_model_config_id_seq'),
+            ('wh_warehouse_id_seq', 'fdc_warehouse_t_warehouse_id_seq'),
+            ('wh_area_id_seq', 'fdc_warehouse_area_t_warehouse_area_id_seq'),
+            ('wh_rack_id_seq', 'fdc_warehouse_rack_t_warehouse_rack_id_seq'),
+            ('wh_location_id_seq', 'fdc_warehouse_location_t_warehouse_location_id_seq'),
+            ('arc_archive_object_id_seq', 'fdc_archive_object_t_archive_object_id_seq'),
+            ('arc_archive_receipt_id_seq', 'fdc_archive_receipt_t_archive_receipt_id_seq'),
+            ('arc_catalog_task_id_seq', 'fdc_catalog_task_t_catalog_task_id_seq'),
+            ('wf_workflow_instance_id_seq', 'fdc_workflow_instance_t_workflow_instance_id_seq'),
+            ('wf_workflow_task_id_seq', 'fdc_workflow_task_t_workflow_task_id_seq'),
+            ('wf_workflow_history_id_seq', 'fdc_workflow_history_t_workflow_history_id_seq'),
+            ('arc_borrow_record_id_seq', 'fdc_borrow_record_t_borrow_record_id_seq'),
+            ('arc_inventory_task_id_seq', 'fdc_inventory_task_t_inventory_task_id_seq'),
+            ('arc_disposal_record_id_seq', 'fdc_disposal_record_t_disposal_record_id_seq')
+        ) AS v(src, dst)
+    LOOP
+        IF to_regclass('public.' || seq_pair.src) IS NOT NULL
+           AND to_regclass('public.' || seq_pair.dst) IS NULL THEN
+            EXECUTE format('ALTER SEQUENCE %I RENAME TO %I', seq_pair.src, seq_pair.dst);
+        END IF;
+    END LOOP;
+END $$;
 
 -- ========== 4) Legacy soft-delete ==========
 ALTER TABLE fdc_archive_object_t ADD COLUMN IF NOT EXISTS delete_flag CHAR(1) NOT NULL DEFAULT 'N';

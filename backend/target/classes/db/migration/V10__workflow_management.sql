@@ -1,5 +1,10 @@
+-- 重新创建工作流相关表以确保列定义正确
+DROP TABLE IF EXISTS wf_workflow_history CASCADE;
+DROP TABLE IF EXISTS wf_workflow_task CASCADE;
+DROP TABLE IF EXISTS wf_workflow_instance CASCADE;
+
 -- 创建工作流实例表
-CREATE TABLE IF NOT EXISTS wf_workflow_instance (
+CREATE TABLE wf_workflow_instance (
     id SERIAL PRIMARY KEY,
     process_instance_id VARCHAR(255) NOT NULL,
     business_key VARCHAR(255) NOT NULL,
@@ -22,7 +27,7 @@ CREATE TABLE IF NOT EXISTS wf_workflow_instance (
 );
 
 -- 创建工作流任务表
-CREATE TABLE IF NOT EXISTS wf_workflow_task (
+CREATE TABLE wf_workflow_task (
     id SERIAL PRIMARY KEY,
     task_id VARCHAR(255) NOT NULL,
     process_instance_id VARCHAR(255) NOT NULL,
@@ -41,7 +46,7 @@ CREATE TABLE IF NOT EXISTS wf_workflow_task (
 );
 
 -- 创建工作流历史表
-CREATE TABLE IF NOT EXISTS wf_workflow_history (
+CREATE TABLE wf_workflow_history (
     id SERIAL PRIMARY KEY,
     process_instance_id VARCHAR(255) NOT NULL,
     task_id VARCHAR(255),
