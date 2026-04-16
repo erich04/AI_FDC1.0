@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-page">
     <div class="page-summary-grid">
       <el-card class="summary-card" shadow="never">
@@ -56,10 +56,15 @@
             <span>统一档案对象列表</span>
             <el-tag type="info" effect="plain">共 {{ rows.length }} 条</el-tag>
           </div>
+          <div class="page-toolbar__right">
+            <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+            <el-tooltip :content="listFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="listFullPage = !listFullPage" /></el-tooltip>
+            <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="loadData" /></el-tooltip>
+          </div>
         </div>
       </template>
 
-      <el-table :data="rows" stripe border>
+      <el-table :data="rows" stripe border :class="{ 'archive-table--full': listFullPage }">
         <el-table-column prop="archiveCode" label="档号" min-width="150" />
         <el-table-column prop="title" label="题名" min-width="220" show-overflow-tooltip />
         <el-table-column prop="archiveType" label="类型" width="140" />
@@ -70,7 +75,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="organizationName" label="归档主体" width="140" />
+        <el-table-column prop="organizationName" label="公司" width="140" />
         <el-table-column prop="currentWorkflowStage" label="流程阶段" width="140" />
         <el-table-column prop="currentLocationCode" label="库位" min-width="160">
           <template #default="{ row }">
@@ -92,12 +97,15 @@
 </template>
 
 <script setup lang="ts">
+import { FullScreen, RefreshRight, Setting } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { fetchArchiveObjects, type ArchiveQuery } from '../../api/modules/archive'
 import type { ArchiveObject } from '../../types'
 
 const query = reactive<ArchiveQuery>({})
 const rows = ref<ArchiveObject[]>([])
+const listFullPage = ref(false)
 const aiClassifiedCount = computed(() => rows.value.filter(item => item.aiClassified).length)
 const aiMetadataCount = computed(() => rows.value.filter(item => item.aiMetadataExtracted).length)
 const locationAssignedCount = computed(() => rows.value.filter(item => item.currentLocationCode).length)
@@ -111,6 +119,10 @@ const resetQuery = () => {
   query.archiveType = ''
   query.securityLevel = ''
   void loadData()
+}
+
+const notifyColumnSetting = () => {
+  ElMessage.info('列设置入口已保留，当前版本不展示具体列配置面板。')
 }
 
 onMounted(loadData)

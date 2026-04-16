@@ -2,6 +2,13 @@
 
 > 参考：旧规格 `1.1 规格设计-文档查询` + HTML `reference_html/pages/document_search.html`。
 
+## 0. 时间与扩展字段统一口径（强制）
+
+1. 除“开始档期/结束档期”外，所有日期时间字段底表统一为 `TIMESTAMP`。
+2. 查询筛选栏中的日期字段统一使用“年月日”选择器，后端按整日时间范围处理（`00:00:00`~`23:59:59`）。
+3. 列表栏与详情页的日期时间展示统一为 `yyyy-MM-dd HH:mm:ss`。
+4. 所有扩展字段统一为文本类型 `NVARCHAR(500)`（数据库实现口径可为 `VARCHAR(500)`）。
+
 ## 1. 业务场景与用户旅程
 
 - **S-01 查询并浏览文档列表**  
@@ -17,8 +24,10 @@
 - **S-03 批量导出**  
   - **操作步骤**：勾选0~N条记录 → 点击“批量导出”。  
   - **系统响应**：提交导出任务成功提示；引导前往“我的导出”。
-- **S-04 批量导入查询（入口在本页）**  
-  - **说明**：入口存在于文档查询页，但属于“应归档数据/导入查询”功能线，详见 `F03_90_ArchiveReceivableData_Reference.md`。
+- **S-04 批量导入查询（入口在本页）**
+  - **说明**：本页提供导入能力的一种入口；**工作空间「导入查询」**为**全系统共用**的导入任务中心（不限于文档查询），规格见 `F03_06_MyImportQueries.md`。旧规格与原型摘录仍见 `F03_90_ArchiveReceivableData_Reference.md`。
+- **S-05 应归档数据 · 批量创建（与本文「批量导入查询」不同）**
+  - **说明**：在**应归档数据管理**列表中通过 CSV/模板**批量创建**待归档行时，表头为中文展示名，但单元格内容在实现上大量仍为**系统 code / 固定英文枚举**，与用户对「填业务上看得见的值」的预期不一致。详细列口径与改造目标见 **`F03_08_PendingArchiveBatchCreate.md`**；实现参考后端 `PendingArchiveBatchImportHeaderResolver`、`PendingArchiveBatchImportServiceImpl`、`ArchiveManagementServiceImpl#createPendingDocument` 路径。
 
 ## 2. 页面与交互（UI/UX）
 
@@ -37,81 +46,96 @@
 | 2 | 搜索文档 | Search Document | 文本输入框 | 原型包含搜索输入（placeholder：`搜索文档...`） | 原型元素 |
 | 3 | 用户信息 | User | 文本显示 | 展示当前登录用户信息（原型示例：管理员） | 原型元素 |
 
-### 2.2 筛选字段（来自旧规格 + 原型校对）
+### 2.2 筛选字段配置（56项）
 
-> 字段英文名、类型、口径以 `/.docs/01_DataModel.md` 为准；以下主要沉淀“交互与校验”。
+> 以下配置按最新业务口径执行，默认筛选栏展示 1~9 项，其余为“更多筛选栏”字段（含按文档类型条件展示规则）。  
+> 说明：`ArchiveQueryView` 当前用于“仅未归档数据”查询，序号 23~36、39 为归档后阶段字段，当前页面不展示。
 
-
-| 序号 | 字段名称 | 字段名-英文 | 类型 | 字段逻辑说明 | 备注 |
-|---:|---|---|---|---|---|
-| 1 | 文档类型 | Document Type | 下拉选项，单选 | 从表 `fdc_document_type_t` 获取 `name` 展示下拉值，根据权限选择性展示；必填；未选择时禁止展开更多筛选/批量导入查询等并提示“请选择文档类型” | 默认筛选栏 |
-| 2 | 归档主体 | Archived Entity | 弹窗组件 | 归档主体弹窗组件，根据权限选择性展示 | 默认筛选栏 |
-| 3 | 业务模块 | Business Module | 下拉选项，多选框 | 从表 `fdc_business_module_t` 获取 `name` 及 `description` 展示下拉值，根据权限选择性展示 | 默认筛选栏 |
-| 4 | 开始档期 | Start Period | 年月范围 | 时间范围限定在一年内，超出范围弹出提示“选择范围不能超过一年” | 默认筛选栏 |
-| 5 | 载体类型 | Carrier Type | 下拉选项，多选框 | 来源 `LOOKUP`：`FDC_CARRIER_TYPE` | 默认筛选栏 |
-| 6 | 文档状态 | Doc Status | 下拉选项，多选框 | 来源 `LOOKUP`：`FDC_DOC_STATUS` | 默认筛选栏 |
-| 7 | 文档生成时间 | Doc Generation Time | 年月日·起止范围 | 时间范围限定在一年内，超出范围弹出提示“选择范围不能超过一年” | 默认筛选栏 |
-| 8 | 文档业务编码 | Doc Business Code | 文本域 | 单条输入支持模糊搜索，多条输入仅限精确查询，数量限定在100条内，超出范围弹出提示“输入条目不能超过100条” | 默认筛选栏 |
-| 9 | 文档名称 | Doc Name | 文本 | 支持模糊搜索 | 默认筛选栏 |
-| 10 | 文档组织 | Doc Organization | 下拉选项，多选框 |  | 下拉更多筛选栏展示 |
-| 11 | 国家 | Country | 下拉选项，多选框 |  | 下拉更多筛选栏展示 |
-| 12 | 代表处 | Rep Office | 下拉选项，多选框 |  | 下拉更多筛选栏展示 |
-| 13 | 地区部 | Region | 下拉选项，多选框 |  | 下拉更多筛选栏展示 |
-| 14 | 文档状态 | Doc Status | 下拉选项，多选框 | 根据文档id在 `fdc_doc_t` 表中获取 `doc_status` 字段；来源 `LOOKUP`：`FDC_DOC_STATUS`，根据权限选择性展示 | 下拉更多筛选栏展示 |
-| 15 | 密级 | Security Level | 下拉选项，多选框 | 来源 `LOOKUP`：`FDC_SECURITY_LEVEL`，根据权限选择性展示 | 下拉更多筛选栏展示 |
-| 16 | 描述 | Description | 输入框 | 支持模糊搜索 | 下拉更多筛选栏展示 |
-| 17 | 是否可见 | Visibility | 下拉选项，多选框 | 是/否，根据权限选择性展示 | 下拉更多筛选栏展示 |
-| 18 | 归档地 | Arch Place | 弹窗组件 |  | 下拉更多筛选栏展示 |
-| 19 | 产生地 | Originating Place | 弹窗组件 |  | 下拉更多筛选栏展示 |
-| 20 | 归档责任人 | Owner | 人员工号 | 自动联想工号，联想失败弹出提示“请输入正确的工号” | 下拉更多筛选栏展示 |
-| 21 | 文档责任部门 | Resp Arch Dept | 弹窗组件 |  | 下拉更多筛选栏展示 |
-| 22 | 创建人 | Created By | 人员工号 | 自动联想工号，联想失败弹出提示“请输入正确的工号” | 下拉更多筛选栏展示 |
-| 23 | 创建时间 | Creation Time | 年月日范围 | 时间范围限定在一年内，超出范围弹出提示“选择范围不能超过一年” | 下拉更多筛选栏展示 |
-| 24 | 系统来源 | Source System | 下拉选项，多选框 | 来源 `LOOKUP`：`FDC_SOURCE_SYS` | 下拉更多筛选栏展示 |
-| 25 | 文档归档编码 | （未给英文） | 文本域 |  | 下拉更多筛选栏展示 |
-| 26 | 条码模块 | Barcode Module | 弹窗组件 |  | 下拉更多筛选栏展示 |
-| 27 | 档案条码 | Archive Barcode | 文本域 |  | 下拉更多筛选栏展示 |
-| 28 | 册条码 | Volume Barcode | 文本域 |  | 下拉更多筛选栏展示 |
-| 29 | 成册人 | Volume Compiler | 人员工号 |  | 下拉更多筛选栏展示 |
-| 30 | 文号 | File No. | 文本域 |  | 下拉更多筛选栏展示 |
-| 31 | 起止号 | S/E No. | 文本域 |  | 下拉更多筛选栏展示 |
-| 32 | 发票号 | Invoice No. | 文本域 |  | 下拉更多筛选栏展示 |
-| 33 | 其他归档号 | Other Arch No | 文本域 | 输入数量限定在100条内，超出范围弹出提示“输入条目不能超过100条” | 下拉更多筛选栏展示 |
-| 34 | 业务类型 | Business Type | 下拉 |  | 下拉更多筛选栏展示 |
-| 35 | 子公司名称 | Subsidiary Name | 下拉 |  | 下拉更多筛选栏展示 |
+| 序号 | 字段名称 | 字段名-英文 | 类型 | 提示语 | 提示语-英文 | 必填 | 备注 |
+|---:|---|---|---|---|---|---|---|
+| 1 | 文档类型 | Document Type | 下拉选项，单选 | 请选择 | Please Select | 是 | 默认筛选栏 |
+| 2 | 公司 | company | 弹窗组件 | 请选择 | Please Select | 否 | 默认筛选栏 |
+| 3 | 业务模块 | Business Module | 下拉选项，多选框 | 请选择 | Please Select | 否 | 默认筛选栏 |
+| 4 | 开始档期 | Start Period | 日历选择·起止范围 |  |  | 否 | 默认筛选栏 |
+| 5 | 载体类型 | Carrier Type | 下拉选项，多选框 | 请选择 | Please Select | 否 | 默认筛选栏 |
+| 6 | 文档生成时间 | Doc Generation Time | 日历选择·起止范围 |  |  | 否 | 默认筛选栏 |
+| 7 | 文档业务编码 | Doc Business Code | 文本域 | 请输入 | Please Input | 否 | 默认筛选栏 |
+| 8 | 文档名称 | Doc Name | 文本 | 请输入 | Please Input | 否 | 默认筛选栏 |
+| 9 | 文档组织 | Doc Organization | 下拉选项，多选框 | 请选择 | Please Select | 否 | 默认筛选栏 |
+| 10 | 国家 | Country | 下拉选项，多选框 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 11 | 代表处 | Rep Office | 下拉选项，多选框 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 12 | 地区部 | Region | 下拉选项，多选框 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 13 | 文档生命周期状态 | Archival Phase | 下拉选项，多选框 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 14 | 密级 | Security Level | 下拉选项，多选框 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 15 | 描述 | Description | 输入框 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示 |
+| 16 | 归档地 | Arch Place | 弹窗组件 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 17 | 产生地 | Originating Place | 弹窗组件 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 18 | 归档责任人 | Owner | 人员工号 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示 |
+| 19 | 文档责任部门 | Resp Arch Dept | 弹窗组件 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 20 | 创建人 | Created By | 人员工号 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示 |
+| 21 | 创建日期 | Creation Date | 日历选择·起止范围 |  |  | 否 | 下拉更多筛选栏展示 |
+| 22 | 系统来源 | Source System | 下拉选项，多选框 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 23 | 归档主体名称（含历史） | Archived Entity Name | 下拉选项，单选框 | 请选择 | Please Select | 否 | 本页面不展示（仅未归档数据） |
+| 24 | 条码模块 | Barcode Module | 弹窗组件 | 请选择 | Please Select | 否 | 本页面不展示（仅未归档数据） |
+| 25 | 档案条码 | Archive Barcode | 文本起止范围 | 请输入 | Please Input | 否 | 本页面不展示（仅未归档数据） |
+| 26 | 核销日期 | Verification Date | 日历选择·起止范围 |  |  | 否 | 本页面不展示（仅未归档数据） |
+| 27 | 核销人 | Verified By | 人员工号 | 请输入 | Please Input | 否 | 本页面不展示（仅未归档数据） |
+| 28 | 文档编号 | Volume Seq. No. | 文本 | 请输入 | Please Input | 否 | 本页面不展示（仅未归档数据） |
+| 29 | 册条码 | Volume Barcode | 文本起止范围 | 请输入 | Please Input | 否 | 本页面不展示（仅未归档数据） |
+| 30 | 成册日期 | Volumization Date | 日历选择·起止范围 |  |  | 否 | 本页面不展示（仅未归档数据） |
+| 31 | 成册人 | Assembled By | 人员工号 | 请输入 | Please Input | 否 | 本页面不展示（仅未归档数据） |
+| 32 | 册号 | Volume No. | 文本起止范围 |  |  | 否 | 本页面不展示（仅未归档数据） |
+| 33 | 库房 | Repository | 文本 | 请输入 | Please Input | 否 | 本页面不展示（仅未归档数据） |
+| 34 | 库位 | Storage Location | 库房起止范围 |  |  | 否 | 本页面不展示（仅未归档数据） |
+| 35 | 入库日期 | Storage Date | 日历选择·起止范围 |  |  | 否 | 本页面不展示（仅未归档数据） |
+| 36 | 入库人 | Stored By | 人员工号 | 请输入 | Please Input | 否 | 本页面不展示（仅未归档数据） |
+| 37 | 份数 | Copies | 文本 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示 |
+| 38 | 剩余份数 | Remaining Copies | 文本 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示 |
+| 39 | 档案类型 | Archive Type | 下拉选项，多选框 | 请选择 | Please Select | 否 | 本页面不展示（仅未归档数据） |
+| 40 | 是否可见 | Visibility | 下拉选项，多选框 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示 |
+| 41 | 发票号 | Invoice No. | 文本域 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为会计或税务时展示 |
+| 42 | 其他相关编号 | Ref. No. | 文本域 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示 |
+| 43 | 会计 | Accountant | 人员工号 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为会计时展示 |
+| 44 | 扫描员 | Scanned By | 人员工号 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为会计时展示 |
+| 45 | 开立日期 | Issue Date | 日历选择·起止范围 |  |  | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为资金文档时展示 |
+| 46 | 到期日 | Maturity Date | 日历选择·起止范围 |  |  | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为资金文档或非财经文档时展示 |
+| 47 | 保函失效日期 | LG Expiry Date | 日历选择·起止范围 |  |  | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为资金文档时展示 |
+| 48 | 保函台账状态 | LG Ledger Status | 下拉选项，多选框 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为资金文档时展示 |
+| 49 | 银行名称 | Bank Name | 文本 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为资金文档时展示 |
+| 50 | 币种 | Currency | 下拉选项，多选框 | 请选择 | Please Select | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为税务或资金文档时展示 |
+| 51 | 金额 | Amount | 文本 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为税务或资金文档时展示 |
+| 52 | 签发机构 | Issuing Authority | 文本 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为非财经文档时展示 |
+| 53 | 报废时间 | Disposal Time | 日历选择·起止范围 |  |  | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为会计时展示 |
+| 54 | 业务册号 | Business Volume No. | 文本 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为会计时展示 |
+| 55 | 保函电子流编号 | LG Workflow No. | 文本 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为资金文档时展示 |
+| 56 | 保函编号 | LG No. | 文本 | 请输入 | Please Input | 否 | 下拉更多筛选栏展示，仅用户选择文档类型为资金文档时展示 |
 
 
 ### 2.3 列表字段（来自旧规格）
 
 
-| 序号 | 字段名称 | 字段名-英文 | 类型 | 字段逻辑说明 | 备注 |
-|---:|---|---|---|---|---|
-| 0 | 勾选 | Select | 复选框 | 用于批量导出选择 0~N 条记录 | 与“批量导出”联动 |
-| 1 | 文档类型 | Document Type | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `business_module_id`，作为外键关联 `fdc_business_module_t` 获取 `document_type_id`，作为外键关联 `fdc_document_type_t` 获取 `document_type_name` | 设置中扩展字段可选 |
-| 2 | 文档业务编码 | Doc Business No. | 链接 | 根据文档id在 `fdc_doc_t` 表中获取 `doc_busi_no` 字段；默认展示，点击后调用文档详情api，跳转至文档详情页 | 默认展示 |
-| 3 | 公司/主体 | Company/Entity | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `archived_entity_unit_id`，作为外键关联 `fdc_archived_entity_unit_t` 获取 `archived_entity_id`，作为外键关联 `fdc_archived_entity_t` 获取 `archived_entity_name` | 默认展示 |
-| 4 | 业务模块 | Business Module | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `business_module_id`，作为外键关联 `fdc_business_module_t` 获取 `business_module_name` | 默认展示 |
-| 5 | 开始档期 | Start Period | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `start_period` 字段 | 设置中扩展字段可选 |
-| 6 | 结束档期 | End Period | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `end_period` 字段 | 默认展示 |
-| 7 | 归档地 | Arch Place | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `arch_place_alpha2_code` 字段，作为入参（通过 `-` 分割符数量判断行政区域层级决定具体入参）查询政区域获取对应 `AliasChinese` 和 `AliasEnglish` 出参 | 默认展示 |
-| 8 | 产生地 | Originating Place | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `origin_place_alpha2_code` 字段，作为入参（通过 `-` 分割符数量判断行政区域层级决定具体入参）查询政区域获取对应 `AliasChinese` 和 `AliasEnglish` 出参 | 设置中扩展字段可选 |
-| 9 | 文档组织 | Doc Organization | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `doc_organization_code` 字段，关联 `fdc_document_organization_t` 带出 `doc_organization_name` 字段 | 默认展示 |
-| 10 | 文档状态 | Doc Status | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `doc_status` 字段 | 默认展示 |
-| 11 | 文档名称 | Doc Name | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `doc_name` 字段 | 默认展示 |
-| 12 | 文档生成日期 | Doc Generation Date | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `doc_generation_date` 字段 | 默认展示 |
-| 13 | 归档责任人 | Owner | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `owner_id` 字段，作为外键外联【用户表】的 `user_id`，带出 `user_name` 字段展示 | 默认展示 |
-| 14 | 文档责任部门 | Responsible Dept. | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `dept_code` 字段，作为入参查询获取对应 `organizationName` 字段 | 设置中扩展字段可选 |
-| 15 | 载体类型 | Carrier Type | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `carrier_type` 字段，关联Lookup中的Carrier Type值 | 设置中扩展字段可选 |
-| 16 | 是否可见 | Visibility | 文本 | 根据文档id在 `fdc_doc_t` 表中匹配归档流向，获取 `visible_flag` | 设置中扩展字段可选 |
-| 17 | 系统来源 | Source System | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `source_system` 字段 | 设置中扩展字段可选 |
-| 18 | 密级 | Security Level | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `business_module_id`，作为外键关联 `fdc_business_module_t` 获取 | 设置中扩展字段可选 |
-| 19 | 描述 | Description | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `description` 字段 | 设置中扩展字段可选 |
-| 20 | 文档归档编码 | （未给英文） | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 | 设置中扩展字段可选 |
-| 21 | 创建时间 | Creation Time | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `creation_date` 字段 | 设置中扩展字段可选 |
-| 22 | 创建人 | Created By | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `created_by` 字段，作为外键外联【用户表】的 `user_id`，带出 `user_name` 字段展示 | 设置中扩展字段可选 |
-| 23 | 地区部 | Region | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `archived_entity_unit_id`，作为外键关联 `fdc_archived_entity_unit_t` 获取 `archived_entity_id`，作为外键关联 `fdc_archived_entity_t` 获取 `region_code`，地区部名称根据 `region_code` 调用idata服务获取对应的名称 | 设置中扩展字段可选 |
-| 24 | 代表处 | Rep Office | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `archived_entity_unit_id`，作为外键关联 `fdc_archived_entity_unit_t` 获取 `archived_entity_id`，作为外键关联 `fdc_archived_entity_t` 获取 `rep_office_code`，地区部名称根据 `rep_office_code` 调用idata服务获取对应的名称 | 设置中扩展字段可选 |
-| 25 | 国家/地区 | Country | 文本 | 根据文档id在 `fdc_doc_t` 表中获取 `archived_entity_unit_id`，作为外键关联 `fdc_archived_entity_unit_t` 获取 `archived_entity_id`，作为外键关联 `fdc_archived_entity_t` 获取 `country_code`，国家名称根据 `country_code` 调用idata服务获取对应的名称 | 设置中扩展字段可选 |
+| 字段名称 | 字段名-英文 | 备注 |
+|---|---|---|
+| 文档业务编码 | Doc Business No. | 默认展示，点击后调用文档详情api，新建标签页展示文档详情页 |
+| 公司/主体 | Company/Entity | 默认展示 |
+| 业务模块 | Business Module | 默认展示 |
+| 开始档期 | Start Period | 默认展示 |
+| 结束档期 | End Period | 设置中扩展字段可选 |
+| 归档地 | Arch Place | 默认展示 |
+| 产生地 | Originating Place | 设置中扩展字段可选 |
+| 文档组织 | Doc Organization | 默认展示 |
+| 文档状态 | Doc Status | 默认展示 |
+| 文档名称 | Doc Name | 默认展示 |
+| 文档生成日期 | Doc Generation Date | 默认展示 |
+| 归档责任人 | Owner | 默认展示 |
+| 文档责任部门 | Responsible Dept. | 设置中扩展字段可选 |
+| 载体类型 | Carrier Type | 设置中扩展字段可选 |
+| 是否可见 | Visibility | 设置中扩展字段可选 |
+| 系统来源 | Source System | 设置中扩展字段可选 |
+| 密级 | Security Level | 设置中扩展字段可选 |
+| 描述 | Description | 设置中扩展字段可选 |
+| 创建时间 | Creation Time | 设置中扩展字段可选 |
+| 创建人 | Created By | 设置中扩展字段可选 |
 
 
 ### 2.4 按钮区按钮（旧规格）
@@ -334,4 +358,73 @@
 | 确定 | Confirm | - | - | 调用批量导入查询服务（old_spec：确认导入） |
 | 取消 | Cancel | - | - | 关闭弹窗 |
 
+
+## 6.（交叉引用）应归档数据 · 批量创建模板
+
+应归档数据列表「批量创建」导入模板的列口径（当前宜填 code 或展示值、改造目标、示例、实现备注）已独立为 **`F03_08_PendingArchiveBatchCreate.md`**，避免与本文「批量导入查询」混淆。
+
+
+## 7. 最新口径补充（2026-04，已确认）
+
+### 7.1 批量导出首列规则（文档查询 vs 应归档数据管理）
+
+- **应归档数据管理**：批量导出文件首列需导出 `doc_id`，用于用户批量调整时快速定位记录。  
+- **文档查询**：批量导出文件不导出 `doc_id`（保持面向业务字段的导出口径）。
+
+### 7.2 应归档数据管理 · 批量创建（模板录入口径）
+
+- 批量创建导入文件中，以下字段不应要求用户录入系统 code，而应录入 code 对应的展示值：  
+  - 载体类型  
+  - 密级（字段名展示为“密级”，不使用“密级编码”文案）  
+  - 保管状态
+
+### 7.3 应归档数据管理 · 批量创建结果下载（Sheet2）
+
+- 结果下载的 `Sheet2`，末尾扩展字段不应以 JSON 串展示。  
+- 应与“应归档数据批量导出”保持一致：扩展字段按具体字段逐列平铺展示，便于人工核对与二次处理。
+
+### 7.4 批量导入查询模板与匹配规则（导入查询工作台）
+
+- 下载模板字段统一为以下 6 列：  
+  - 文档业务编码  
+  - 发票号  
+  - 其他相关编号  
+  - 公司  
+  - 业务模块  
+  - 开始档期
+- 每一行必须至少填写三项中的一项：`文档业务编码 / 发票号 / 其他相关编号`。  
+- 每行内字段组合规则为 **AND（且）**。  
+- 系统将每一行查询结果进行合并（并集拼接）后，形成最终“批量导入查询”结果。  
+- “我的导入”支持查看该批量导入查询结果。
+
+## 8. 联调验证清单（对应第7节）
+
+### 8.1 批量导出 docId 首列差异
+
+- 用同一批 docIds 分别在“文档查询”和“应归档数据管理”触发批量导出。  
+- 预期：  
+  - 文档查询导出首列为“文档类型”（不含 `doc_id`）；  
+  - 应归档数据管理导出首列为“文档ID”。
+
+### 8.2 应归档批量创建录入口径（展示值）
+
+- 批量创建模板中“载体类型/密级/保管状态”填写展示值（非 code）后导入。  
+- 预期：导入成功，列表与详情展示值正确；无需手填 code。  
+- 兼容：若模板仍写“密级编码”表头，也应按“密级”处理。
+
+### 8.3 批量创建结果下载 Sheet2
+
+- 发起批量创建并在“我的导入”下载结果文件。  
+- 预期：  
+  - `Sheet2` 不再出现“扩展字段JSON”列；  
+  - 扩展字段按具体列展开（发票号、其他相关编号1~5、保函编号等）。
+
+### 8.4 批量导入查询模板与匹配逻辑
+
+- 下载模板应仅包含 6 列：文档业务编码、发票号、其他相关编号、公司、业务模块、开始档期。  
+- 构造多行数据验证：  
+  - 行内多字段按 AND；  
+  - 每行至少填写“文档业务编码/发票号/其他相关编号”之一；  
+  - 最终结果为逐行命中集合并（并集）。  
+- 导入完成后，在“我的导入”可见本次 `IMPORT_QUERY` 任务记录与结果统计。
 

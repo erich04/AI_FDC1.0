@@ -9,17 +9,19 @@ import lombok.Data;
 @Data
 @TableName("fdc_operation_audit_log_t")
 public class OperationAuditRecord {
-    @TableId(value = "operation_audit_log_id", type = IdType.AUTO)
-    private Long id;
-    private String moduleCode;
-    private String moduleName;
-    private String businessType;
-    private String businessKey;
+    @TableId(value = "audit_log_id", type = IdType.AUTO)
+    private Long auditLogId;
+    private Long tenantid;
+    private Long objectId;
+    /** Mirrors module_code: PENDING_ARCHIVE, COMPANY_PROJECT, … */
+    private String objectType;
+    private Long operatedBy;
     private String operationType;
-    private String operationSummary;
-    private String beforeSnapshot;
-    private String afterSnapshot;
-    private Long operatorId;
-    private String operatorName;
+    private String opContent;
     private LocalDateTime operationTime;
+    private Long createdBy;
+    private LocalDateTime creationDate;
+    private Long lastUpdatedBy;
+    private LocalDateTime lastUpdateDate;
+    private Integer lastUpdateVersion;
 }

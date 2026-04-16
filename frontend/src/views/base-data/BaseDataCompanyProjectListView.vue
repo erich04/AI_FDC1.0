@@ -25,13 +25,13 @@
         <div class="toolbar-actions">
           <el-button @click="resetQuery">重置</el-button>
           <el-button type="primary" @click="loadList">查询</el-button>
-          <el-button type="success" @click="router.push('/base-data/company-projects/create')">新建公司/项目</el-button>
+          <el-button type="success" @click="router.push('/base-data/company-projects/create')">新建公司</el-button>
         </div>
       </div>
 
-      <el-table :data="items" border empty-text="暂无公司/项目数据，请调整筛选条件或新建数据">
-        <el-table-column prop="companyProjectCode" label="公司/项目编码" min-width="160" />
-        <el-table-column prop="companyProjectName" label="公司/项目名称" min-width="220" show-overflow-tooltip />
+      <el-table :data="items" border empty-text="暂无公司数据，请调整筛选条件或新建数据">
+        <el-table-column prop="companyProjectCode" label="公司编码" min-width="160" />
+        <el-table-column prop="companyProjectName" label="公司名称" min-width="220" show-overflow-tooltip />
         <el-table-column label="国家" min-width="120">
           <template #default="{ row }">{{ formatCountry(row.countryCode) }}</template>
         </el-table-column>
@@ -47,7 +47,7 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="openDetail(row.companyProjectCode, 'view')">查看</el-button>
             <el-button link type="primary" @click="openDetail(row.companyProjectCode, 'edit')">编辑</el-button>
-            <el-popconfirm title="确认软删除该公司/项目吗？" @confirm="removeItem(row.companyProjectCode)">
+            <el-popconfirm title="确认软删除该公司吗？" @confirm="removeItem(row.companyProjectCode)">
               <template #reference>
                 <el-button link type="danger">删除</el-button>
               </template>
@@ -111,7 +111,7 @@ const openDetail = (companyProjectCode: string, mode: 'view' | 'edit') => {
 const removeItem = async (companyProjectCode: string) => {
   try {
     await deleteCompanyProject(companyProjectCode)
-    ElMessage.success('公司/项目已软删除')
+    ElMessage.success('公司已软删除')
     await loadList()
   } catch (error: any) {
     ElMessage.error(error?.message || '删除失败')

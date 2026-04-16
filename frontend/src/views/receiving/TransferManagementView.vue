@@ -20,7 +20,7 @@
             <el-form-item label="文档类型" prop="documentTypeCode">
               <CommonTreeSelect
                 v-model="headerForm.documentTypeCode"
-                :data="documentTypeTree"
+                :data="documentTypeLevel1Tree"
                 :props="{ label: 'typeName', value: 'typeCode' }"
                 class="input-w180"
                 @change="handleHeaderDocTypeChange"
@@ -159,7 +159,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import axios from 'axios'
 import CommonTreeSelect from '../../components/CommonTreeSelect.vue'
-import { fetchDocumentTypeTree } from '../../api/modules/documentType'
+import { fetchDocumentTypeTree, fetchLevel3Modules } from '../../api/modules/documentType'
 import { fetchArchiveCreateOptions, fetchEffectiveDocumentTypeExtFields, queryArchives } from '../../api/modules/archiveManagement'
 import { fetchDictionaryItems } from '../../api/modules/dictionary'
 import {
@@ -212,6 +212,7 @@ const pickerRows = ref<any[]>([])
 const pickerSelection = ref<any[]>([])
 const extFields = ref<DocumentTypeExtField[]>([])
 const documentTypeTree = ref<DocumentTypeTreeNode[]>([])
+const documentTypeLevel1Tree = computed(() => (Array.isArray(documentTypeTree.value) ? documentTypeTree.value : []).map((n) => ({ ...n, children: [] })))
 const companyOptions = ref<LabelOption[]>([])
 const carrierTypeOptions = ref<LabelOption[]>([])
 const busiModuleOptions = ref<LabelOption[]>([])
@@ -361,8 +362,15 @@ async function handleHeaderDocTypeChange() {
   }
   if (!headerForm.documentTypeCode) {
     extFields.value = []
+    busiModuleOptions.value = []
+    detailRows.value.forEach((r) => { r.busiModuleCode = '' })
     return
   }
+  busiModuleOptions.value = await fetchLevel3Modules(headerForm.documentTypeCode)
+  const validModuleCodes = new Set(busiModuleOptions.value.map((o) => o.code))
+  detailRows.value.forEach((r) => {
+    if (r.busiModuleCode && !validModuleCodes.has(r.busiModuleCode)) r.busiModuleCode = ''
+  })
   extFields.value = (await fetchEffectiveDocumentTypeExtFields(headerForm.documentTypeCode))
     .sort((a, b) => (a.formSortOrder ?? 0) - (b.formSortOrder ?? 0))
   detailRows.value.forEach((r) => {
@@ -623,10 +631,9 @@ function resolveErrorMessage(error: unknown, fallback: string) {
 
 onMounted(async () => {
   headerForm.applicationDate = new Date().toISOString().slice(0, 10)
-  const [tree, options, businessModules, applyMethods, expressTypes, handoverForms] = await Promise.all([
+  const [tree, options, applyMethods, expressTypes, handoverForms] = await Promise.all([
     fetchDocumentTypeTree(),
     fetchArchiveCreateOptions(),
-    fetchDictionaryItems('BUSINESS_MOUDLE').catch(() => []),
     fetchDictionaryItems('TRANSFER_APPLY_METHOD').catch(() => []),
     fetchDictionaryItems('TRANSFER_EXPRESS_TYPE').catch(() => []),
     fetchDictionaryItems('HANDOVER_FORM').catch(() => [])
@@ -634,7 +641,6 @@ onMounted(async () => {
   documentTypeTree.value = tree
   companyOptions.value = (options as ArchiveCreateOptions).companyProjects ?? []
   carrierTypeOptions.value = (options as ArchiveCreateOptions).carrierTypes ?? []
-  busiModuleOptions.value = toLabelOptions(businessModules as DictionaryItem[])
   const applyMethodDict = toLabelOptions(applyMethods as DictionaryItem[])
   const expressDict = toLabelOptions(expressTypes as DictionaryItem[])
   const handoverFormDict = toLabelOptions(handoverForms as DictionaryItem[])

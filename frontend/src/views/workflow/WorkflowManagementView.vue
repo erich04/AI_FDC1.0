@@ -17,6 +17,9 @@
               />
             </el-select>
             <el-button type="primary" @click="openStartProcessDialog">发起流程</el-button>
+            <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+            <el-tooltip :content="tableFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="tableFullPage = !tableFullPage" /></el-tooltip>
+            <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="loadData" /></el-tooltip>
           </div>
         </div>
       </template>
@@ -314,6 +317,7 @@
 </template>
 
 <script setup lang="ts">
+import { FullScreen, RefreshRight, Setting } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { fetchArchiveCreateOptions } from '../../api/modules/archiveManagement'
@@ -422,6 +426,7 @@ const completeTaskVisible = ref(false)
 const rejectTaskVisible = ref(false)
 const delegateTaskVisible = ref(false)
 const processDetailVisible = ref(false)
+const tableFullPage = ref(false)
 
 const startProcessForm = ref({
   processDefinitionKey: 'documentTransfer',
@@ -916,6 +921,10 @@ const openProcessDetailByTask = async (task: WorkflowTaskItem) => {
     status: 'RUNNING',
     initiatorName: ''
   })
+}
+
+const notifyColumnSetting = () => {
+  ElMessage.info('列设置入口已保留，当前版本不展示具体列配置面板。')
 }
 
 onMounted(() => {

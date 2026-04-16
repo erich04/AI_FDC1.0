@@ -240,6 +240,7 @@ public class CompanyProjectServiceImpl implements CompanyProjectService {
         entity.setCompanyProjectName(requireText(command.getCompanyProjectName(), "companyProjectName"));
         entity.setCountryCode(requireText(command.getCountryCode(), "countryCode"));
         entity.setManagementArea(requireText(command.getManagementArea(), "managementArea"));
+        entity.setCompanyTag(trimToNull(command.getCompanyTag()));
         entity.setEnabledFlag(requireText(command.getEnabledFlag(), "enabledFlag"));
         entity.setDeleteFlag("N");
         entity.setCreatedBy(SYSTEM_OPERATOR_ID);
@@ -267,6 +268,7 @@ public class CompanyProjectServiceImpl implements CompanyProjectService {
         existing.setCompanyProjectName(requireText(command.getCompanyProjectName(), "companyProjectName"));
         existing.setCountryCode(requireText(command.getCountryCode(), "countryCode"));
         existing.setManagementArea(requireText(command.getManagementArea(), "managementArea"));
+        existing.setCompanyTag(trimToNull(command.getCompanyTag()));
         existing.setEnabledFlag(requireText(command.getEnabledFlag(), "enabledFlag"));
         existing.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
         existing.setLastUpdateDate(now);
@@ -455,6 +457,7 @@ public class CompanyProjectServiceImpl implements CompanyProjectService {
         response.setCompanyProjectName(item.getCompanyProjectName());
         response.setCountryCode(item.getCountryCode());
         response.setManagementArea(item.getManagementArea());
+        response.setCompanyTag(item.getCompanyTag());
         response.setEnabledFlag(item.getEnabledFlag());
         response.setOrganizationCount(listActiveLines(item.getCompanyProjectCode()).size());
         response.setLastUpdatedBy(item.getLastUpdatedBy());
@@ -469,6 +472,7 @@ public class CompanyProjectServiceImpl implements CompanyProjectService {
         response.setCompanyProjectName(item.getCompanyProjectName());
         response.setCountryCode(item.getCountryCode());
         response.setManagementArea(item.getManagementArea());
+        response.setCompanyTag(item.getCompanyTag());
         response.setEnabledFlag(item.getEnabledFlag());
         response.setDeleteFlag(item.getDeleteFlag());
         response.setCreatedBy(item.getCreatedBy());

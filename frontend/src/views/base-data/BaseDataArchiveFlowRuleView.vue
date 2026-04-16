@@ -4,9 +4,9 @@
       <div class="toolbar">
         <el-form :inline="true" :model="query" class="query-form">
           <el-form-item label="关键字">
-            <el-input v-model.trim="query.keyword" placeholder="公司/项目、文档类型或文档组织" clearable />
+            <el-input v-model.trim="query.keyword" placeholder="公司、文档类型或文档组织" clearable />
           </el-form-item>
-          <el-form-item label="公司/项目">
+          <el-form-item label="公司">
             <el-select v-model="query.companyProjectCode" placeholder="全部" clearable style="width: 220px">
               <el-option v-for="item in companyProjectOptions" :key="item.code" :label="`${item.code} - ${item.name}`" :value="item.code" />
             </el-select>
@@ -42,15 +42,15 @@
         <el-form ref="formRef" :model="form" :rules="rules" label-width="160px" class="editor-form">
           <el-row :gutter="16">
             <el-col :md="8" :xs="24">
-              <el-form-item label="公司/项目" prop="companyProjectCode" required>
-                <el-select v-model="form.companyProjectCode" :disabled="editor.mode !== 'create' || isReadonly" placeholder="请选择公司/项目" filterable style="width: 100%">
+              <el-form-item label="公司" prop="companyProjectCode" required>
+                <el-select v-model="form.companyProjectCode" :disabled="editor.mode !== 'create' || isReadonly" placeholder="请选择公司" filterable style="width: 100%">
                   <el-option v-for="item in companyProjectOptions" :key="item.code" :label="`${item.code} - ${item.name}`" :value="item.code" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
               <el-form-item label="文档类型" prop="documentTypeCode" required>
-                <TreeCodeSelector v-model="form.documentTypeCode" :data="documentTypeTree" placeholder="请选择文档类型" label-key="typeName" value-key="typeCode" :disabled="isReadonly" />
+                <TreeCodeSelector v-model="form.documentTypeCode" :data="documentTypeLevel1Tree" placeholder="请选择文档类型" label-key="typeName" value-key="typeCode" :disabled="isReadonly" />
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
@@ -110,8 +110,8 @@
       </div>
 
       <el-table :data="displayedItems" border empty-text="暂无归档流向规则">
-        <el-table-column prop="companyProjectCode" label="公司/项目编码" min-width="180" />
-        <el-table-column prop="companyProjectName" label="公司/项目名称" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="companyProjectCode" label="公司编码" min-width="180" />
+        <el-table-column prop="companyProjectName" label="公司名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="documentTypeName" label="文档类型" min-width="180" show-overflow-tooltip />
         <el-table-column prop="archiveDestinationName" label="归档地" min-width="140" show-overflow-tooltip />
         <el-table-column prop="documentOrganizationName" label="文档组织" min-width="180" show-overflow-tooltip />
@@ -199,6 +199,7 @@ const documentOrganizationOptions = ref<ArchiveFlowRuleOption[]>([])
 const cityOptions = ref<ArchiveFlowRuleOption[]>([])
 const securityLevels = ref<SecurityLevelOption[]>([])
 const documentTypeTree = ref<DocumentTypeTreeNode[]>([])
+const documentTypeLevel1Tree = computed(() => (Array.isArray(documentTypeTree.value) ? documentTypeTree.value : []).map((n) => ({ ...n, children: [] })))
 
 const enabledOptions = [
   { label: '启用', value: 'Y' },
@@ -247,7 +248,7 @@ watch(retentionPeriodInput, (value) => {
 })
 
 const rules: FormRules<ArchiveFlowRuleCreateCommand> = {
-  companyProjectCode: [{ required: true, message: '请选择公司/项目', trigger: 'change' }],
+  companyProjectCode: [{ required: true, message: '请选择公司', trigger: 'change' }],
   documentTypeCode: [{ required: true, message: '请选择文档类型', trigger: 'change' }],
   customRule: [{ max: 500, message: '最大长度500', trigger: 'blur' }],
   archiveDestination: [{ max: 64, message: '最大长度64', trigger: 'change' }],

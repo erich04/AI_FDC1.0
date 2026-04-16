@@ -1,6 +1,7 @@
 package com.smartarchive.documenttype.controller;
 
 import com.smartarchive.common.api.ApiResponse;
+import com.smartarchive.archivemanage.dto.LabelValueOption;
 import com.smartarchive.documenttype.dto.DocumentTypeCreateCommand;
 import com.smartarchive.documenttype.dto.DocumentTypePermissionPreviewResponse;
 import com.smartarchive.documenttype.dto.DocumentTypeTreeNodeResponse;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,6 +34,11 @@ public class DocumentTypeController {
     @GetMapping("/permissions/preview")
     public ApiResponse<DocumentTypePermissionPreviewResponse> permissionPreview() {
         return ApiResponse.success(documentTypeService.getPermissionPreview());
+    }
+
+    @GetMapping("/level3-modules")
+    public ApiResponse<List<LabelValueOption>> listLevel3Modules(@RequestParam String documentTypeCode) {
+        return ApiResponse.success(documentTypeService.listLevel3Modules(documentTypeCode));
     }
 
     @GetMapping("/{typeCode}")

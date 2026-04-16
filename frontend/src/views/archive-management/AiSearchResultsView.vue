@@ -93,7 +93,7 @@
 
           <div class="filters-form">
             <div class="filter-item">
-              <label>公司/项目</label>
+              <label>公司</label>
               <el-select v-model="filters.companyProjectCode" clearable filterable @change="applyFilters">
                 <el-option v-for="item in options.companyProjects" :key="item.code" :label="item.name" :value="item.code" />
               </el-select>
@@ -103,7 +103,7 @@
               <label>文档类型</label>
               <CommonTreeSelect
                 v-model="filters.documentTypeCode"
-                :data="documentTypeTree"
+                :data="documentTypeLevel1Tree"
                 placeholder="请选择文档类型"
                 label-key="typeName"
                 value-key="typeCode"
@@ -231,7 +231,7 @@
                   @click="selectDocument(reference)"
                 >
                   <strong>{{ reference.documentName }}</strong>
-                  <span>{{ reference.documentTypeName || reference.archiveTypeCode || '未分类' }} / {{ reference.companyProjectName || '未标注项目' }}</span>
+                  <span>{{ reference.documentTypeName || reference.archiveTypeCode || '未分类' }} / {{ reference.companyProjectName || '未标注公司' }}</span>
                 </button>
               </div>
               <el-empty v-else description="当前没有可直接引用的依据文档，建议从下方相关文档继续查看。" />
@@ -272,7 +272,7 @@
                       <button type="button" class="link-button" @click="selectDocument(record)">{{ record.documentName }}</button>
                       <div class="document-card__meta">
                         <el-tag size="small">{{ record.documentTypeName || record.archiveTypeCode || '未分类' }}</el-tag>
-                        <el-tag size="small" type="success">{{ record.companyProjectName || '默认项目' }}</el-tag>
+                        <el-tag size="small" type="success">{{ record.companyProjectName || '默认公司' }}</el-tag>
                         <el-tag size="small" :type="relevanceTag(record).type">{{ relevanceTag(record).label }}</el-tag>
                       </div>
                     </div>
@@ -325,7 +325,7 @@
               <strong>{{ selectedDocument.documentName }}</strong>
               <div class="preview-header__meta">
                 <el-tag size="small">{{ selectedDocument.documentTypeName || selectedDocument.archiveTypeCode || '未分类' }}</el-tag>
-                <el-tag size="small" type="success">{{ selectedDocument.companyProjectName || '默认项目' }}</el-tag>
+                <el-tag size="small" type="success">{{ selectedDocument.companyProjectName || '默认公司' }}</el-tag>
               </div>
             </div>
 
@@ -351,7 +351,7 @@
             <div class="preview-section">
               <span class="preview-section__label">元信息</span>
               <div class="meta-grid">
-                <span>档号：{{ selectedDocument.archiveFilingCode || selectedDocument.archiveCode }}</span>
+                <span>档案编码：{{ selectedDocument.archiveCode }}</span>
                 <span>责任人：{{ selectedDocument.dutyPerson || '未标注' }}</span>
                 <span>更新时间：{{ formatDocumentDate(selectedDocument.lastUpdateDate || selectedDocument.documentDate) }}</span>
                 <span>状态：{{ selectedDocument.archiveStatus || '已归档' }}</span>
@@ -417,9 +417,10 @@ const selectedTags = ref<string[]>([])
 const loading = ref(false)
 const searchElapsed = ref('0.0')
 const answerResult = ref<ArchiveAskResult | null>(null)
-const queryResult = ref<ArchiveQueryResult>({ records: [], queryFields: [] })
+const queryResult = ref<ArchiveQueryResult>({ records: [], queryFields: [], total: 0, page: 1, pageSize: 20 })
 const aiModels = ref<ArchiveAiModelSummary[]>([])
 const documentTypeTree = ref<DocumentTypeTreeNode[]>([])
+const documentTypeLevel1Tree = computed(() => (Array.isArray(documentTypeTree.value) ? documentTypeTree.value : []).map((n) => ({ ...n, children: [] })))
 const selectedDocument = ref<ArchiveRecordSummary | null>(null)
 const favorites = ref(new Set<string>())
 
@@ -441,7 +442,7 @@ const filters = reactive({
   documentOrganizationCode: ''
 })
 
-const searchModes = [
+const searchModes: Array<{ label: string; value: SearchMode }> = [
   { label: '智能问答', value: 'qa' },
   { label: '文档搜索', value: 'document' }
 ]
@@ -554,7 +555,7 @@ const answerHighlights = computed(() => {
 const applicableScopes = computed(() => {
   const scopes: string[] = []
   if (selectedDocumentTypeName.value) scopes.push(`当前优先覆盖文档类型：${selectedDocumentTypeName.value}`)
-  if (selectedCompanyName.value) scopes.push(`当前限定公司/项目：${selectedCompanyName.value}`)
+  if (selectedCompanyName.value) scopes.push(`当前限定公司：${selectedCompanyName.value}`)
   if (selectedOrganizationName.value) scopes.push(`当前限定文档组织：${selectedOrganizationName.value}`)
 
   const typeNames = Array.from(new Set(displayedRecords.value.map(item => item.documentTypeName || item.archiveTypeCode).filter(Boolean))).slice(0, 3)
@@ -629,7 +630,7 @@ const filteredRecords = computed(() => {
 
 const activeFilterTags = computed(() => {
   const tags: string[] = []
-  if (selectedCompanyName.value) tags.push(`公司/项目：${selectedCompanyName.value}`)
+  if (selectedCompanyName.value) tags.push(`公司：${selectedCompanyName.value}`)
   if (selectedDocumentTypeName.value) tags.push(`文档类型：${selectedDocumentTypeName.value}`)
   if (selectedOrganizationName.value) tags.push(`文档组织：${selectedOrganizationName.value}`)
   if (timeRange.value !== 'all') tags.push(`时间范围：${timeRangeOptions.find(item => item.value === timeRange.value)?.label}`)
@@ -762,7 +763,7 @@ function resetFilters() {
 }
 
 function removeFilterTag(tag: string) {
-  if (tag.startsWith('公司/项目')) filters.companyProjectCode = ''
+  if (tag.startsWith('公司：') || tag.startsWith('公司/项目')) filters.companyProjectCode = ''
   if (tag.startsWith('文档类型')) filters.documentTypeCode = ''
   if (tag.startsWith('文档组织')) filters.documentOrganizationCode = ''
   if (tag.startsWith('时间范围')) {
@@ -894,7 +895,7 @@ function downloadDocument(record: ArchiveRecordSummary) {
 function showMetadata(record: ArchiveRecordSummary) {
   ElMessageBox.alert(
     [
-      `档号：${record.archiveFilingCode || record.archiveCode}`,
+      `档案编码：${record.archiveCode}`,
       `文档类型：${record.documentTypeName || record.archiveTypeCode || '未分类'}`,
       `责任人：${record.dutyPerson || '未标注'}`,
       `来源系统：${record.sourceSystem || '未标注'}`,

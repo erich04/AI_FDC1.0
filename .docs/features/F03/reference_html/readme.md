@@ -12,7 +12,7 @@ financial_document_system/
 │   ├── document_detail.html    # 文档详情页
 │   ├── document_edit.html      # 文档编辑页
 │   ├── document_create.html    # 文档创建页
-│   ├── data_maintenance.html   # 数据维护页
+│   ├── data_maintenance.html   # 应归档数据管理页
 │   ├── attachment_preview.html # 附件预览页
 │   ├── import_query.html       # 导入查询页
 │   └── my_exports.html         # 我的导出页
@@ -24,7 +24,7 @@ financial_document_system/
 ### 1. 主页面 (index.html)
 - 展示系统的两个主要功能入口
 - 文档查询：用于搜索和查看文档
-- 数据维护：用于管理文档数据和创建新文档
+- 应归档数据管理：用于管理文档数据和创建新文档
 
 ### 2. 登录页面 (login.html)
 - 系统登录界面
@@ -33,7 +33,7 @@ financial_document_system/
 
 ### 3. 文档查询页 (document_search.html)
 - 提供多条件筛选功能
-- 支持文档类型、归档主体、业务模块、档期等筛选
+- 支持文档类型、公司、业务模块、档期等筛选
 - 显示文档列表，包含所有关键信息
 - 点击文档编号可跳转到详情页
 - 支持批量导出功能，导出成功后可跳转到"我的导出"页面
@@ -58,7 +58,7 @@ financial_document_system/
 - 所有必填字段都有标记
 - 提供提交和取消功能
 
-### 7. 数据维护页 (data_maintenance.html)
+### 7. 应归档数据管理页 (data_maintenance.html)
 - 展示所有文档的列表
 - 提供编辑、删除等操作按钮
 - "文档创建"按钮可跳转到创建页面

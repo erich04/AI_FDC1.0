@@ -17,6 +17,7 @@ public class CompanyProject {
     private String companyProjectName;
     private String countryCode;
     private String managementArea;
+    private String companyTag;
     @TableField("enable_flag")
     private String enabledFlag;
     @TableLogic(value = "N", delval = "Y")

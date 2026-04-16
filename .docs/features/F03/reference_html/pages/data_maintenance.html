@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>财经文档系统 - 数据维护</title>
+    <title>财经文档系统 - 应归档数据管理</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -103,7 +103,10 @@
 
         <!-- Main -->
         <main class="flex-1 p-6 max-w-[1440px] mx-auto w-full">
-            <h2 class="text-2xl font-bold mb-6">数据维护</h2>
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold">应归档数据管理</h2>
+                <p class="text-sm text-text-secondary mt-1">对未归档数据进行手工调整</p>
+            </div>
 
             <!-- Filter Section -->
             <section class="bg-white rounded-lg border border-border-color p-6 shadow-sm mb-6">
@@ -129,7 +132,7 @@
                             </select>
                         </div>
                         <div class="col-span-3">
-                            <label class="block text-sm font-medium text-text-secondary mb-1.5">归档主体</label>
+                            <label class="block text-sm font-medium text-text-secondary mb-1.5">公司</label>
                             <input type="text" placeholder="选择主体" class="w-full h-10 px-3 rounded border border-border-color text-sm cursor-pointer" readonly>
                         </div>
                         <div class="col-span-3">
@@ -333,7 +336,7 @@
                                 <th class="px-4 py-3 font-semibold text-text-secondary">文档编号</th>
                                 <th class="px-4 py-3 font-semibold text-text-secondary">文档名称</th>
                                 <th class="px-4 py-3 font-semibold text-text-secondary">业务模块</th>
-                                <th class="px-4 py-3 font-semibold text-text-secondary">归档主体</th>
+                                <th class="px-4 py-3 font-semibold text-text-secondary">公司</th>
                                 <th class="px-4 py-3 font-semibold text-text-secondary">档期</th>
                                 <th class="px-4 py-3 font-semibold text-text-secondary">状态</th>
                                 <th class="px-4 py-3 font-semibold text-text-secondary">更新人</th>

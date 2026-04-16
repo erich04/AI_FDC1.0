@@ -17,7 +17,7 @@ public class TransferApplicationDetail {
     private String docBusiNo;
     private String docName;
     private String busiModuleCode;
-    /** 公司/项目编码 */
+    /** 公司编码（company_code，库字段 company_project_code） */
     private String companyProjectCode;
     private String archPlaceAlpha2Code;
     private String endArchPeriod;

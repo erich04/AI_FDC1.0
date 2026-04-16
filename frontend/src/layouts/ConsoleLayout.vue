@@ -25,17 +25,37 @@
             <span>首页工作台</span>
           </el-menu-item>
 
+          <el-menu-item index="/archive-management/query">
+            <el-icon><Search /></el-icon>
+            <span>文档查询</span>
+          </el-menu-item>
+
+          <el-menu-item index="/archive-management/pending-archive/query">
+            <el-icon><List /></el-icon>
+            <span>应归档数据管理</span>
+          </el-menu-item>
+
+          <el-sub-menu index="/workspace">
+            <template #title>
+              <el-icon><List /></el-icon>
+              <span>我的工作空间</span>
+            </template>
+            <el-menu-item index="/workspace/import-query">我的导入</el-menu-item>
+            <el-menu-item index="/workspace/export-query">我的导出</el-menu-item>
+            <el-menu-item index="/workspace/my-drafts">我的草稿</el-menu-item>
+          </el-sub-menu>
+
           <el-sub-menu index="/base-data">
             <template #title>
               <el-icon><Files /></el-icon>
               <span>配置中心</span>
             </template>
-            <el-menu-item index="/base-data/company-projects">公司/项目管理</el-menu-item>
+            <el-menu-item index="/base-data/company-projects">公司管理</el-menu-item>
             <el-menu-item index="/base-data/document-organizations">文档组织管理</el-menu-item>
-            <el-menu-item index="/base-data/document-types">文档类型管理</el-menu-item>
+            <el-menu-item index="/base-data/document-types">业务模块管理</el-menu-item>
             <el-menu-item index="/base-data/archive-flow-rules">归档规则管理</el-menu-item>
             <el-menu-item index="/base-data/warehouse">库房管理</el-menu-item>
-            <el-menu-item index="/base-data/company-project-dictionaries">公司/项目字典</el-menu-item>
+            <el-menu-item index="/base-data/company-project-dictionaries">公司字典</el-menu-item>
             <el-menu-item index="/base-data/dictionaries">字典管理</el-menu-item>
           </el-sub-menu>
 
@@ -45,6 +65,7 @@
               <span>档案业务管理</span>
             </template>
             <el-menu-item index="/archive-management/create">发起归档</el-menu-item>
+            <el-menu-item index="/archive-management/query?mine=1">待我归档</el-menu-item>
             <el-sub-menu index="archive-management-doc-transfer">
               <template #title>
                 <span>文档移交</span>
@@ -53,7 +74,6 @@
               <el-menu-item index="/archive-management/transfer-query">移交申请查询</el-menu-item>
             </el-sub-menu>
             <el-menu-item index="/archive-management/ai-search">AI+档案</el-menu-item>
-            <el-menu-item index="/archive-management/query">档案查询</el-menu-item>
             <el-menu-item index="/archive-management/borrow">借阅文档</el-menu-item>
             <el-menu-item index="/archive-management/bind">成册整理</el-menu-item>
             <el-menu-item index="/archive-management/storage">入库上架</el-menu-item>
@@ -76,6 +96,7 @@
               </el-icon>
               <span>档案安全管理</span>
             </template>
+            <el-menu-item index="/security/user-role-config">系统角色配置</el-menu-item>
             <el-sub-menu index="/security/four-properties">
               <template #title>
                 <span>四性检测</span>
@@ -95,12 +116,9 @@
           <el-button text class="icon-button" @click="layout.toggle()">
             <el-icon><component :is="layout.collapsed ? Expand : Fold" /></el-icon>
           </el-button>
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item v-for="crumb in breadcrumbs" :key="crumb">{{ crumb }}</el-breadcrumb-item>
-          </el-breadcrumb>
         </div>
 
-        <div class="console-header__center">
+        <div class="console-header__right-fixed">
           <el-input
             v-model="globalKeyword"
             class="global-search"
@@ -174,16 +192,42 @@
       </el-header>
 
       <el-main class="console-main">
-        <div class="page-head">
-          <div>
-            <h1>{{ pageTitle }}</h1>
-            <p>{{ pageDescription }}</p>
+        <template v-if="usePageContextBar">
+          <div class="page-context-bar">
+            <el-breadcrumb separator="/" class="page-context-bar__crumb">
+              <el-breadcrumb-item v-for="(crumb, i) in breadcrumbs" :key="`${i}-${crumb}`">{{ crumb }}</el-breadcrumb-item>
+            </el-breadcrumb>
+            <div class="page-context-bar__right">
+              <div class="page-context-bar__meta">
+                <el-tag effect="plain" type="success" size="small">统一业务入口</el-tag>
+                <div class="ai-ready-entry">
+                  <el-tag effect="plain" type="warning" size="small">AI 检索已就绪</el-tag>
+                  <el-button v-if="showAiArchiveButton" type="info" plain size="small" @click="goAiSearch">AI+档案</el-button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="page-head__meta">
-            <el-tag effect="plain" type="success">统一业务入口</el-tag>
-            <el-tag effect="plain" type="warning">AI 检索已就绪</el-tag>
+        </template>
+        <template v-else>
+          <div class="page-breadcrumb">
+            <el-breadcrumb separator="/">
+              <el-breadcrumb-item v-for="(crumb, i) in breadcrumbs" :key="`${i}-${crumb}`">{{ crumb }}</el-breadcrumb-item>
+            </el-breadcrumb>
           </div>
-        </div>
+          <div class="page-head" :class="{ 'page-head--no-title': hideLayoutPageHead }">
+            <div v-if="!hideLayoutPageHead">
+              <h1>{{ pageTitle }}</h1>
+              <p>{{ pageDescription }}</p>
+            </div>
+            <div class="page-head__meta">
+              <el-tag effect="plain" type="success">统一业务入口</el-tag>
+              <div class="ai-ready-entry">
+                <el-tag effect="plain" type="warning">AI 检索已就绪</el-tag>
+                <el-button v-if="showAiArchiveButton" type="info" plain size="small" @click="goAiSearch">AI+档案</el-button>
+              </div>
+            </div>
+          </div>
+        </template>
         <router-view />
       </el-main>
     </el-container>
@@ -220,6 +264,12 @@ interface HeaderMessage {
 const route = useRoute()
 const router = useRouter()
 const layout = useLayoutStore()
+
+/** vue-router 的 query 可能是 string | string[] */
+const firstQueryValue = (q: unknown) => {
+  if (q == null) return ''
+  return String(Array.isArray(q) ? q[0] : q)
+}
 const globalKeyword = ref('')
 const hasUnreadMessages = ref(true)
 
@@ -257,10 +307,38 @@ const todoCount = computed(() => 12)
 const todoBadge = computed(() => (todoCount.value > 99 ? '99+' : todoCount.value))
 const activeMenu = computed(() => route.path.startsWith('/base-data/company-projects') ? '/base-data/company-projects' : route.path)
 const pageTitle = computed(() => (route.meta.title as string) ?? '档案智能工作台')
-const breadcrumbs = computed(() => (route.meta.breadcrumb as string[]) ?? [pageTitle.value])
+const hideLayoutPageHead = computed(() => route.meta.hidePageHead === true)
+const usePageContextBar = computed(
+  () =>
+    route.name === 'archive-management-detail' ||
+    route.name === 'archive-management-pending-archive-edit' ||
+    route.name === 'archive-management-pending-archive-create'
+)
+
+const showAiArchiveButton = computed(
+  () =>
+    route.path === '/archive-management/query' ||
+    route.name === 'archive-management-detail' ||
+    route.name === 'archive-management-pending-archive-edit' ||
+    route.name === 'archive-management-pending-archive-create'
+)
+const breadcrumbs = computed(() => {
+  if (route.name === 'archive-management-detail') {
+    if (firstQueryValue(route.query.from) === 'pending') {
+      return ['应归档数据管理', '应归档数据详情']
+    }
+    return ['文档查询', '文档详情']
+  }
+  return (route.meta.breadcrumb as string[]) ?? [pageTitle.value]
+})
+
 
 const pageDescription = computed(() => {
   if (route.meta.description) return route.meta.description as string
+
+  if (route.path.startsWith('/archive-management/pending-archive')) {
+    return '对应路线图 F02：应归档数据的集成、录入、批量维护、查询与编辑；详细规格以 .docs 下 F02 功能文档为准。'
+  }
 
   switch (route.path) {
     case '/dashboard':
@@ -279,6 +357,8 @@ const pageDescription = computed(() => {
       return '集中展示 AI 回答、相关文档、命中依据和右侧预览，承接自然语言搜索结果。'
     case '/archive-management/borrow':
       return '统一管理档案借阅申请、审批、借出与归还过程。'
+    case '/security/user-role-config':
+      return '配置用户系统角色及其管辖的公司、业务模块等数据范围。'
     case '/governance':
       return '集中查看流程、规则、AI 能力与安全策略配置。'
     case '/security/four-properties/config':
@@ -307,6 +387,10 @@ const handleGlobalSearch = () => {
 
 const goTodoCenter = () => {
   router.push({ path: '/dashboard', query: { focus: 'workspace' } })
+}
+
+const goAiSearch = () => {
+  router.push('/archive-management/ai-search')
 }
 
 const markMessagesRead = () => {
@@ -389,8 +473,8 @@ const openMessage = (path: string) => {
 }
 
 .console-header {
-  display: grid;
-  grid-template-columns: auto minmax(320px, 640px) auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 16px;
   height: 72px;
@@ -405,6 +489,18 @@ const openMessage = (path: string) => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.console-header__right-fixed {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  width: 560px;
+  max-width: 52vw;
+}
+
+.console-header__right-fixed .global-search {
+  width: 100%;
 }
 
 .global-search :deep(.el-input__wrapper) {
@@ -503,12 +599,63 @@ const openMessage = (path: string) => {
   overflow-y: auto;
 }
 
+.page-breadcrumb {
+  margin-bottom: 12px;
+}
+
+.page-context-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  flex-wrap: nowrap;
+  margin-bottom: 16px;
+  min-height: 28px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.page-context-bar__crumb {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.page-context-bar__crumb :deep(.el-breadcrumb) {
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.page-context-bar__right {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+  gap: 8px;
+}
+
+.page-context-bar__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+
 .page-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.page-head--no-title {
+  justify-content: flex-end;
+  margin-bottom: 12px;
 }
 
 .page-head h1 {
@@ -528,20 +675,33 @@ const openMessage = (path: string) => {
 
 .page-head__meta {
   display: flex;
+  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+.ai-ready-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 @media (max-width: 1280px) {
   .console-header {
-    grid-template-columns: 1fr;
+    align-items: flex-start;
     height: auto;
     padding: 16px 20px;
+    flex-wrap: wrap;
   }
 
-  .console-header__left,
+  .console-header__right-fixed {
+    order: 2;
+    width: 100%;
+    margin-left: 0;
+  }
+
   .console-header__right {
-    justify-content: space-between;
+    order: 3;
+    margin-left: auto;
   }
 }
 
@@ -559,6 +719,10 @@ const openMessage = (path: string) => {
 
   .page-head {
     flex-direction: column;
+  }
+
+  .page-head__meta {
+    flex-wrap: wrap;
   }
 
   .user-copy {

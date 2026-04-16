@@ -24,13 +24,13 @@
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="120px" class="detail-form" require-asterisk-position="left">
         <el-row :gutter="16">
           <el-col :md="12" :xs="24">
-            <el-form-item label="公司/项目编码" prop="companyProjectCode" required>
-              <el-input v-model.trim="form.companyProjectCode" :disabled="mode !== 'create' || readonly" placeholder="请输入公司/项目编码" maxlength="64" show-word-limit />
+            <el-form-item label="公司编码" prop="companyProjectCode" required>
+              <el-input v-model.trim="form.companyProjectCode" :disabled="mode !== 'create' || readonly" placeholder="请输入公司编码" maxlength="64" show-word-limit />
             </el-form-item>
           </el-col>
           <el-col :md="12" :xs="24">
-            <el-form-item label="公司/项目名称" prop="companyProjectName" required>
-              <el-input v-model.trim="form.companyProjectName" :disabled="readonly" placeholder="请输入公司/项目名称" maxlength="128" show-word-limit />
+            <el-form-item label="公司名称" prop="companyProjectName" required>
+              <el-input v-model.trim="form.companyProjectName" :disabled="readonly" placeholder="请输入公司名称" maxlength="128" show-word-limit />
             </el-form-item>
           </el-col>
           <el-col :md="12" :xs="24">
@@ -166,20 +166,20 @@ const mode = computed<'create' | 'view' | 'edit'>(() => {
   return 'create'
 })
 const readonly = computed(() => mode.value === 'view')
-const pageHeading = computed(() => mode.value === 'create' ? '新建公司/项目' : mode.value === 'edit' ? '编辑公司/项目' : '查看公司/项目')
-const pageSubtitle = computed(() => mode.value === 'create' ? '维护公司/项目头信息和组织行信息。' : `当前对象：${code.value ?? '-'}`)
+const pageHeading = computed(() => mode.value === 'create' ? '新建公司' : mode.value === 'edit' ? '编辑公司' : '查看公司')
+const pageSubtitle = computed(() => mode.value === 'create' ? '维护公司头信息与组织行信息。' : `当前对象：${code.value ?? '-'}`)
 const flagOptions = [
   { label: '启用', value: 'Y' },
   { label: '停用', value: 'N' }
 ]
 const formRules: FormRules<CompanyProjectCreateCommand> = {
   companyProjectCode: [
-    { required: true, message: '请输入公司/项目编码', trigger: 'blur' },
-    { max: 64, message: '公司/项目编码长度不能超过64', trigger: 'blur' }
+    { required: true, message: '请输入公司编码', trigger: 'blur' },
+    { max: 64, message: '公司编码长度不能超过64', trigger: 'blur' }
   ],
   companyProjectName: [
-    { required: true, message: '请输入公司/项目名称', trigger: 'blur' },
-    { max: 128, message: '公司/项目名称长度不能超过128', trigger: 'blur' }
+    { required: true, message: '请输入公司名称', trigger: 'blur' },
+    { max: 128, message: '公司名称长度不能超过128', trigger: 'blur' }
   ],
   countryCode: [{ required: true, message: '请选择国家', trigger: 'change' }],
   managementArea: [
@@ -295,7 +295,7 @@ const submit = async () => {
     validateLines()
     if (mode.value === 'create') {
       const created = await createCompanyProject(form)
-      ElMessage.success('公司/项目创建成功')
+      ElMessage.success('公司创建成功')
       router.push(`/base-data/company-projects/${created.companyProjectCode}/view`)
       return
     }
@@ -307,7 +307,7 @@ const submit = async () => {
       lines: form.lines
     }
     const updated = await updateCompanyProject(code.value!, payload)
-    ElMessage.success('公司/项目更新成功')
+    ElMessage.success('公司更新成功')
     router.push(`/base-data/company-projects/${updated.companyProjectCode}/view`)
   } catch (error: any) {
     ElMessage.error(error?.message || '保存失败')

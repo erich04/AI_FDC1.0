@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-page">
     <div class="page-summary-grid">
       <el-card class="summary-card" shadow="never">
@@ -46,7 +46,16 @@
     </el-card>
 
     <el-card class="page-section-card" shadow="never">
-      <template #header>借阅记录</template>
+      <template #header>
+        <div class="page-toolbar">
+          <div class="page-toolbar__left"><span>借阅记录</span></div>
+          <div class="page-toolbar__right">
+            <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+            <el-tooltip :content="listFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="listFullPage = !listFullPage" /></el-tooltip>
+            <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="loadData" /></el-tooltip>
+          </div>
+        </div>
+      </template>
       <el-table :data="records" stripe border>
         <el-table-column prop="borrowCode" label="借阅单号" min-width="140" />
         <el-table-column prop="archiveCode" label="档号" min-width="140" />
@@ -74,6 +83,7 @@
 </template>
 
 <script setup lang="ts">
+import { FullScreen, RefreshRight, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { createBorrowRecord, fetchBorrowRecords, type BorrowCreateCommand } from '../../api/modules/lifecycle'
@@ -81,6 +91,7 @@ import type { BorrowRecord } from '../../types'
 
 const form = reactive<BorrowCreateCommand>({ archiveCode: '', archiveTitle: '', borrower: '普通用户', borrowType: 'PHYSICAL', expectedReturnDate: '' })
 const records = ref<BorrowRecord[]>([])
+const listFullPage = ref(false)
 const pendingApprovals = computed(() => records.value.filter(item => item.approvalStatus !== 'APPROVED').length)
 const borrowingCount = computed(() => records.value.filter(item => item.borrowStatus === 'BORROWED').length)
 const dueSoonCount = computed(() => records.value.filter(item => item.expectedReturnDate).length)
@@ -102,6 +113,10 @@ const submit = async () => {
   ElMessage.success('借阅申请已提交')
   resetForm()
   await loadData()
+}
+
+const notifyColumnSetting = () => {
+  ElMessage.info('列设置入口已保留，当前版本不展示具体列配置面板。')
 }
 
 onMounted(loadData)

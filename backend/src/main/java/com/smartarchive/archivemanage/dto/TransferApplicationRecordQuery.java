@@ -13,7 +13,7 @@ public class TransferApplicationRecordQuery {
 
     /** 文档业务编码（模糊） */
     private String docBusiNo;
-    /** 公司/项目编码 */
+    /** 公司编码（company_code，库字段 company_project_code） */
     private String companyProjectCode;
     /** 业务模块编码 */
     private String busiModuleCode;

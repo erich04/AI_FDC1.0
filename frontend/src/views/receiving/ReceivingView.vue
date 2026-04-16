@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-page">
     <div class="page-summary-grid">
       <el-card class="summary-card" shadow="never">
@@ -55,7 +55,16 @@
     <el-row :gutter="16">
       <el-col :xs="24" :lg="12">
         <el-card class="page-section-card" shadow="never">
-          <template #header>归档接收单</template>
+          <template #header>
+            <div class="page-toolbar">
+              <div class="page-toolbar__left"><span>归档接收单</span></div>
+              <div class="page-toolbar__right">
+                <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+                <el-tooltip :content="receiptFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="receiptFullPage = !receiptFullPage" /></el-tooltip>
+                <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="loadData" /></el-tooltip>
+              </div>
+            </div>
+          </template>
           <el-table :data="receipts" stripe border>
             <el-table-column prop="receiptCode" label="接收单号" min-width="140" />
             <el-table-column prop="archiveTitle" label="题名" min-width="180" show-overflow-tooltip />
@@ -73,7 +82,16 @@
 
       <el-col :xs="24" :lg="12">
         <el-card class="page-section-card" shadow="never">
-          <template #header>编目任务</template>
+          <template #header>
+            <div class="page-toolbar">
+              <div class="page-toolbar__left"><span>编目任务</span></div>
+              <div class="page-toolbar__right">
+                <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+                <el-tooltip :content="taskFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="taskFullPage = !taskFullPage" /></el-tooltip>
+                <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="loadData" /></el-tooltip>
+              </div>
+            </div>
+          </template>
           <el-table :data="catalogTasks" stripe border>
             <el-table-column prop="taskCode" label="任务号" min-width="120" />
             <el-table-column prop="archiveCode" label="档号" min-width="140" />
@@ -95,6 +113,7 @@
 </template>
 
 <script setup lang="ts">
+import { FullScreen, RefreshRight, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { createArchiveReceipt, fetchArchiveReceipts, fetchCatalogTasks, type ReceiptCreateCommand } from '../../api/modules/archive'
@@ -110,6 +129,8 @@ const form = reactive<ReceiptCreateCommand>({
 
 const receipts = ref<ArchiveReceipt[]>([])
 const catalogTasks = ref<CatalogTask[]>([])
+const receiptFullPage = ref(false)
+const taskFullPage = ref(false)
 const processingReceipts = computed(() => receipts.value.filter(item => item.receiveStatus !== 'COMPLETED').length)
 const dueSoonTasks = computed(() => catalogTasks.value.filter(item => item.taskStatus === 'PENDING').length)
 
@@ -136,6 +157,10 @@ const submit = async () => {
   ElMessage.success('归档接收单已创建')
   resetForm()
   await loadData()
+}
+
+const notifyColumnSetting = () => {
+  ElMessage.info('列设置入口已保留，当前版本不展示具体列配置面板。')
 }
 
 onMounted(loadData)

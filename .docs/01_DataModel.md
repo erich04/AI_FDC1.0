@@ -129,6 +129,16 @@
 | **时间类** | 日期时间   |        |      | DATETIME                           | 时间类                                  |
 | **时间类** | 日期     |        |      | DATE                               | 时间类，POSTSQL中用于涉及时区计算时，防止被自动转换        |
 
+## 时间字段落库与展示口径（F03 强制）
+
+适用范围：`F03 文档查询`、`应归档数据管理`、`文档详情` 及其后续复用页面。
+
+1. 除“开始档期（`start_period`）”与“结束档期（`end_period`）”外，业务日期/时间字段在数据库中统一使用 `TIMESTAMP` 存储。
+2. “开始档期/结束档期”保持档期语义（年月），可继续使用 `DATE` 字段并按 `YYYY-MM` 口径处理。
+3. 查询条件中的日期类控件统一为“日期（年月日）”选择；后端接收后按当天起止时间换算为时间戳条件（`00:00:00` ~ `23:59:59`）。
+4. 列表与详情页对非档期时间字段统一展示为 `yyyy-MM-dd HH:mm:ss`。
+5. 新增表/改表时，若字段中文语义为“日期/时间”且非档期字段，不得再定义为 `DATE`。
+
 
 ## 通用字段规范
 
@@ -183,7 +193,7 @@
 | 创建日期 | `creation_date` | TIMESTAMP |
 | 最后修改人 | `last_updated_by` | INT8 |
 | 最后修改日期 | `last_update_date` | TIMESTAMP |
-| 对本条记录的说明 | `sys_description` | NVARCHAR2(500) |
+| 对本条记录说明 | `sys_description` | NVARCHAR2(500) |
 | 最后修改追踪ID | `last_update_trace_id` | NVARCHAR2(100) |
 | 租户ID | `tenantid` | INT8 |
 
@@ -195,320 +205,172 @@
 
 ---
 
-## 5. F03 文档查询（核心数据模型草案）
+## 5. F03 文档查询（核心数据模型）
 
-> 说明：你目前没有 `fdc_doc_t / fdc_doc_att_t / fdc_doc_op_log_t / fdc_doc_log_att_t` 等现成表结构，本节提供一版**可实现、可扩展**的起草方案。  
-> 原则：字段命名/后缀/索引命名遵循本文件第 2~4 章；与 `/.docs/04_Glossary.md` 术语保持一致。
+> 说明：本节定义了 F03 模块的核心数据模型，支撑文档查询、详情、导出等功能。模型采用了“合并文档与档案表”的设计，并引入了“本表扩展字段”方案以支持灵活的业务属性。
 
 ### 5.1 ER（文字版）
 
-- `fdc_doc_t`（文档） 1 --- N `fdc_doc_att_t`（附件）
-- `fdc_doc_t`（文档） 1 --- N `fdc_doc_op_log_t`（操作日志）
-- `fdc_doc_op_log_t`（操作日志） 1 --- N `fdc_doc_log_att_t`（日志补充附件）
-- `fdc_doc_t`（文档） 1 --- 1 `fdc_arch_t`（档案，建议：一文档一档案；若一文档多档案则改 1---N）
-- `fdc_arch_t`（档案） 1 --- 1 `fdc_arch_storage_t`（档案物理信息，建议：一档案一份物理信息；如多册/多存放点则改 1---N）
-- `fdc_arch_t`（档案） N --- 1 `fdc_volume_t`（册）
-- `fdc_doc_export_task_t`（导出任务） 1 --- N `fdc_doc_export_task_item_t`（导出明细，可选）
+- `fdc_document_t`（文档） 1 --- N `fdc_document_attach_t`（文档附件）
+- 通用业务对象 1 --- N `fdc_audit_log_t`（业务操作审计日志）
+- `fdc_audit_log_t`（操作日志） 1 --- N `fdc_doc_log_att_t`（日志补充附件）
+- `fdc_document_t`（文档） 1 --- N `fdc_arch_storage_t`（档案物理信息，多对一或一对多）
+- `fdc_document_t`（文档） N --- 1 `fdc_volume_t`（册）
+- `fdc_doc_export_task_t`（导出任务） 1 --- N `fdc_doc_export_task_item_t`（导出明细）
+- `fdc_file_t`（文件） 记录系统内各种来源和平台的文件元数据
 
-### 5.2 表字典（草案）
+### 5.2 表字典
 
-#### 5.2.1 fdc_doc_t（文档主表）
+#### 5.2.1 fdc_document_t（文档信息表）
 
-用途：支撑文档查询、文档详情展示的核心事实表（Document）。
-
-
-| 字段中文名    | 字段名                       | 数据类型           | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK)                      | 自增(Auto Increment) | 默认值(Default Value) | 备注                                                            |
-| -------- | ------------------------- | -------------- | ---- | ------ | ------------ | ---------- | --------------------------- | ------------------ | ------------------ | ------------------------------------------------------------- |
-| ID主键     | doc_id                    | BIGINT         |      | Y      | Y            |            |                             | Y                  |                    | IT 主键（序列）                                                     |
-| 租户隔离     | tenantid                  | BIGINT         |      |        | Y            |            |                             |                    |                    | `idx_fdc_doc_tn1(tenantid)`                                   |
-| 文档业务编码   | doc_busi_no               | VARCHAR(60)    |      |        | Y            | Y          |                             |                    |                    | `uk_fdc_doc_t(tenantid, doc_busi_no)`；源系统业务ID                 |
-| 文档名称     | doc_name                  | VARCHAR(500)   |      |        | Y            |            |                             |                    |                    | `idx_fdc_doc_tn2(tenantid, doc_name)`（可选）                     |
-| 文档类型ID   | document_type_id          | BIGINT         |      |        | Y            |            | fdc_document_type_t         |                    |                    | `idx_fdc_doc_tn3(tenantid, document_type_id)`                 |
-| 归档主体ID   | archived_entity_unit_id   | BIGINT         |      |        | Y            |            | fdc_archived_entity_unit_t  |                    |                    | `idx_fdc_doc_tn4(tenantid, archived_entity_unit_id)`          |
-| 业务模块ID   | business_module_id        | BIGINT         |      |        | Y            |            | fdc_business_module_t       |                    |                    | `idx_fdc_doc_tn5(tenantid, business_module_id)`               |
-| 归档责任人ID  | owner_id                  | BIGINT         |      |        | N            |            |                             |                    |                    | 用于列表/详情“归档责任人（Owner）”展示与筛选（对应 `tpl_user_t.user_id`，逻辑外键）                |
-| 文档责任部门编码 | dept_code                 | VARCHAR(60)    |      |        | N            |            |                             |                    |                    | 用于列表/详情“文档责任部门（Responsible Dept.）”展示与筛选（部门服务入参）               |
-| 开始档期     | start_period              | DATE           |      |        | N            |            |                             |                    |                    | 旧规格字段；`idx_fdc_doc_tn6(tenantid, start_period)`（可选）           |
-| 结束档期     | end_period                | DATE           |      |        | N            |            |                             |                    |                    | 旧规格字段                                                         |
-| 文档状态     | doc_status                | VARCHAR(30)    |      |        | Y            |            |                             |                    |                    | LOOKUP：FDC_DOC_STATUS；`idx_fdc_doc_tn7(tenantid, doc_status)` |
-| 载体类型     | carrier_type              | VARCHAR(30)    |      |        | N            |            |                             |                    |                    | LOOKUP：FDC_CARRIER_TYPE                                       |
-| 密级       | security_level            | VARCHAR(30)    |      |        | N            |            |                             |                    |                    | LOOKUP：安全等级；`idx_fdc_doc_tn8(tenantid, security_level)`（可选）   |
-| 系统来源     | source_system             | VARCHAR(30)    |      |        | N            |            |                             |                    |                    | LOOKUP：FDC_SOURCE_SYS                                         |
-| 文档生成日期   | doc_generation_date       | DATE           |      |        | N            |            |                             |                    |                    | 旧规格字段；`idx_fdc_doc_tn9(tenantid, doc_generation_date)`（可选）    |
-| 归档地编码    | arch_place_alpha2_code    | VARCHAR(100)   |      |        | N            |            |                             |                    |                    | 行政区划/地理码                                                      |
-| 产生地编码    | origin_place_alpha2_code  | VARCHAR(100)   |      |        | N            |            |                             |                    |                    | 行政区划/地理码                                                      |
-| 文档组织编码   | doc_organization_code     | VARCHAR(30)    |      |        | N            |            | fdc_document_organization_t |                    |                    |                                                               |
-| 条码模块     | barcode_module_code       | VARCHAR(30)    |      |        | N            |            |                             |                    |                    | 旧规格字段                                                         |
-| 份数       | copies_quantity           | DECIMAL(24,10) |      |        | N            |            |                             |                    |                    | 数量类默认精度                                                       |
-| 归档流向规则ID | archive_rule_id           | BIGINT         |      |        | N            |            | fdc_archive_rule_t          |                    |                    | 用于 visible_flag 的可追溯（可选）                                      |
-| 是否可见     | visible_flag              | CHAR(1)        |      |        | Y            |            |                             |                    | 'Y'                | Y/N；`idx_fdc_doc_tn10(tenantid, visible_flag)`（可选）            |
-| 描述/      | description               | VARCHAR(500)   |      |        | N            |            |                             |                    |                    | 旧规格字段                                                         |
-| 有效标识     | enable_flag               | CHAR(1)        |      |        | Y            |            |                             |                    | 'Y'                | Y/N                                                           |
-| 删除标识     | delete_flag               | CHAR(1)        |      |        | Y            |            |                             |                    | 'N'                | Y/N                                                           |
-| 创建人      | created_by                | BIGINT         |      |        | Y            |            |                             |                    |                    | 外键（逻辑）到 `tpl_user_t.user_id`（创建人）                  |
-| 创建日期     | creation_date             | TIMESTAMP      |      |        | Y            |            |                             |                    |                    | 系统字段；`idx_fdc_doc_tn11(tenantid, creation_date)`（可选）          |
-| 乐观锁版本    | last_update_version       | INT4           |      |        | Y            |            |                             |                    | 0                  | 系统字段                                                          |
+用途：合并原文档表与档案表，记录从上游集成、核销、签收至成册前的全生命周期信息。采用本表 100 个扩展属性字段设计。
 
 
-#### 5.2.2 fdc_doc_att_t（文档附件表）
+| 字段中文名 | 字段名 | 数据类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 备注 |
+|---|---|---|---|---|---|---|---|
+| 文档ID | doc_id | INT8 | Y | Y |  |  |  |
+| 公司编码 | company_code | VARCHAR(60) |  | Y |  |  |  |
+| 公司名称 | company_name | VARCHAR(200) |  | Y |  |  |  |
+| 开始档期 | start_period | DATE |  | Y |  |  |  |
+| 结束档期 | end_period | DATE |  | N |  |  |  |
+| 业务模块编码 | biz_module_code | NVARCHAR2(30) |  | Y |  |  |  |
+| 文档业务编码 | doc_biz_no | NVARCHAR2(100) |  | Y |  |  |  |
+| 文档生成日期 | doc_gen_date | TIMESTAMP |  | Y |  |  |  |
+| 归档地编码 | arch_place_alpha2_code | NVARCHAR2(60) |  | Y |  |  |  |
+| 产生地编码 | origin_place_alpha2_code | NVARCHAR2(60) |  | Y |  |  |  |
+| 载体类型 | carrier_type | NVARCHAR2(30) |  | Y |  |  |  |
+| 文档名称 | doc_name | NVARCHAR2(100) |  | Y |  |  |  |
+| 文档组织编码 | doc_organization_code | NVARCHAR2(60) |  | Y |  |  |  |
+| 文档责任部门ID | doc_resp_dept_id | INT8 |  | Y |  |  |  |
+| 归档责任人 | doc_resp_person_id | INT8 |  | Y |  |  |  |
+| 保存期限（年） | rentention_term | INT4 |  | Y |  |  |  |
+| 密级 | security_level | NVARCHAR2(30) |  | Y |  |  |  |
+| 文档版本 | doc_version | VARCHAR |  | Y |  |  |  |
+| 来源数据唯一标识符 | source_id | NVARCHAR2(500) |  | N |  |  |  |
+| 数据来源系统 | source_system | NVARCHAR2(30) |  | Y |  |  |  |
+| 文档管理周期状态 | lifecycle_status | NVARCHAR2(30) |  | Y |  |  |  |
+| 文档保管状态 | custody_status | NVARCHAR2(30) |  | Y |  |  |  |
+| 描述 | description | NVARCHAR2(500) |  | N |  |  |  |
+| 份数 | copies_qty | INT4 |  | N |  |  |  |
+| 剩余份数 | remaining_copies_qty | INT4 |  | N |  |  |  |
+| 数据集成时间 | integretion_time | TIMESTAMP |  | N |  |  |  |
+| 签收人 | received_by | INT8 |  | N |  |  |  |
+| 签收时间 | received_time | TIMESTAMP |  | N |  |  |  |
+| 核销人 | verified_by | INT8 |  | N |  |  |  |
+| 核销时间 | verification_time | TIMESTAMP |  | N |  |  |  |
+| 档案条码 | arch_barcode | NVARCHAR2(100) |  | N |  |  |  |
+| 档案描述 | arch_description | NVARCHAR2(500) |  | N |  |  |  |
+| 档案类型 | arch_type_code | NVARCHAR2(60) |  | N |  |  |  |
+| 附件数量 | attachment_qty | INT4 |  | N |  |  |  |
+| 扩展字段1-100 | attr1~attr100 | NVARCHAR2(500) |  | N |  |  | 扩展字段统一文本口径 |
+| 删除标识 | delete_flag | INT1 |  | Y |  |  |  |
+| 创建人 | created_by | INT8 |  | Y |  |  |  |
+| 创建时间 | creation_date | TIMESTAMP |  | Y |  |  |  |
+| 更新人 | last_updated_by | INT8 |  | Y |  |  |  |
+| 更新时间 | last_update_date | TIMESTAMP |  | Y |  |  |  |
+| 系统描述 | sys_description | NVARCHAR2(500) |  | N |  |  |  |
+| 更新追踪编号 | last_update_trace_id | NVARCHAR2(100) |  | N |  |  |  |
+| 租户编号 | tenantid | INT8 |  | N |  |  |  |
 
-用途：支撑文档详情的附件列表、预览、下载、批量下载。
+#### 5.2.2 fdc_document_attach_t（文档附件表）
 
-
-| 字段中文名      | 字段名                 | 数据类型         | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 自增(Auto Increment) | 默认值(Default Value) | 备注                                      |
-| ---------- | ------------------- | ------------ | ---- | ------ | ------------ | ---------- | ------ | ------------------ | ------------------ | --------------------------------------- |
-| ID主键       | doc_att_id          | BIGINT       |      | Y      | Y            |            |        | Y                  |                    | IT 主键                                   |
-| 租户         | tenantid            | BIGINT       |      |        | Y            |            |        |                    |                    | `idx_fdc_doc_att_tn1(tenantid, doc_id)` |
-| 关联文档       | doc_id              | BIGINT       |      |        | Y            |            | FK（逻辑） |                    |                    |                                         |
-| 文件名        | file_name           | VARCHAR(500) |      |        | Y            |            |        |                    |                    |                                         |
-| 附件类型       | att_type            | VARCHAR(30)  |      |        | N            |            |        |                    |                    |                                         |
-| 文件大小（字节）   | file_size           | BIGINT       |      |        | N            |            |        |                    |                    |                                         |
-| 上传时间       | upload_time         | TIMESTAMP    |      |        | N            |            |        |                    |                    |                                         |
-| 补充信息/唯一标识码 | additional_info     | VARCHAR(500) |      |        | N            |            |        |                    |                    |                                         |
-| 存储地址/对象Key | location_url        | VARCHAR(500) |      |        | Y            |            |        |                    |                    | （受控）                                    |
-| 有效标识       | enable_flag         | CHAR(1)      |      |        | Y            |            |        |                    | 'Y'                |                                         |
-| 删除标识       | delete_flag         | CHAR(1)      |      |        | Y            |            |        |                    | 'N'                |                                         |
-| 创建人        | created_by          | BIGINT       |      |        | Y            |            |        |                    |                    | 外键（逻辑）到 `tpl_user_t.user_id`（创建人） |
-| 创建时间       | creation_date       | TIMESTAMP    |      |        | Y            |            |        |                    |                    |                                         |
-| 版本号        | last_update_version | INT4         |      |        | Y            |            |        |                    | 0                  |                                         |
-
-
-#### 5.2.3 fdc_doc_op_log_t（文档操作日志表）
-
-用途：支撑文档详情的操作日志展示与审计。
-
-
-| 字段中文名 | 字段名                 | 数据类型         | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 自增(Auto Increment) | 默认值(Default Value) | 备注                                                         |
-| ----- | ------------------- | ------------ | ---- | ------ | ------------ | ---------- | ------ | ------------------ | ------------------ | ---------------------------------------------------------- |
-| ID主键  | doc_op_log_id       | BIGINT       |      | Y      | Y            |            |        | Y                  |                    | IT 主键                                                      |
-| 租户    | tenantid            | BIGINT       |      |        | Y            |            |        |                    |                    | `idx_fdc_doc_op_log_tn1(tenantid, doc_id, operation_time)` |
-| 文档ID  | doc_id              | BIGINT       |      |        | Y            |            |        |                    |                    |                                                            |
-| 操作人   | operated_by         | BIGINT       |      |        | Y            |            |        |                    |                    | 外键（逻辑）到 `tpl_user_t.user_id`（操作人）               |
-| 操作类型  | operation_type      | VARCHAR(30)  |      |        | Y            |            |        |                    |                    | 枚举/LOOKUP                                                  |
-| 操作内容  | op_content          | VARCHAR(500) |      |        | Y            |            |        |                    |                    |                                                            |
-| 操作时间  | operation_time      | TIMESTAMP    |      |        | Y            |            |        |                    |                    |                                                            |
-| 备注    | remarks             | VARCHAR(500) |      |        | N            |            |        |                    |                    |                                                            |
-| 有效标识  | enable_flag         | CHAR(1)      |      |        | Y            |            |        |                    | 'Y'                |                                                            |
-| 删除标识  | delete_flag         | CHAR(1)      |      |        | Y            |            |        |                    | 'N'                |                                                            |
-| 创建人   | created_by          | BIGINT       |      |        | Y            |            |        |                    |                    | 外键（逻辑）到 `tpl_user_t.user_id`（创建人）               |
-| 创建时间  | creation_date       | TIMESTAMP    |      |        | Y            |            |        |                    |                    |                                                            |
-| 版本号   | last_update_version | INT4         |      |        | Y            |            |        |                    | 0                  |                                                            |
-
-
-#### 5.2.4 fdc_doc_log_att_t（日志补充附件表）
-
-用途：支撑“操作日志-补充附件”下载。
-
-
-| 字段中文名      | 字段名                 | 数据类型         | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 自增(Auto Increment) | 默认值(Default Value) | 备注                                                 |
-| ---------- | ------------------- | ------------ | ---- | ------ | ------------ | ---------- | ------ | ------------------ | ------------------ | -------------------------------------------------- |
-| ID主键       | doc_log_att_id      | BIGINT       |      | Y      | Y            |            |        | Y                  |                    | IT 主键                                              |
-| 租户         | tenantid            | BIGINT       |      |        | Y            |            |        |                    |                    | `idx_fdc_doc_log_att_tn1(tenantid, doc_op_log_id)` |
-| 关联日志       | doc_op_log_id       | BIGINT       |      |        | Y            |            |        |                    |                    |                                                    |
-| 附件名        | log_att_name        | VARCHAR(500) |      |        | Y            |            |        |                    |                    |                                                    |
-| 存储地址/对象Key | edm_id              | VARCHAR(500) |      |        | Y            |            |        |                    |                    |                                                    |
-| 有效标识       | enable_flag         | CHAR(1)      |      |        | Y            |            |        |                    | 'Y'                |                                                    |
-| 删除标识       | delete_flag         | CHAR(1)      |      |        | Y            |            |        |                    | 'N'                |                                                    |
-| 创建人        | created_by          | BIGINT       |      |        | Y            |            |        |                    |                    | 外键（逻辑）到 `tpl_user_t.user_id`（创建人）                 |
-| 创建时间       | creation_date       | TIMESTAMP    |      |        | Y            |            |        |                    |                    |                                                    |
-| 版本号        | last_update_version | INT4         |      |        | Y            |            |        |                    | 0                  |                                                    |
+用途：支撑文档详情的附件列表、预览、下载。关联 `fdc_file_t` 获取实际存储信息。
 
 
-#### 5.2.5 fdc_doc_export_task_t（导出任务表）
+| 字段中文名 | 字段名 | 数据类型 | 主键(PK) | 非空(NOT NULL) | 外键(FK) | 备注 |
+|---|---|---|---|---|---|---|
+| ID主键 | document_attach_id | BIGINT | Y | Y |  |  |
+| 租户隔离 | tenantid | BIGINT |  | Y |  |  | `idx_fdc_document_attach_tn1` |
+| 文档ID | document_id | BIGINT |  | Y | fdc_document_t |  |
+| 文件ID | file_id | BIGINT |  | Y | fdc_file_t | 关联实际文件存储元数据 |
+| 附件类别 | attach_category | VARCHAR(30) |  | N |  | LOOKUP: FDC_ATTACH_CATEGORY |
+| 附件类型 | att_type | VARCHAR(30) |  | N |  |  |
+| 有效标识 | enable_flag | CHAR(1) |  | Y |  | 'Y' |
+| 删除标识 | delete_flag | CHAR(1) |  | Y |  | 'N' |
+| 创建人 | created_by | BIGINT |  | Y |  |  |
+| 创建日期 | creation_date | TIMESTAMP |  | Y |  |  |
+| 最后修改人 | last_updated_by | BIGINT |  | Y |  |  |
+| 最后修改日期 | last_update_date | TIMESTAMP |  | Y |  |  |
+| 最后修改版本 | last_update_version | INT4 |  | Y |  |  | 0 |
 
-用途：支撑“批量导出”异步任务与“我的导出”列表。
+#### 5.2.3 fdc_audit_log_t（业务操作审计日志表）
 
-
-| 字段中文名        | 字段名                 | 数据类型          | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 自增(Auto Increment) | 默认值(Default Value) | 备注                                                                        |
-| ------------ | ------------------- | ------------- | ---- | ------ | ------------ | ---------- | ------ | ------------------ | ------------------ | ------------------------------------------------------------------------- |
-| ID主键         | export_task_id      | BIGINT        |      | Y      | Y            |            |        | Y                  |                    | IT 主键                                                                     |
-| 租户           | tenantid            | BIGINT        |      |        | Y            |            |        |                    |                    | `idx_fdc_doc_export_task_tn1(tenantid, requested_by, request_time)`       |
-| 业务任务号        | export_task_no      | VARCHAR(60)   |      |        | Y            | Y          |        |                    |                    | `uk_fdc_doc_export_task_t(tenantid, export_task_no)`                      |
-| 发起人          | requested_by        | BIGINT        |      |        | Y            |            |        |                    |                    | 外键（逻辑）到 `tpl_user_t.user_id`（发起人）                    |
-| 发起时间         | request_time        | TIMESTAMP     |      |        | Y            |            |        |                    |                    |                                                                           |
-| 幂等键          | idempotency_key     | VARCHAR(100)  |      |        | N            | Y          |        |                    |                    | 用于 documents/export 幂等（建议 tenant 粒度唯一）                                    |
-| 导出范围类型       | export_scope_type   | VARCHAR(10)   |      |        | N            |            |        |                    |                    | 未勾选=导出当前筛选结果；勾选=导出勾选集合（后端约定）                                              |
-| 勾选数量         | selected_count      | BIGINT        |      |        | N            |            |        |                    |                    | 仅当导出范围为“勾选集合”时有值（可选）                                                      |
-| 筛选条件摘要       | filter_snapshot     | VARCHAR(2000) |      |        | N            |            |        |                    |                    | 用于审计与排障（可选：筛选/勾选数量/导出类型摘要）                                                |
-| 状态           | export_status       | VARCHAR(30)   |      |        | Y            |            |        |                    |                    | 状态（处理中/已完成/失败/已取消）；`idx_fdc_doc_export_task_tn2(tenantid, export_status)` |
-| 导出内容摘要       | export_content      | VARCHAR(500)  |      |        | Y            |            |        |                    |                    |                                                                           |
-| 结果文件名        | file_name           | VARCHAR(500)  |      |        | N            |            |        |                    |                    |                                                                           |
-| 结果文件大小       | file_size           | BIGINT        |      |        | N            |            |        |                    |                    |                                                                           |
-| 结果文件地址/对象Key | location_url        | VARCHAR(500)  |      |        | N            |            |        |                    |                    |                                                                           |
-| 失败原因         | error_message       | VARCHAR(500)  |      |        | N            |            |        |                    |                    |                                                                           |
-| 有效标识         | enable_flag         | CHAR(1)       |      |        | Y            |            |        |                    | 'Y'                |                                                                           |
-| 删除标识         | delete_flag         | CHAR(1)       |      |        | Y            |            |        |                    | 'N'                |                                                                           |
-| 创建人          | created_by          | BIGINT        |      |        | Y            |            |        |                    |                    | 外键（逻辑）到 `tpl_user_t.user_id`（创建人）                    |
-| 创建时间         | creation_date       | TIMESTAMP     |      |        | Y            |            |        |                    |                    |                                                                           |
-| 版本号          | last_update_version | INT4          |      |        | Y            |            |        |                    | 0                  |                                                                           |
+用途：记录文档、册等各类业务实体的全生命周期操作轨迹。
 
 
-#### 5.2.6 fdc_doc_export_task_item_t（导出明细，可选）
+| 字段中文名 | 字段名 | 数据类型 | 主键(PK) | 非空(NOT NULL) | 备注 |
+|---|---|---|---|---|---|
+| ID主键 | audit_log_id | BIGINT | Y | Y |  |
+| 租户隔离 | tenantid | BIGINT |  | Y | `idx_fdc_audit_log_tn1` |
+| 业务对象ID | object_id | BIGINT |  | Y | 如 document_id, volume_id |
+| 业务对象类型 | object_type | VARCHAR(30) |  | Y | 如 DOCUMENT, VOLUME |
+| 操作人 | operated_by | BIGINT |  | Y | 对应 `tpl_user_t.user_id` |
+| 操作类型 | operation_type | VARCHAR(30) |  | Y | LOOKUP: FDC_OPERATION_TYPE |
+| 操作内容 | op_content | VARCHAR(500) |  | Y |  |
+| 操作时间 | operation_time | TIMESTAMP |  | Y |  |
+| 创建人 | created_by | BIGINT |  | Y |  |
+| 创建日期 | creation_date | TIMESTAMP |  | Y |  |
+| 最后修改人 | last_updated_by | BIGINT |  | Y |  |
+| 最后修改日期 | last_update_date | TIMESTAMP |  | Y |  |
+| 最后修改版本 | last_update_version | INT4 |  | Y | 0 |
 
-用途：当“按勾选集合导出”需要审计到文档粒度时使用；若仅存筛选条件 JSON，也可不建此表。
+#### 5.2.4 fdc_arch_storage_t（档案物理信息表）
+
+用途：记录档案在库房中的物理分布信息。
 
 
-| 字段中文名  | 字段名                 | 数据类型      | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 自增(Auto Increment) | 默认值(Default Value) | 备注                                                           |
-| ------ | ------------------- | --------- | ---- | ------ | ------------ | ---------- | ------ | ------------------ | ------------------ | ------------------------------------------------------------ |
-| ID主键   | export_task_item_id | BIGINT    |      | Y      | Y            |            |        | Y                  |                    | IT 主键                                                        |
-| 租户     | tenantid            | BIGINT    |      |        | Y            |            |        |                    |                    | `idx_fdc_doc_export_task_item_tn1(tenantid, export_task_id)` |
-| 导出任务ID | export_task_id      | BIGINT    |      |        | Y            |            |        |                    |                    |                                                              |
-| 文档ID   | doc_id              | BIGINT    |      |        | Y            |            |        |                    |                    |                                                              |
-| 创建人    | created_by          | BIGINT    |      |        | Y            |            |        |                    |                    | 外键（逻辑）到 `tpl_user_t.user_id`（创建人）               |
-| 创建时间   | creation_date       | TIMESTAMP |      |        | Y            |            |        |                    |                    |                                                              |
-| 版本号    | last_update_version | INT4      |      |        | Y            |            |        |                    | 0                  |                                                              |
+| 字段中文名 | 字段名 | 数据类型 | 主键(PK) | 非空(NOT NULL) | 外键(FK) | 备注 |
+|---|---|---|---|---|---|---|
+| ID主键 | arch_storage_id | BIGINT | Y | Y |  |  |
+| 文档ID | document_id | BIGINT |  | Y | fdc_document_t | 物理信息关联逻辑文档 |
+| 册ID | volume_id | BIGINT |  | N | fdc_volume_t |  |
+| 册内编号 | volume_seq_no | VARCHAR(60) |  | N |  |  |
+| 档案成册人 | binder | BIGINT |  | N | tpl_user_t | 对应 `tpl_user_t.user_id` |
+| 档案成册时间 | bind_time | TIMESTAMP |  | N |  |  |
+| 档案入库人 | storage_person | BIGINT |  | N | tpl_user_t | 对应 `tpl_user_t.user_id` |
+| 档案入库时间 | storage_time | TIMESTAMP |  | N |  |  |
+| 有效标识 | enable_flag | CHAR(1) |  | Y |  | 'Y' |
+| 删除标识 | delete_flag | CHAR(1) |  | Y |  | 'N' |
 
-#### 5.2.7 fdc_arch_t（档案表）
+#### 5.2.5 fdc_volume_t（册信息表）
 
-用途：沉淀档案主信息，记录档案类型、档案条码、剩余份数、核销人、核销时间等。
+用途：记录册信息，保持不动。
 
-| 字段中文名 | 字段名 | 数据类型 | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 自增(Auto Increment) | 默认值(Default Value) | 备注 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| ID主键 | arch_id | BIGINT |  | Y | Y |  |  | Y |  | IT 主键 |
-| 租户ID | tenantid | BIGINT |  |  | Y |  |  |  |  |  |
-| 关联文档ID | doc_id | BIGINT |  |  | Y |  |  |  |  | 关联 `fdc_doc_t.doc_id`（逻辑外键） |
-| 档案类型 | archive_type | VARCHAR(60) |  |  | N |  |  |  |  | 档案类型（可对齐 LOOKUP） |
-| 档案条码 | archive_barcode | VARCHAR(60) |  |  | N | Y |  |  |  | 建议同租户唯一 |
-| 剩余份数 | remaining_copies_quantity | DECIMAL(24,10) |  |  | N |  |  |  |  |  |
-| 核销人 | write_off_by | BIGINT |  |  | N |  |  |  |  | 外键（逻辑）到 `tpl_user_t.user_id`（核销人） |
-| 核销时间 | write_off_time | TIMESTAMP |  |  | N |  |  |  |  |  |
-| 有效标识 | enable_flag | CHAR(1) |  |  | Y |  |  |  | 'Y' |  |
-| 删除标识 | delete_flag | CHAR(1) |  |  | Y |  |  |  | 'N' |  |
-| 创建人 | created_by | BIGINT |  |  | Y |  |  |  |  | 外键（逻辑）到 `tpl_user_t.user_id`（创建人） |
-| 创建日期 | creation_date | TIMESTAMP |  |  | Y |  |  |  |  |  |
-| 最后修改人 | last_updated_by | BIGINT |  |  | N |  |  |  |  | 外键（逻辑）到 `tpl_user_t.user_id`（最后修改人） |
-| 最后修改日期 | last_update_date | TIMESTAMP |  |  | N |  |  |  |  |  |
-| 对本条记录的说明 | sys_description | NVARCHAR2(500) |  |  | N |  |  |  |  |  |
-| 最后修改追踪ID | last_update_trace_id | NVARCHAR2(100) |  |  | N |  |  |  |  |  |
-| 最后修改版本 | last_update_version | INT4 |  |  | Y |  |  |  | 0 |  |
 
-#### 5.2.8 fdc_arch_storage_t（档案物理信息表）
+| 字段中文名 | 字段名 | 数据类型 | 主键(PK) | 非空(NOT NULL) | 备注 |
+|---|---|---|---|---|---|
+| ID主键 | volume_id | BIGINT | Y | Y |  |
+| 册号 | volume_no | VARCHAR(60) |  | Y |  |
+| 册条码 | volume_barcode | VARCHAR(60) |  | N |  |
+| 册状态 | volume_status | VARCHAR(30) |  | N |  |
 
-用途：沉淀档案物理信息，记录册ID、册内编号等。
+#### 5.2.6 fdc_file_t（文件元数据表）
 
-| 字段中文名 | 字段名 | 数据类型 | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 自增(Auto Increment) | 默认值(Default Value) | 备注 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| ID主键 | arch_storage_id | BIGINT |  | Y | Y |  |  | Y |  | IT 主键 |
-| 租户ID | tenantid | BIGINT |  |  | Y |  |  |  |  |  |
-| 档案ID | arch_id | BIGINT |  |  | Y |  |  |  |  | 关联 `fdc_arch_t.arch_id`（逻辑外键） |
-| 册ID | volume_id | BIGINT |  |  | Y |  |  |  |  | 关联 `fdc_volume_t.volume_id`（逻辑外键） |
-| 册内编号 | volume_seq_no | VARCHAR(60) |  |  | N |  |  |  |  |  |
-| 备注 | remark | NVARCHAR2(500) |  |  | N |  |  |  |  |  |
-| 有效标识 | enable_flag | CHAR(1) |  |  | Y |  |  |  | 'Y' |  |
-| 删除标识 | delete_flag | CHAR(1) |  |  | Y |  |  |  | 'N' |  |
-| 创建人 | created_by | BIGINT |  |  | Y |  |  |  |  | 外键（逻辑）到 `tpl_user_t.user_id`（创建人） |
-| 创建日期 | creation_date | TIMESTAMP |  |  | Y |  |  |  |  |  |
-| 最后修改人 | last_updated_by | BIGINT |  |  | N |  |  |  |  | 外键（逻辑）到 `tpl_user_t.user_id`（最后修改人） |
-| 最后修改日期 | last_update_date | TIMESTAMP |  |  | N |  |  |  |  |  |
-| 对本条记录的说明 | sys_description | NVARCHAR2(500) |  |  | N |  |  |  |  |  |
-| 最后修改追踪ID | last_update_trace_id | NVARCHAR2(100) |  |  | N |  |  |  |  |  |
-| 最后修改版本 | last_update_version | INT4 |  |  | Y |  |  |  | 0 |  |
+用途：记录系统内各个来源和平台存储的文件元数据信息。
 
-#### 5.2.9 fdc_volume_t（册信息表）
 
-用途：记录册信息，包含册ID、册号、册状态、成册人、成册时间、库位ID等。
-
-| 字段中文名 | 字段名 | 数据类型 | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 自增(Auto Increment) | 默认值(Default Value) | 备注 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| ID主键 | volume_id | BIGINT |  | Y | Y |  |  | Y |  | IT 主键 |
-| 租户ID | tenantid | BIGINT |  |  | Y |  |  |  |  |  |
-| 册号 | volume_no | VARCHAR(60) |  |  | Y | Y |  |  |  | 建议同租户唯一 |
-| 册条码 | volume_barcode | VARCHAR(60) |  |  | N |  |  |  |  | 成册后生成，可按租户建立唯一约束（可选） |
-| 册状态 | volume_status | VARCHAR(30) |  |  | N |  |  |  |  | 可对齐 LOOKUP |
-| 成册人 | volume_compiler | BIGINT |  |  | N |  |  |  |  | 外键（逻辑）到 `tpl_user_t.user_id`（成册人） |
-| 成册时间 | volume_compiled_time | TIMESTAMP |  |  | N |  |  |  |  |  |
-| 库位ID | location_id | BIGINT |  |  | N |  | fdc_warehouse_location_t |  |  | 外键（逻辑）到 `fdc_warehouse_location_t.warehouse_location_id` |
-| 备注 | remark | NVARCHAR2(500) |  |  | N |  |  |  |  |  |
-| 有效标识 | enable_flag | CHAR(1) |  |  | Y |  |  |  | 'Y' |  |
-| 删除标识 | delete_flag | CHAR(1) |  |  | Y |  |  |  | 'N' |  |
-| 创建人 | created_by | BIGINT |  |  | Y |  |  |  |  | 外键（逻辑）到 `tpl_user_t.user_id`（创建人） |
-| 创建日期 | creation_date | TIMESTAMP |  |  | Y |  |  |  |  |  |
-| 最后修改人 | last_updated_by | BIGINT |  |  | N |  |  |  |  | 外键（逻辑）到 `tpl_user_t.user_id`（最后修改人） |
-| 最后修改日期 | last_update_date | TIMESTAMP |  |  | N |  |  |  |  |  |
-| 对本条记录的说明 | sys_description | NVARCHAR2(500) |  |  | N |  |  |  |  |  |
-| 最后修改追踪ID | last_update_trace_id | NVARCHAR2(100) |  |  | N |  |  |  |  |  |
-| 最后修改版本 | last_update_version | INT4 |  |  | Y |  |  |  | 0 |  |
-
+| 字段中文名 | 字段名 | 数据类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 备注 |
+|---|---|---|---|---|---|---|
+| 文件ID | file_id | BIGINT | Y | Y |  | IT 主键 |
+| 文件名称 | file_name | VARCHAR(500) |  | Y |  | 带后缀的文件名 |
+| 文件路径 | file_path | VARCHAR(1000) |  | Y |  | 存储平台内的相对路径或 Key |
+| 文件大小 | file_size | BIGINT |  | N |  | 字节数 |
+| 文件类型 | file_type | VARCHAR(50) |  | N |  | MIME Type 或 后缀 |
+| 来源系统 | source_system | VARCHAR(60) |  | N |  |  |
+| 存储平台 | storage_platform | VARCHAR(60) |  | Y |  | 如：MINIO, OBS, LOCAL, EDM |
+| MD5校验值 | file_md5 | VARCHAR(64) |  | N |  |  |
+| 有效标识 | enable_flag | CHAR(1) |  | Y |  | 'Y' |
+| 删除标识 | delete_flag | CHAR(1) |  | Y |  | 'N' |
+| 创建人 | created_by | BIGINT |  | Y |  |  |
+| 创建时间 | creation_date | TIMESTAMP |  | Y |  |  |
 
 ---
 
-### 5.3 扩展信息模型（推荐：配置驱动，避免主表无限扩列）
+## 6. F01 基础数据管理（主数据模型草案）
 
-> 目标：将“文档扩展信息”（如文号/发票号/金额/银行等）从 `fdc_doc_t` 解耦出来，做到**按文档类型配置字段**、可校验、可脱敏、可演进。
+> 说明：以下表字段来自 `F01` 功能规格中使用的表字段清单。
 
-#### 5.3.1 设计要点
-
-- **字段配置驱动**：每种“文档类型”可配置不同的扩展字段集合、必填/校验/展示顺序/脱敏策略。
-- **存储解耦**：扩展值不再加列到 `fdc_doc_t`，避免扩列带来的迁移/索引/性能与治理成本。
-- **查询策略**：
-  - 默认查询列表不依赖扩展字段（扩展字段只在详情或高级筛选时加载）。
-  - 对“高频筛选”的扩展字段，可在配置中标记为“可索引”，由后端选择落 `fdc_doc_ext_t.ext_value_text` 的索引或使用表达式/GIN（若使用 JSONB）。
-  - **F03 字段归属口径**：`fdc_doc_t` 承载文档主维度字段（如 `doc_busi_no/doc_name/doc_status/carrier_type/source_system/arch_place_alpha2_code/origin_place_alpha2_code/doc_organization_code/barcode_module_code/owner_id/dept_code/visible_flag`）；档案信息由 `fdc_arch_t` 承载（如 `archive_type/archive_barcode/remaining_copies_quantity`）；档案物理信息由 `fdc_arch_storage_t` 承载（如 `volume_id/volume_seq_no`）；册信息由 `fdc_volume_t` 承载（如 `volume_no/volume_barcode/volume_status/location_id`）。其余“文号/票据/金额/交易对手/业务类型/子公司名称”等可配置扩展字段通过 `fdc_doc_ext_t` 与 `fdc_doc_field_config_t` 承载，并通过 `searchable_flag/indexable_flag` 决定是否参与筛选与索引。
-
-#### 5.3.2 fdc_doc_field_config_t（文档扩展字段配置表，IT配置表）
-
-用途：定义“某文档类型有哪些扩展字段”及其约束。
-
-
-| 字段中文名     | 字段名                 | 数据类型         | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK)              | 自增(Auto Increment) | 默认值(Default Value) | 备注                                                                               |
-| --------- | ------------------- | ------------ | ---- | ------ | ------------ | ---------- | ------------------- | ------------------ | ------------------ | -------------------------------------------------------------------------------- |
-| ID主键      | doc_field_config_id | BIGINT       |      | Y      | Y            |            |                     | Y                  |                    | IT 主键                                                                            |
-| 租户        | tenantid            | BIGINT       |      |        | Y            |            |                     |                    |                    | `idx_fdc_doc_field_config_tn1(tenantid, document_type_id)`                       |
-| 文档类型ID    | document_type_id    | BIGINT       |      |        | Y            |            | fdc_document_type_t |                    |                    | 与 fdc_document_type_t 关联（逻辑）                                                     |
-| 字段编码      | field_code          | VARCHAR(60)  |      |        | Y            | Y          |                     |                    |                    | `uk_fdc_doc_field_config_t(tenantid, document_type_id, field_code)`；字段编码（机器用，稳定） |
-| 字段名称      | field_name          | VARCHAR(500) |      |        | Y            |            |                     |                    |                    |                                                                                  |
-| 字段类型      | field_type          | VARCHAR(30)  |      |        | Y            |            |                     |                    |                    | TEXT/NUMBER/DATE/LOOKUP/USER/ORG…                                                |
-| 格式        | value_format        | VARCHAR(60)  |      |        | N            |            |                     |                    |                    | 格式（如日期格式/正则key）                                                                  |
-| 是否必填      | required_flag       | CHAR(1)      |      |        | Y            |            |                     |                    | 'N'                | Y/N                                                                              |
-| 是否可用于查询筛选 | searchable_flag     | CHAR(1)      |      |        | Y            |            |                     |                    | 'N'                | Y/N                                                                              |
-| 是否建议建立索引  | indexable_flag      | CHAR(1)      |      |        | Y            |            |                     |                    | 'N'                | Y/N                                                                              |
-| 是否脱敏展示    | masked_flag         | CHAR(1)      |      |        | Y            |            |                     |                    | 'N'                | Y/N（规则在安全文档）                                                                     |
-| 展示顺序      | display_order       | INT4         |      |        | Y            |            |                     |                    | 0                  |                                                                                  |
-| 有效标识      | enable_flag         | CHAR(1)      |      |        | Y            |            |                     |                    | 'Y'                |                                                                                  |
-| 删除标识      | delete_flag         | CHAR(1)      |      |        | Y            |            |                     |                    | 'N'                |                                                                                  |
-| 创建人       | created_by          | BIGINT       |      |        | Y            |            |                     |                    |                    |                                                                                  |
-| 创建时间      | creation_date       | TIMESTAMP    |      |        | Y            |            |                     |                    |                    |                                                                                  |
-| 版本号       | last_update_version | INT4         |      |        | Y            |            |                     |                    | 0                  |                                                                                  |
-
-
-#### 5.3.3 fdc_doc_ext_t（文档扩展值表，扩展信息表）
-
-用途：存储某个文档的扩展字段值（KV 或 JSON）。
-
-**KV 推荐（便于按字段精确索引与治理）**：
-
-
-| 字段中文名       | 字段名                 | 数据类型           | 变更类型 | 主键(PK) | 非空(NOT NULL) | 唯一(UNIQUE) | 外键(FK) | 自增(Auto Increment) | 默认值(Default Value) | 备注                                               |
-| ----------- | ------------------- | -------------- | ---- | ------ | ------------ | ---------- | ------ | ------------------ | ------------------ | ------------------------------------------------ |
-| ID主键        | doc_ext_id          | BIGINT         |      | Y      | Y            |            |        | Y                  |                    | IT 主键                                            |
-| 租户          | tenantid            | BIGINT         |      |        | Y            |            |        |                    |                    | `idx_fdc_doc_ext_tn1(tenantid, doc_id)`          |
-| 文档ID        | doc_id              | BIGINT         |      |        | Y            |            |        |                    |                    |                                                  |
-| 扩展字段编码      | field_code          | VARCHAR(60)    |      |        | Y            | Y          |        |                    |                    | `uk_fdc_doc_ext_t(tenantid, doc_id, field_code)` |
-| 文本值（通用）     | ext_value_text      | VARCHAR(500)   |      |        | N            |            |        |                    |                    |                                                  |
-| 数值值（金额/占比等） | ext_value_number    | DECIMAL(38,10) |      |        | N            |            |        |                    |                    |                                                  |
-| 日期值         | ext_value_date      | DATE           |      |        | N            |            |        |                    |                    |                                                  |
-| 时间值         | ext_value_time      | TIMESTAMP      |      |        | N            |            |        |                    |                    |                                                  |
-| 有效标识        | enable_flag         | CHAR(1)        |      |        | Y            |            |        |                    | 'Y'                |                                                  |
-| 删除标识        | delete_flag         | CHAR(1)        |      |        | Y            |            |        |                    | 'N'                |                                                  |
-| 创建人         | created_by          | BIGINT         |      |        | Y            |            |        |                    |                    |                                                  |
-| 创建时间        | creation_date       | TIMESTAMP      |      |        | Y            |            |        |                    |                    |                                                  |
-| 版本号         | last_update_version | INT4           |      |        | Y            |            |        |                    | 0                  |                                                  |
-
-
-**JSONB 备选（更灵活，但索引/治理更难）**：可改为 `ext_json`（JSONB）一行存所有字段；高频筛选字段用表达式索引或 GIN。
-
-#### 5.3.4 约束与一致性规则（必须）
-
-- `fdc_doc_ext_t.field_code` 必须存在于 `fdc_doc_field_config_t` 的对应 `(tenantid, document_type_id)` 范围内。
-- 变更 `field_code` 禁止破坏历史（建议仅新增字段；废弃字段用 `enable_flag='N'`，不直接删）。
-- 涉及脱敏的字段（`masked_flag='Y'`）在查询与导出时必须遵循 `/.docs/03_Security.md` 的规则与审计要求。
-
----
-
-## 6. F01 基础数据管理（主数据模型草案，字段清单）
-
-> 说明：以下表字段来自 `F01` 功能规格中使用的表字段清单，用于补齐 `/.docs/01_DataModel.md` 的字段真相来源。  
-> 后续可按需要进一步补全“索引/唯一约束/外键（物理约束）”等信息。
-
-
-
+#### 6.1 fdc_document_type_t (文档类型表)
+#### 6.2 fdc_business_module_t (业务模块表)
+#### 6.3 fdc_archived_entity_unit_t (归档主体表)
+#### 6.4 fdc_document_organization_t (文档组织表)

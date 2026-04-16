@@ -5,7 +5,7 @@
 ## 文档目录
 
 - `F01_00_Overview.md`：F01 范围、共性约束、跨模块规则
-- `F01_01_ArchiveEntity.md`：归档主体管理
+- `F01_01_ArchiveEntity.md`：公司主数据管理（公司编码/公司名称）
 - `F01_02_DocumentType.md`：文档类型管理
 - `F01_03_BusinessModule.md`：业务模块管理
 - `F01_04_BarcodeRule.md`：条码生成规则

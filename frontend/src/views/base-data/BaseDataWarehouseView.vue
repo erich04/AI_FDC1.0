@@ -54,10 +54,13 @@
               :options="sortOptions"
               size="small"
             />
+            <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+            <el-tooltip :content="warehouseListFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="warehouseListFullPage = !warehouseListFullPage" /></el-tooltip>
+            <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="loadWarehouses" /></el-tooltip>
           </div>
         </div>
 
-        <div class="warehouse-card-list">
+        <div class="warehouse-card-list" :class="{ 'warehouse-card-list--full': warehouseListFullPage }">
           <el-card
             v-for="item in filteredWarehouseCards"
             :key="item.warehouse.warehouseCode"
@@ -365,7 +368,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type UploadFile, type UploadUserFile } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { FullScreen, Plus, RefreshRight, Setting } from '@element-plus/icons-vue'
 import {
   copyWarehouse,
   copyWarehouseArea,
@@ -424,6 +427,7 @@ const managementMap = ref<Record<string, WarehouseManagementResponse>>({})
 const collapsedRacks = reactive<Record<string, boolean>>({})
 const warehousePhotoList = ref<UploadUserFile[]>([])
 const sortType = ref<'updatedAt' | 'name' | 'locationCount'>('updatedAt')
+const warehouseListFullPage = ref(false)
 
 const dialogs = reactive({ warehouseForm: false, warehouseCopy: false, areaForm: false, areaCopy: false, rackForm: false, rackCopy: false, locationEdit: false, imagePreview: false })
 const warehouseFormMode = ref<'create' | 'edit' | 'view'>('create')
@@ -599,6 +603,10 @@ const refreshSelectedWarehouse = async () => {
   if (!selectedWarehouseCode.value) return
   await ensureManagementLoaded(selectedWarehouseCode.value, true)
   await loadWarehouses()
+}
+
+const notifyColumnSetting = () => {
+  ElMessage.info('列设置入口已保留，当前版本不展示具体列配置面板。')
 }
 
 const resetWarehouseForm = () => {

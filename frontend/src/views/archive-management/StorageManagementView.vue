@@ -38,11 +38,18 @@
 
     <el-card shadow="never">
       <template #header><strong>待入库册</strong></template>
+      <div class="section-actions section-actions--table">
+        <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+        <el-tooltip :content="volumeTableFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="volumeTableFullPage = !volumeTableFullPage" /></el-tooltip>
+        <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="handleSearch" /></el-tooltip>
+      </div>
       <el-table :data="queryResult.volumes" border @selection-change="handleVolumeSelection">
         <el-table-column type="selection" width="48" />
         <el-table-column prop="bindVolumeCode" label="册号" width="180" />
         <el-table-column prop="volumeTitle" label="册题名" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="carrierTypeCode" label="载体" width="120" />
+          <el-table-column label="载体" width="120">
+            <template #default="{ row }">{{ carrierTypeName(row.carrierTypeCode) }}</template>
+          </el-table-column>
         <el-table-column prop="archiveCount" label="档案数" width="90" />
         <el-table-column prop="bindStatus" label="状态" width="110" />
       </el-table>
@@ -50,6 +57,11 @@
 
     <el-card shadow="never">
       <template #header><strong>待入库单档</strong></template>
+      <div class="section-actions section-actions--table">
+        <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+        <el-tooltip :content="archiveTableFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="archiveTableFullPage = !archiveTableFullPage" /></el-tooltip>
+        <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="handleSearch" /></el-tooltip>
+      </div>
       <el-table :data="queryResult.archives" border @selection-change="handleArchiveSelection">
         <el-table-column type="selection" width="48" />
         <el-table-column prop="archiveCode" label="档案编号" width="180" />
@@ -89,6 +101,9 @@
           </div>
           <div class="section-actions">
             <el-button @click="handleLedgerSearch">查询流水</el-button>
+            <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+            <el-tooltip :content="ledgerTableFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="ledgerTableFullPage = !ledgerTableFullPage" /></el-tooltip>
+            <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="handleLedgerSearch" /></el-tooltip>
           </div>
         </div>
       </template>
@@ -126,9 +141,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { FullScreen, RefreshRight, Setting } from '@element-plus/icons-vue'
 import { useRoute } from 'vue-router'
 import {
   createStorageBatch,
+  fetchArchiveCreateOptions,
   fetchStorageOptions,
   queryStorage,
   queryStorageLedger
@@ -145,12 +162,16 @@ import type {
 const route = useRoute()
 
 const storageOptions = ref<StorageOptions>({ sourceTypes: [], warehouses: [], locations: [] })
+const carrierTypeOptions = ref<Array<{ code: string; name: string }>>([])
 const queryResult = ref<StorageQueryResult>({ volumes: [], archives: [] })
 const latestBatch = ref<StorageBatch>()
 const ledgerRows = ref<StorageLedger[]>([])
 const selectedVolumes = ref<BindVolume[]>([])
 const selectedArchives = ref<BindArchiveCandidate[]>([])
 const submitLoading = ref(false)
+const volumeTableFullPage = ref(false)
+const archiveTableFullPage = ref(false)
+const ledgerTableFullPage = ref(false)
 
 const queryForm = reactive({
   sourceBindBatchCode: '',
@@ -179,10 +200,18 @@ const filteredLocations = computed(() => {
 })
 
 async function loadInitialData() {
-  storageOptions.value = await fetchStorageOptions()
+  const [storageRes, createRes] = await Promise.all([fetchStorageOptions(), fetchArchiveCreateOptions()])
+  storageOptions.value = storageRes
+  carrierTypeOptions.value = createRes.carrierTypes || []
   queryForm.sourceBindBatchCode = String(route.query.sourceBindBatchCode || queryForm.sourceBindBatchCode || '')
   await handleSearch()
   await handleLedgerSearch()
+}
+
+const carrierTypeName = (code?: string) => {
+  if (!code) return '-'
+  const item = carrierTypeOptions.value.find((x) => x.code === code)
+  return item?.name || code
 }
 
 async function handleSearch() {
@@ -248,6 +277,10 @@ async function handleLedgerSearch() {
   })
 }
 
+const notifyColumnSetting = () => {
+  ElMessage.info('列设置入口已保留，当前版本不展示具体列配置面板。')
+}
+
 onMounted(loadInitialData)
 </script>
 
@@ -273,6 +306,10 @@ onMounted(loadInitialData)
   display: flex;
   gap: 12px;
   align-items: center;
+}
+.section-actions--table {
+  justify-content: flex-end;
+  margin-bottom: 12px;
 }
 .filter-grid,
 .ledger-grid {

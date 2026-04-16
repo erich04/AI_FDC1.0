@@ -2,6 +2,7 @@ package com.smartarchive.documenttype.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.smartarchive.archivemanage.dto.LabelValueOption;
 import com.smartarchive.common.audit.service.OperationAuditService;
 import com.smartarchive.common.exception.BusinessException;
 import com.smartarchive.documenttype.domain.DocumentType;
@@ -27,11 +28,11 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class DocumentTypeServiceImpl implements DocumentTypeService {
-    private static final int MAX_LEVEL = 5;
+    private static final int MAX_LEVEL = 3;
     private static final Long SYSTEM_OPERATOR_ID = 1L;
     private static final String SYSTEM_OPERATOR_NAME = "system";
-    private static final String MODULE_CODE = "DOCUMENT_TYPE";
-    private static final String MODULE_NAME = "Document Type Management";
+    private static final String MODULE_CODE = "BUSINESS_MODULE";
+    private static final String MODULE_NAME = "业务模块管理";
 
     private final DocumentTypeMapper documentTypeMapper;
     private final OperationAuditService operationAuditService;
@@ -93,10 +94,10 @@ public class DocumentTypeServiceImpl implements DocumentTypeService {
         operationAuditService.record(
             MODULE_CODE,
             MODULE_NAME,
-            "DOCUMENT_TYPE",
+            "BUSINESS_MODULE",
             entity.getTypeCode(),
             "CREATE",
-            "Create document type",
+            "Create business module node",
             null,
             response,
             SYSTEM_OPERATOR_ID,
@@ -132,10 +133,10 @@ public class DocumentTypeServiceImpl implements DocumentTypeService {
         operationAuditService.record(
             MODULE_CODE,
             MODULE_NAME,
-            "DOCUMENT_TYPE",
+            "BUSINESS_MODULE",
             refreshed.getTypeCode(),
             "UPDATE",
-            "Update document type",
+            "Update business module node",
             before,
             after,
             SYSTEM_OPERATOR_ID,
@@ -163,10 +164,10 @@ public class DocumentTypeServiceImpl implements DocumentTypeService {
         operationAuditService.record(
             MODULE_CODE,
             MODULE_NAME,
-            "DOCUMENT_TYPE",
+            "BUSINESS_MODULE",
             existing.getTypeCode(),
             "DELETE",
-            "Soft delete document type",
+            "Soft delete business module node",
             before,
             null,
             SYSTEM_OPERATOR_ID,
@@ -182,28 +183,28 @@ public class DocumentTypeServiceImpl implements DocumentTypeService {
             .permissionPoints(List.of(
                 DocumentTypePermissionPreviewResponse.PermissionPoint.builder()
                     .code("document-type:create")
-                    .name("Document Type Create")
+                    .name("Business Module Create")
                     .action("CREATE")
-                    .description("Allow creating document type nodes")
+                    .description("Allow creating business module nodes")
                     .build(),
                 DocumentTypePermissionPreviewResponse.PermissionPoint.builder()
                     .code("document-type:edit")
-                    .name("Document Type Edit")
+                    .name("Business Module Edit")
                     .action("UPDATE")
-                    .description("Allow editing document type name, description, parent, and enabled status")
+                    .description("Allow editing business module name, description, parent, and enabled status")
                     .build(),
                 DocumentTypePermissionPreviewResponse.PermissionPoint.builder()
                     .code("document-type:view")
-                    .name("Document Type View")
+                    .name("Business Module View")
                     .action("READ")
-                    .description("Allow viewing document type tree and details")
+                    .description("Allow viewing business module tree and details")
                     .build()
             ))
             .dataDimensions(List.of(
                 DocumentTypePermissionPreviewResponse.DataDimension.builder()
                     .code("ALL")
-                    .name("All Document Types")
-                    .description("Can view full document type tree up to 5 levels")
+                    .name("All Business Modules")
+                    .description("Can view full business module tree up to 3 levels")
                     .build(),
                 DocumentTypePermissionPreviewResponse.DataDimension.builder()
                     .code("ROOT_BRANCH")
@@ -213,10 +214,33 @@ public class DocumentTypeServiceImpl implements DocumentTypeService {
                 DocumentTypePermissionPreviewResponse.DataDimension.builder()
                     .code("ENABLED_ONLY")
                     .name("Enabled Only")
-                    .description("Only allow enabled document type data")
+                    .description("Only allow enabled business module data")
                     .build()
             ))
             .build();
+    }
+
+    @Override
+    public List<LabelValueOption> listLevel3Modules(String documentTypeCode) {
+        DocumentType root = findActiveByCode(requireText(documentTypeCode, "documentTypeCode"));
+        if (root.getLevelNum() == null || root.getLevelNum() != 1) {
+            throw new BusinessException("documentTypeCode must be level 1");
+        }
+        return documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>()
+                .eq(DocumentType::getDeleteFlag, "N")
+                .eq(DocumentType::getEnabledFlag, "Y")
+                .eq(DocumentType::getLevelNum, 3)
+                .likeRight(DocumentType::getAncestorPath, root.getTypeCode())
+                .orderByAsc(DocumentType::getSortOrder)
+                .orderByAsc(DocumentType::getTypeCode))
+            .stream()
+            .map(item -> {
+                String displayName = StringUtils.hasText(item.getDescription())
+                    ? item.getTypeName() + "（" + item.getDescription().trim() + "）"
+                    : item.getTypeName();
+                return LabelValueOption.builder().code(item.getTypeCode()).name(displayName).build();
+            })
+            .toList();
     }
 
     private List<DocumentType> listActiveTypes() {
@@ -262,7 +286,7 @@ public class DocumentTypeServiceImpl implements DocumentTypeService {
 
         int level = parent.getLevelNum() + 1;
         if (level > MAX_LEVEL) {
-            throw new BusinessException("Document type tree supports up to 5 levels");
+            throw new BusinessException("Business module tree supports up to 3 levels");
         }
 
         String ancestorPath = StringUtils.hasText(parent.getAncestorPath())
@@ -302,7 +326,7 @@ public class DocumentTypeServiceImpl implements DocumentTypeService {
         for (DocumentType child : children) {
             child.setLevelNum(parent.getLevelNum() + 1);
             if (child.getLevelNum() > MAX_LEVEL) {
-                throw new BusinessException("Moving parent would exceed max level 5");
+                throw new BusinessException("Moving parent would exceed max level 3");
             }
             child.setAncestorPath(StringUtils.hasText(parent.getAncestorPath())
                 ? parent.getAncestorPath() + "/" + parent.getTypeCode()
@@ -318,6 +342,13 @@ public class DocumentTypeServiceImpl implements DocumentTypeService {
         if (!"Y".equals(enabledFlag) && !"N".equals(enabledFlag)) {
             throw new BusinessException("enabledFlag only supports Y or N");
         }
+    }
+
+    private String requireText(String value, String fieldName) {
+        if (!StringUtils.hasText(value)) {
+            throw new BusinessException(fieldName + " is required");
+        }
+        return value.trim();
     }
 
     private DocumentTypeTreeNodeResponse toNode(DocumentType item) {

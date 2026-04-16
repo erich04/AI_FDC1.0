@@ -245,7 +245,7 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
         return documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>()
             .eq(DocumentType::getDeleteFlag, "N")
             .eq(DocumentType::getEnabledFlag, "Y")
-            .orderByAsc(DocumentType::getLevelNum)
+            .eq(DocumentType::getLevelNum, 1)
             .orderByAsc(DocumentType::getSortOrder)
             .orderByAsc(DocumentType::getTypeCode));
     }

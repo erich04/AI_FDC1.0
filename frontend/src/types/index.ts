@@ -329,12 +329,15 @@ export interface AuditRecord {
   businessType: string
   businessKey: string
   operationType: string
+  operationTypeName?: string
   operationSummary: string
   beforeSnapshot?: string
   afterSnapshot?: string
   operatorId: number
   operatorName: string
   operationTime: string
+  operationRemark?: string
+  auditAttachments?: Array<{ fileId?: number; fileName?: string; storageKey?: string; fileSize?: number }>
 }
 
 export interface CompanyProjectLine {
@@ -369,6 +372,7 @@ export interface CompanyProjectDetail {
   companyProjectName: string
   countryCode: string
   managementArea: string
+  companyTag?: string
   enabledFlag: string
   deleteFlag: string
   createdBy: number
@@ -521,6 +525,10 @@ export interface ArchiveCreateOptions {
   attachmentTypes: LabelValueOption[]
   archiveTypes: LabelValueOption[]
   aiModels: LabelValueOption[]
+  geoCountries: LabelValueOption[]
+  geoRepOffices: LabelValueOption[]
+  geoRegions: LabelValueOption[]
+  custodyStatuses: LabelValueOption[]
 }
 
 export interface ArchiveDefaultResolve {
@@ -582,19 +590,23 @@ export interface ArchiveCreateSession {
 export interface ArchiveRecordSummary {
   archiveId: number
   archiveCode: string
-  archiveFilingCode: string
   documentTypeCode: string
   documentTypeName?: string
   companyProjectCode: string
+  /** 三级业务模块 type_code（fdc_document_t.biz_module_code） */
+  businessModuleTypeCode?: string
   companyProjectName?: string
   beginPeriod?: string
   endPeriod?: string
   documentName: string
   businessCode?: string
   dutyPerson: string
+  createdBy?: string
   dutyDepartment: string
   documentDate: string
   securityLevelCode: string
+  /** 密级中文展示名（与 securityLevelCode 成对） */
+  securityLevelName?: string
   sourceSystem?: string
   archiveDestination?: string
   originPlace?: string
@@ -608,6 +620,10 @@ export interface ArchiveRecordSummary {
   retentionPeriodYears: number
   archiveTypeCode: string
   archiveStatus: string
+  lifecycleStatus?: string
+  custodyStatus?: string
+  /** 是否可见（attr1），详情归档信息区使用 */
+  documentVisibility?: string
   parseStatus: string
   vectorStatus: string
   lastUpdateDate?: string
@@ -640,6 +656,62 @@ export interface ArchiveAiModelSummary {
   scoreThreshold?: number
   enabledFlag: 'Y' | 'N'
   remark?: string
+}
+
+export interface WorkspaceIoJobSummary {
+  jobId: number
+  jobType: string
+  dataType: string
+  jobName: string
+  documentTypeCode?: string
+  queryConfigJson?: string
+  inputFileName?: string
+  inputTotal?: number
+  resultTotal?: number
+  durationMs?: number
+  jobStatus: string
+  errorMessage?: string
+  failedFileCsv?: string
+  exportFileFormat?: string
+  artifactExpiresAt?: string
+  /** 列表展示：含 EXPIRED、COMPLETED */
+  displayStatus?: string
+  exportDownloadable?: boolean
+  /** 应归档批量导入等：可下载结果 Excel */
+  resultArtifactDownloadable?: boolean
+  creationDate?: string
+}
+
+export interface WorkspaceIoJobPage {
+  records: WorkspaceIoJobSummary[]
+  total: number
+  pages: number
+  page: number
+  pageSize: number
+}
+
+export interface WorkspaceImportQueryResultRow {
+  archiveId?: number
+  businessCode?: string
+  companyProjectName?: string
+  archiveTypeCode?: string
+  beginPeriod?: string
+  endPeriod?: string
+  archiveDestination?: string
+  originPlace?: string
+  documentOrganizationCode?: string
+  archiveStatus?: string
+  documentName?: string
+  documentDate?: string
+  dutyPerson?: string
+  dutyDepartment?: string
+  carrierTypeCode?: string
+  documentVisibility?: string
+  sourceSystem?: string
+  securityLevelName?: string
+  remark?: string
+  creationDate?: string
+  createdBy?: string
 }
 
 export interface DictionaryCategory {

@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Data;
 
@@ -16,7 +15,6 @@ public class ArchiveRecord {
     @TableId(type = IdType.AUTO)
     private Long archiveId;
     private String archiveCode;
-    private String archiveFilingCode;
     private String createMode;
     private String archiveStatus;
     private String documentTypeCode;
@@ -27,7 +25,7 @@ public class ArchiveRecord {
     private String documentName;
     private String dutyPerson;
     private String dutyDepartment;
-    private LocalDate documentDate;
+    private LocalDateTime documentDate;
     private String securityLevelCode;
     private String sourceSystem;
     private String archiveDestination;
