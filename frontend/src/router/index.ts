@@ -122,6 +122,15 @@ const router = createRouter({
           }
         },
         {
+          path: 'base-data/document-type-configs',
+          name: 'base-data-document-type-configs',
+          component: () => import('../views/base-data/DocumentTypeConfigView.vue'),
+          meta: {
+            title: '文档类型配置',
+            breadcrumb: ['配置中心', '文档类型配置']
+          }
+        },
+        {
           path: 'governance',
           name: 'governance',
           component: GovernanceView,

@@ -12,7 +12,6 @@ public class ArchiveCreateCommand {
     private String createMode;
     private String busiModuleCode;
     private String companyProjectCode;
-    private String busiModuleCode;
     private String beginPeriod;
     private String endPeriod;
     private String businessCode;

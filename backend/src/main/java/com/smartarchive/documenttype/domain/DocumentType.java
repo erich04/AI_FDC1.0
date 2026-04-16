@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-@TableName("fdc_document_type_t")
+@TableName("fdc_busi_module_t")
 public class DocumentType {
     @TableId(value = "busi_module_id", type = IdType.AUTO)
     private Long id;

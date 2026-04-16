@@ -74,6 +74,7 @@ for (const filePath of files) {
       createMode: 'AUTO',
       documentTypeCode: typeCode,
       companyProjectCode: '1987',
+      busiModuleCode: 'FINANCE',
       beginPeriod: detail.data.aiParseResult?.beginPeriod || '2026-03',
       endPeriod: detail.data.aiParseResult?.endPeriod || '2026-03',
       businessCode: `AUTO-${baseNameHash}`,

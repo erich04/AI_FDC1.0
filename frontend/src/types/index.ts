@@ -890,3 +890,14 @@ export interface FourAttrInspectionConfig {
   lastUpdateDate?: string
   details: FourAttrInspectionDetail[]
 }
+
+export interface DocumentTypeConfig {
+  documentTypeId: number
+  docTypeCode: string
+  docTypeDescription: string
+  enableFlag: 'Y' | 'N'
+  createdBy?: number
+  creationDate?: string
+  lastUpdatedBy?: number
+  lastUpdateDate?: string
+}

@@ -91,7 +91,7 @@ public class ArchiveAiChatService {
 
     private String buildReferenceContext(List<ArchiveSummaryResponse> references) {
         return references.stream()
-            .map(item -> "- " + item.getDocumentName() + "（类型：" + Objects.toString(item.getDocumentTypeName(), item.getArchiveTypeCode()) + "）")
+            .map(item -> "- " + item.getDocumentName() + "（类型：" + Objects.toString(item.getBusiModuleName(), item.getArchiveTypeCode()) + "）")
             .collect(Collectors.joining("\n"));
     }
 

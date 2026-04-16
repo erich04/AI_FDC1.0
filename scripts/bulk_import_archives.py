@@ -107,6 +107,14 @@ def choose_duty_department(document_type_code: str) -> str:
     return "\u8d22\u52a1\u90e8\u95e8"
 
 
+def choose_busi_module_code(document_type_code: str) -> str:
+    if document_type_code in FINANCE_TYPES:
+        return "FINANCE"
+    if document_type_code in CONTRACT_TYPES:
+        return "PROCUREMENT"
+    return "GENERAL"
+
+
 @dataclass
 class OptionItem:
     code: str
@@ -373,6 +381,7 @@ class ArchiveImporter:
             "createMode": "AUTO",
             "documentTypeCode": document_type_code,
             "companyProjectCode": company_project_code,
+            "busiModuleCode": choose_busi_module_code(document_type_code),
             "beginPeriod": begin_period,
             "endPeriod": end_period,
             "businessCode": document_name,

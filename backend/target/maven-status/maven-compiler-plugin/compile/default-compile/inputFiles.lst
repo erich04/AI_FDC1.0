@@ -213,6 +213,12 @@ D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\s
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\companyproject\service\impl\CompanyProjectServiceImpl.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\config\MybatisPlusConfig.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\config\WebConfig.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\countryregion\controller\CountryRegionController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\countryregion\domain\CountryRegion.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\countryregion\dto\CountryRegionResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\countryregion\mapper\CountryRegionMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\countryregion\service\CountryRegionService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\countryregion\service\impl\CountryRegionServiceImpl.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\controller\DashboardController.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardDistributionItem.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\dashboard\dto\DashboardMetric.java
@@ -262,6 +268,14 @@ D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\dto
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\mapper\DocumentTypeMapper.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\service\DocumentTypeService.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttype\service\impl\DocumentTypeServiceImpl.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttypeconfig\controller\DocumentTypeConfigController.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttypeconfig\domain\DocumentTypeConfig.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttypeconfig\dto\DocumentTypeConfigQueryCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttypeconfig\dto\DocumentTypeConfigResponse.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttypeconfig\dto\DocumentTypeConfigSaveCommand.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttypeconfig\mapper\DocumentTypeConfigMapper.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttypeconfig\service\DocumentTypeConfigService.java
+D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\documenttypeconfig\service\impl\DocumentTypeConfigServiceImpl.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\IntelligentArchiveApplication.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\config\KnowledgeGraphConfiguration.java
 D:\CodeDevelop\AI_FDC1.0\backend\src\main\java\com\smartarchive\knowledgegraph\config\KnowledgeGraphNeo4jProperties.java

@@ -32,6 +32,7 @@
             </template>
             <el-menu-item index="/base-data/company-projects">公司/项目管理</el-menu-item>
             <el-menu-item index="/base-data/document-organizations">文档组织管理</el-menu-item>
+            <el-menu-item index="/base-data/document-type-configs">文档类型配置</el-menu-item>
             <el-menu-item index="/base-data/document-types">业务模块管理</el-menu-item>
             <el-menu-item index="/base-data/archive-flow-rules">归档规则管理</el-menu-item>
             <el-menu-item index="/base-data/warehouse">库房管理</el-menu-item>
@@ -271,6 +272,8 @@ const pageDescription = computed(() => {
       return '维护档案类型树以及创建档案所需的扩展字段配置。'
     case '/base-data/dictionaries':
       return '维护档案业务所需的标准字典与配置项。'
+    case '/base-data/document-type-configs':
+      return '维护文档类型编码、名称与启用状态，并支持导入导出。'
     case '/archive-management/create':
       return '支持自动与手工两种归档模式，提升归档发起效率。'
     case '/archive-management/query':

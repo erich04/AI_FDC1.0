@@ -14,13 +14,10 @@ com\smartarchive\knowledgegraph\dto\TimelineEventDto$TimelineEventDtoBuilder.cla
 com\smartarchive\warehouse\domain\WarehouseLocation.class
 com\smartarchive\knowledgegraph\event\ArchiveGraphRefreshEvent.class
 com\smartarchive\archivemanage\dto\ArchiveSummaryResponse$ArchiveSummaryResponseBuilder.class
-com\smartarchive\archivemanage\dto\ArchiveCreateCommand.class
 com\smartarchive\archive\controller\BorrowRecordController.class
 com\smartarchive\archivemanage\dto\LabelValueOption$LabelValueOptionBuilder.class
 com\smartarchive\knowledgegraph\controller\ProcurementKnowledgeGraphController.class
-com\smartarchive\archivemanage\service\impl\ArchiveManagementServiceImpl$SemanticMatchRow.class
 com\smartarchive\archivemanage\mapper\BindVolumeMapper.class
-com\smartarchive\archivemanage\service\impl\ArchiveManagementServiceImpl$StorageExecutionResult.class
 com\smartarchive\archive\mapper\DisposalRecordMapper.class
 com\smartarchive\archive\controller\CatalogTaskController.class
 com\smartarchive\dictionary\controller\DictionaryController.class
@@ -41,7 +38,6 @@ com\smartarchive\workflow\controller\WorkflowController.class
 com\smartarchive\companyproject\domain\Country.class
 com\smartarchive\knowledgegraph\config\KnowledgeGraphConfiguration.class
 com\smartarchive\archiveflow\mapper\SecurityLevelDictionaryMapper.class
-com\smartarchive\archivemanage\service\ArchiveManagementService.class
 com\smartarchive\warehouse\mapper\WarehouseLocationMapper.class
 com\smartarchive\archivemanage\domain\StorageBatchItem.class
 com\smartarchive\archivemanage\domain\ArchiveCreateSession.class
@@ -89,7 +85,6 @@ com\smartarchive\archivemanage\dto\TransferApplicationRecordRowResponse.class
 com\smartarchive\documenttype\controller\DocumentTypeController.class
 com\smartarchive\ai\dto\AiCapabilityDto.class
 com\smartarchive\archivemanage\service\support\ArchiveTextVectorService.class
-com\smartarchive\archivemanage\mapper\ArchiveRecordMapper.class
 com\smartarchive\archivemanage\dto\FourAttrInspectionResponse.class
 com\smartarchive\warehouse\mapper\WarehouseMapper.class
 com\smartarchive\archivemanage\mapper\BindVolumeItemMapper.class
@@ -131,7 +126,6 @@ com\smartarchive\archivemanage\mapper\StorageBatchItemMapper.class
 com\smartarchive\workflow\service\impl\WorkflowServiceImpl.class
 com\smartarchive\archivemanage\dto\BindVolumeResponse.class
 com\smartarchive\archive\mapper\CatalogTaskMapper.class
-com\smartarchive\dashboard\service\impl\DashboardServiceImpl.class
 com\smartarchive\knowledgegraph\dto\ProcurementConversationResponse.class
 com\smartarchive\archivemanage\dto\FourAttrInspectionQueryCommand.class
 com\smartarchive\companyproject\mapper\CompanyProjectMapper.class
@@ -173,7 +167,6 @@ com\smartarchive\dashboard\dto\DashboardTaskItem.class
 com\smartarchive\companyproject\domain\CompanyProjectLine.class
 com\smartarchive\companyproject\mapper\CountryMapper.class
 com\smartarchive\documentorganization\domain\DocumentOrganization.class
-com\smartarchive\archivemanage\dto\ArchiveCreateCommand$ArchivePaperSaveCommand.class
 com\smartarchive\archivemanage\domain\BindVolumeItem.class
 com\smartarchive\archivemanage\dto\BindBatchResponse$BindBatchResponseBuilder.class
 com\smartarchive\archivemanage\dto\BindVolumeItemResponse.class
@@ -281,7 +274,6 @@ com\smartarchive\archivemanage\dto\LabelValueOption.class
 com\smartarchive\archiveflow\controller\ArchiveFlowRuleController.class
 com\smartarchive\archive\domain\WorkflowInstance.class
 com\smartarchive\documentorganization\dto\DocumentOrganizationPermissionPreviewResponse$DataDimension$DataDimensionBuilder.class
-com\smartarchive\archivemanage\service\impl\TransferApplicationArchiveMaterializationServiceImpl.class
 com\smartarchive\archive\mapper\ArchiveObjectMapper.class
 com\smartarchive\archivemanage\dto\BindArchiveCandidateResponse.class
 com\smartarchive\dictionary\dto\DictionaryItemResponse.class
@@ -298,22 +290,16 @@ com\smartarchive\documenttype\dto\DocumentTypeCreateCommand.class
 com\smartarchive\workflow\domain\WorkflowInstance.class
 com\smartarchive\archivemanage\support\TransferApplicationWorkflowHook.class
 com\smartarchive\knowledgegraph\dto\ProcurementAskRequest.class
-com\smartarchive\archivemanage\dto\ArchiveQueryCommand.class
 com\smartarchive\archivemanage\mapper\TransferApplicationDetailMapper.class
 com\smartarchive\archivemanage\mapper\ArchiveExtFieldConfigMapper.class
 com\smartarchive\warehouse\dto\WarehouseLocationUpdateCommand.class
-com\smartarchive\dashboard\service\impl\DashboardServiceImpl$DashboardRecentWrapper.class
-com\smartarchive\archivemanage\service\impl\ArchiveManagementServiceImpl.class
-com\smartarchive\archivemanage\controller\ArchiveManagementController.class
 com\smartarchive\archive\controller\InventoryTaskController.class
 com\smartarchive\knowledgegraph\event\DocumentTypeSemanticChangedEvent.class
 com\smartarchive\archivemanage\dto\TransferApplicationRecordPageResponse.class
-com\smartarchive\archivemanage\service\impl\ArchiveManagementServiceImpl$ParsedAttachment.class
 com\smartarchive\warehouse\dto\WarehouseVisualizationResponse$WarehouseVisualizationResponseBuilder.class
 com\smartarchive\archiveflow\dto\ArchiveFlowRuleOptionResponse$ArchiveFlowRuleOptionResponseBuilder.class
 com\smartarchive\companyproject\dto\CompanyProjectPermissionPreviewResponse.class
 com\smartarchive\companyproject\dto\CompanyProjectDetailResponse.class
-com\smartarchive\archivemanage\service\impl\ArchiveManagementServiceImpl$CompanyProjectMatch.class
 com\smartarchive\archivemanage\service\DocumentTypeExtFieldService.class
 com\smartarchive\security\controller\SecurityPolicyController.class
 com\smartarchive\archive\service\impl\WorkflowInstanceServiceImpl.class
@@ -344,10 +330,8 @@ com\smartarchive\archivemanage\dto\ArchiveAiParseResult.class
 com\smartarchive\archivemanage\dto\ArchiveCreateSessionResponse.class
 com\smartarchive\archive\command\CreateDisposalRecordCommand.class
 com\smartarchive\companyproject\dto\CompanyProjectOrgCategoryResponse$CompanyProjectOrgCategoryResponseBuilder.class
-com\smartarchive\archivemanage\dto\ArchiveCreateCommand$ArchiveAttachmentSaveCommand.class
 com\smartarchive\workflow\dto\DelegateTaskCommand.class
 com\smartarchive\archive\command\AssignLocationCommand.class
-com\smartarchive\archivemanage\domain\ArchiveRecord.class
 com\smartarchive\archivemanage\mapper\ArchiveCreateSessionMapper.class
 com\smartarchive\archivemanage\mapper\FourAttrInspectionDetailMapper.class
 com\smartarchive\archivemanage\dto\TransferApplicationDetailCommand.class
@@ -369,7 +353,6 @@ com\smartarchive\warehouse\dto\WarehouseCreateCommand.class
 com\smartarchive\archiveflow\dto\SecurityLevelOptionResponse.class
 com\smartarchive\knowledgegraph\dto\ComplianceCheckItemDto$ComplianceCheckItemDtoBuilder.class
 com\smartarchive\archivemanage\domain\ArchiveAttachment.class
-com\smartarchive\archivemanage\service\impl\ArchiveManagementServiceImpl$MetadataFallback.class
 com\smartarchive\warehouse\domain\WarehouseArea.class
 com\smartarchive\archivemanage\dto\TransferApplicationRecordQuery.class
 com\smartarchive\dictionary\domain\DictionaryCategory.class
