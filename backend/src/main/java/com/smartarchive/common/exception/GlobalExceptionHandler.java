@@ -1,10 +1,12 @@
 package com.smartarchive.common.exception;
 
 import com.smartarchive.common.api.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
@@ -22,6 +24,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ApiResponse<Void> handleException(Exception ex) {
+        log.error("Unhandled exception", ex);
         return ApiResponse.failure(5000, ex.getMessage());
     }
 }

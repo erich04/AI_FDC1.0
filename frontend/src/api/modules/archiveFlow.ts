@@ -60,6 +60,10 @@ export function fetchArchiveFlowDocumentOrganizationOptions() {
   return apiRequest<ArchiveFlowRuleOption[]>(http.get('/api/base-data/archive-flow-rules/options/document-organizations'))
 }
 
+export function fetchArchiveFlowCityOptions() {
+  return apiRequest<ArchiveFlowRuleOption[]>(http.get('/api/base-data/archive-flow-rules/options/cities'))
+}
+
 export function fetchArchiveFlowSecurityLevels() {
   return apiRequest<SecurityLevelOption[]>(http.get('/api/base-data/archive-flow-rules/options/security-levels'))
 }

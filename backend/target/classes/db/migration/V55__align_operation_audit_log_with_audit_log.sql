@@ -1,10 +1,29 @@
 -- Align fdc_operation_audit_log_t column layout with fdc_audit_log_t (V35).
 -- Module / business key / snapshots live in op_content JSON for query + API compatibility.
+-- Compatible with legacy databases where opt_content is used instead of op_content.
 
-ALTER TABLE fdc_audit_log_t
-    ALTER COLUMN op_content TYPE TEXT USING op_content::TEXT;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'fdc_audit_log_t'
+          AND column_name = 'op_content'
+    ) THEN
+        EXECUTE 'ALTER TABLE fdc_audit_log_t ALTER COLUMN op_content TYPE TEXT USING op_content::TEXT';
+    ELSIF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'fdc_audit_log_t'
+          AND column_name = 'opt_content'
+    ) THEN
+        EXECUTE 'ALTER TABLE fdc_audit_log_t ALTER COLUMN opt_content TYPE TEXT USING opt_content::TEXT';
+    END IF;
+END $$;
 
-ALTER TABLE fdc_operation_audit_log_t RENAME TO fdc_operation_audit_log_t_old;
+ALTER TABLE IF EXISTS fdc_operation_audit_log_t RENAME TO fdc_operation_audit_log_t_old;
 
 CREATE TABLE fdc_operation_audit_log_t (
     audit_log_id BIGSERIAL PRIMARY KEY,
@@ -65,4 +84,4 @@ SELECT
     COALESCE(last_update_version, 0)
 FROM fdc_operation_audit_log_t_old;
 
-DROP TABLE fdc_operation_audit_log_t_old;
+DROP TABLE IF EXISTS fdc_operation_audit_log_t_old;

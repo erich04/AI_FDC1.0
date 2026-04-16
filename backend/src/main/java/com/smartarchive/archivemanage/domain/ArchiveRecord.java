@@ -56,4 +56,14 @@ public class ArchiveRecord {
     private LocalDateTime creationDate;
     private Long lastUpdatedBy;
     private LocalDateTime lastUpdateDate;
+
+    // Backward-compatible alias for merged branches still using documentTypeCode.
+    public String getDocumentTypeCode() {
+        return busiModuleCode;
+    }
+
+    // Backward-compatible alias for merged branches still using documentTypeCode.
+    public void setDocumentTypeCode(String documentTypeCode) {
+        this.busiModuleCode = documentTypeCode;
+    }
 }

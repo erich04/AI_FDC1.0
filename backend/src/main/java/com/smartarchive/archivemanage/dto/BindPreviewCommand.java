@@ -10,4 +10,14 @@ public class BindPreviewCommand {
     private String busiModuleCode;
     private String companyProjectCode;
     private List<Long> archiveIds;
+
+    // Backward-compatible alias for merged branches still using documentTypeCode.
+    public String getDocumentTypeCode() {
+        return busiModuleCode;
+    }
+
+    // Backward-compatible alias for merged branches still using documentTypeCode.
+    public void setDocumentTypeCode(String documentTypeCode) {
+        this.busiModuleCode = documentTypeCode;
+    }
 }

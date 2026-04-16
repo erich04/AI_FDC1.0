@@ -125,7 +125,9 @@
               </template>
             </el-table-column>
             <el-table-column prop="applicationNumber" label="申请单号" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="busiModuleName" label="业务模块" min-width="140" show-overflow-tooltip />
+            <el-table-column label="业务模块" min-width="140" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.busiModuleName || '-' }}</template>
+            </el-table-column>
             <el-table-column prop="applicantName" label="申请人" width="120" show-overflow-tooltip />
             <el-table-column label="申请日期" width="170">
               <template #default="{ row }">{{ formatDateTime(row.applicationDate) }}</template>

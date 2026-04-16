@@ -4,7 +4,6 @@ com\smartarchive\documenttype\dto\DocumentTypePermissionPreviewResponse$Document
 com\smartarchive\archivemanage\dto\FourAttrInspectionResponse$FourAttrInspectionResponseBuilder.class
 com\smartarchive\dashboard\dto\DashboardDistributionItem.class
 com\smartarchive\archivemanage\dto\StorageLedgerResponse$StorageLedgerResponseBuilder.class
-com\smartarchive\knowledgegraph\service\ProcurementKnowledgeGraphService.class
 com\smartarchive\archivemanage\dto\BindQueryCommand.class
 com\smartarchive\archive\mapper\BorrowRecordMapper.class
 com\smartarchive\archiveflow\dto\ArchiveFlowRulePermissionPreviewResponse$PermissionPoint.class
@@ -16,7 +15,6 @@ com\smartarchive\knowledgegraph\event\ArchiveGraphRefreshEvent.class
 com\smartarchive\archivemanage\dto\ArchiveSummaryResponse$ArchiveSummaryResponseBuilder.class
 com\smartarchive\archive\controller\BorrowRecordController.class
 com\smartarchive\archivemanage\dto\LabelValueOption$LabelValueOptionBuilder.class
-com\smartarchive\knowledgegraph\controller\ProcurementKnowledgeGraphController.class
 com\smartarchive\archivemanage\mapper\BindVolumeMapper.class
 com\smartarchive\archive\mapper\DisposalRecordMapper.class
 com\smartarchive\archive\controller\CatalogTaskController.class
@@ -55,7 +53,6 @@ com\smartarchive\dictionary\service\DictionaryService.class
 com\smartarchive\archivemanage\dto\AiModelConnectionTestResult.class
 com\smartarchive\warehouse\dto\WarehouseAreaCopyCommand.class
 com\smartarchive\companyproject\dto\CompanyProjectPermissionPreviewResponse$CompanyProjectPermissionPreviewResponseBuilder.class
-com\smartarchive\knowledgegraph\dto\ContractComplianceResponse.class
 com\smartarchive\archive\service\impl\DisposalRecordServiceImpl.class
 com\smartarchive\archivemanage\dto\ArchiveAttachmentResponse$ArchiveAttachmentResponseBuilder.class
 com\smartarchive\companyproject\dto\CompanyProjectCreateCommand.class
@@ -73,8 +70,6 @@ com\smartarchive\warehouse\dto\WarehouseRackCreateCommand.class
 com\smartarchive\archivemanage\dto\ArchiveAttachmentUpdateCommand.class
 com\smartarchive\documenttype\dto\DocumentTypePermissionPreviewResponse.class
 com\smartarchive\archivemanage\dto\ArchiveCreateOptionsResponse$ArchiveCreateOptionsResponseBuilder.class
-com\smartarchive\archivemanage\service\support\ArchiveAiChatService.class
-com\smartarchive\knowledgegraph\dto\ProcurementChainResponse.class
 com\smartarchive\documentorganization\service\DocumentOrganizationService.class
 com\smartarchive\archive\service\DisposalRecordService.class
 com\smartarchive\warehouse\dto\WarehouseManagementResponse.class
@@ -110,7 +105,6 @@ com\smartarchive\archivemanage\domain\ArchiveExtValue.class
 com\smartarchive\archivemanage\dto\TransferApplicationResponse.class
 com\smartarchive\companyproject\mapper\CompanyProjectLineMapper.class
 com\smartarchive\companyproject\dto\CountryDictionaryCommand.class
-com\smartarchive\knowledgegraph\service\impl\ProcurementKnowledgeGraphServiceFallbackImpl.class
 com\smartarchive\archive\controller\DisposalRecordController.class
 com\smartarchive\archivemanage\dto\TransferApplicationExtValueResponse$TransferApplicationExtValueResponseBuilder.class
 com\smartarchive\dictionary\mapper\DictionaryCategoryMapper.class
@@ -145,7 +139,6 @@ com\smartarchive\documenttype\dto\DocumentTypePermissionPreviewResponse$Permissi
 com\smartarchive\archivemanage\service\TransferApplicationService.class
 com\smartarchive\archivemanage\dto\DocumentTypeExtFieldResponse.class
 com\smartarchive\warehouse\service\WarehouseService.class
-com\smartarchive\knowledgegraph\dto\ProcurementConversationMessageResponse$ProcurementConversationMessageResponseBuilder.class
 com\smartarchive\documentorganization\dto\DocumentOrganizationCityResponse$DocumentOrganizationCityResponseBuilder.class
 com\smartarchive\archiveflow\dto\ArchiveFlowRuleUpdateCommand.class
 com\smartarchive\warehouse\dto\WarehouseRackUpdateCommand.class
@@ -195,7 +188,6 @@ com\smartarchive\documentorganization\dto\DocumentOrganizationDetailResponse.cla
 com\smartarchive\archivemanage\dto\BindPreviewResponse.class
 com\smartarchive\archivemanage\dto\TransferApplicationDetailResponse.class
 com\smartarchive\warehouse\dto\WarehouseAreaCreateCommand.class
-com\smartarchive\knowledgegraph\dto\ProcurementChainResponse$ProcurementChainResponseBuilder.class
 com\smartarchive\documentorganization\dto\DocumentOrganizationCityResponse.class
 com\smartarchive\common\audit\domain\OperationAuditRecord.class
 com\smartarchive\workflow\service\WorkflowService.class
@@ -233,7 +225,6 @@ com\smartarchive\security\dto\SecurityPolicyDto.class
 com\smartarchive\archivemanage\dto\BindOptionsResponse$BindOptionsResponseBuilder.class
 com\smartarchive\warehouse\domain\Warehouse.class
 com\smartarchive\archiveflow\mapper\ArchiveFlowLookupMapper.class
-com\smartarchive\knowledgegraph\dto\ContractComplianceResponse$ContractComplianceResponseBuilder.class
 com\smartarchive\knowledgegraph\dto\SupplierAccountTimelineResponse$SupplierAccountTimelineResponseBuilder.class
 com\smartarchive\companyproject\domain\CompanyProjectOrgCategory.class
 com\smartarchive\dashboard\service\DashboardService.class
@@ -280,7 +271,6 @@ com\smartarchive\dictionary\dto\DictionaryItemResponse.class
 com\smartarchive\archive\service\ArchiveReceiptService.class
 com\smartarchive\archivemanage\service\support\ArchiveFileTextExtractor.class
 com\smartarchive\archivemanage\service\FourAttrInspectionService.class
-com\smartarchive\knowledgegraph\dto\ProcurementAskResponse$ProcurementAskResponseBuilder.class
 com\smartarchive\archivemanage\mapper\ArchiveContentMapper.class
 com\smartarchive\dashboard\controller\DashboardController.class
 com\smartarchive\documentorganization\domain\DocumentOrganizationCity.class
@@ -336,7 +326,6 @@ com\smartarchive\archivemanage\mapper\ArchiveCreateSessionMapper.class
 com\smartarchive\archivemanage\mapper\FourAttrInspectionDetailMapper.class
 com\smartarchive\archivemanage\dto\TransferApplicationDetailCommand.class
 com\smartarchive\companyproject\dto\CompanyProjectOrgCategoryResponse.class
-com\smartarchive\knowledgegraph\dto\ProcurementAskResponse.class
 com\smartarchive\warehouse\service\impl\WarehouseServiceImpl.class
 com\smartarchive\archivemanage\dto\DocumentTypeExtFieldCreateCommand.class
 com\smartarchive\warehouse\dto\WarehouseAreaUpdateCommand.class
@@ -410,7 +399,6 @@ com\smartarchive\warehouse\domain\WarehouseRack.class
 com\smartarchive\knowledgegraph\dto\ComplianceCheckItemDto.class
 com\smartarchive\archiveflow\dto\ArchiveFlowRuleCreateCommand.class
 com\smartarchive\knowledgegraph\dto\GraphNodeDto$GraphNodeDtoBuilder.class
-com\smartarchive\knowledgegraph\dto\ProcurementConversationMessageResponse.class
 com\smartarchive\archiveflow\dto\ArchiveFlowRulePermissionPreviewResponse$PermissionPoint$PermissionPointBuilder.class
 com\smartarchive\companyproject\dto\CompanyProjectPermissionPreviewResponse$PermissionPoint.class
 com\smartarchive\archivemanage\dto\FourAttrInspectionSaveCommand.class

@@ -23,4 +23,14 @@ public class ArchiveQueryCommand {
     private Boolean excludeSubmittedTransferApplied;
     private Integer page = 1;
     private Integer pageSize = 20;
+
+    // Backward-compatible alias for merged branches still using documentTypeCode.
+    public String getDocumentTypeCode() {
+        return busiModuleCode;
+    }
+
+    // Backward-compatible alias for merged branches still using documentTypeCode.
+    public void setDocumentTypeCode(String documentTypeCode) {
+        this.busiModuleCode = documentTypeCode;
+    }
 }

@@ -1,3 +1,12 @@
+DO $$
+BEGIN
+IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'fdc_document_type_t'
+      AND column_name = 'type_code'
+) THEN
 UPDATE fdc_document_type_t
 SET delete_flag = 'Y',
     last_updated_by = 1,
@@ -40,3 +49,5 @@ INSERT INTO fdc_document_type_t (
 SELECT 'NON_FIN', '非财经文档', NULL, 'Y', NULL, 1, NULL, 5, 'N', 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM fdc_document_type_t WHERE type_code = 'NON_FIN' AND delete_flag = 'N');
 
+END IF;
+END $$;

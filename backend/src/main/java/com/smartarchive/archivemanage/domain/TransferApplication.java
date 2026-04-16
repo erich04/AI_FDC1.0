@@ -1,6 +1,7 @@
 package com.smartarchive.archivemanage.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ public class TransferApplication {
     private Long applicant;
     private LocalDateTime applicationDate;
     private String department;
+    @TableField("document_type_code")
     private String busiModuleCode;
     private String applyMethod;
     private String expressType;

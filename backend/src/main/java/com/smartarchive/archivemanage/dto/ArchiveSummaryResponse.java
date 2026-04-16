@@ -49,4 +49,9 @@ public class ArchiveSummaryResponse {
     private Integer attachmentCount;
     private Map<String, String> extValues;
     private List<ArchiveAttachmentResponse> attachments;
+
+    // Backward-compatible alias for merged branches still using busiModuleName.
+    public String getBusiModuleName() {
+        return documentTypeName;
+    }
 }

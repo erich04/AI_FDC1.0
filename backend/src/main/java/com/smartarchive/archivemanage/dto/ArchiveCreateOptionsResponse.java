@@ -24,4 +24,14 @@ public class ArchiveCreateOptionsResponse {
     private List<LabelValueOption> geoRepOffices;
     private List<LabelValueOption> geoRegions;
     private List<LabelValueOption> custodyStatuses;
+
+    // Backward-compatible alias for historical API naming.
+    public List<LabelValueOption> getDocumentTypes() {
+        return busiModules;
+    }
+
+    // Backward-compatible alias for historical API naming.
+    public void setDocumentTypes(List<LabelValueOption> documentTypes) {
+        this.busiModules = documentTypes;
+    }
 }

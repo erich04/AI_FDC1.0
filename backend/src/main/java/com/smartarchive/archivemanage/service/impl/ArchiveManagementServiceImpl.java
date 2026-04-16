@@ -3859,7 +3859,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             .archiveId(archive.getArchiveId())
             .archiveCode(archive.getArchiveCode())
             .documentName(archive.getDocumentName())
-            .documentTypeCode(archive.getDocumentTypeCode())
+            .busiModuleCode(archive.getDocumentTypeCode())
             .companyProjectCode(archive.getCompanyProjectCode())
             .businessCode(archive.getBusinessCode())
             .beginPeriod(archive.getBeginPeriod())
@@ -4373,7 +4373,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     }
 
     private ArchiveCreateSessionResponse buildSessionResponse(ArchiveCreateSession session, List<ArchiveAttachment> attachments, ArchiveAiParseResult parseResult) {
-        return ArchiveCreateSessionResponse.builder().sessionId(session.getSessionId()).sessionCode(session.getSessionCode()).createMode(session.getCreateMode()).sessionStatus(session.getSessionStatus()).documentTypeCodeGuess(session.getDocumentTypeCodeGuess()).carrierTypeCodeGuess(session.getCarrierTypeCodeGuess()).parseStatus(session.getParseStatus()).aiSummarySnapshot(session.getAiSummarySnapshot()).expireTime(session.getExpireTime()).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).aiParseResult(parseResult).build();
+        return ArchiveCreateSessionResponse.builder().sessionId(session.getSessionId()).sessionCode(session.getSessionCode()).createMode(session.getCreateMode()).sessionStatus(session.getSessionStatus()).busiModuleCodeGuess(session.getDocumentTypeCodeGuess()).carrierTypeCodeGuess(session.getCarrierTypeCodeGuess()).parseStatus(session.getParseStatus()).aiSummarySnapshot(session.getAiSummarySnapshot()).expireTime(session.getExpireTime()).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).aiParseResult(parseResult).build();
     }
 
     private ArchiveSummaryResponse buildArchiveSummary(ArchiveRecord archive, Map<String, String> extValues, List<ArchiveAttachment> attachments) {
@@ -5078,7 +5078,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private ArchiveAiParseResult buildParseResult(ArchiveCreateSession session, ArchiveAttachment attachment) {
         ParsedAttachment parsed = parseStoredFile(Paths.get(attachment.getStoragePath()), attachment.getFileName(), attachment.getMimeType());
         return ArchiveAiParseResult.builder()
-            .suggestedDocumentTypeCode(Optional.ofNullable(session.getDocumentTypeCodeGuess()).orElse(parsed.suggestedDocumentTypeCode()))
+            .suggestedBusiModuleCode(Optional.ofNullable(session.getDocumentTypeCodeGuess()).orElse(parsed.suggestedDocumentTypeCode()))
             .suggestedCarrierTypeCode(Optional.ofNullable(session.getCarrierTypeCodeGuess()).orElse("ELECTRONIC"))
             .documentName(stripExtension(attachment.getFileName()))
             .businessCode(parsed.businessCode())

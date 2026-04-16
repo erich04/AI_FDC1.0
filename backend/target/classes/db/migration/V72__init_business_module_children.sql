@@ -1,3 +1,12 @@
+DO $$
+BEGIN
+IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'fdc_document_type_t'
+      AND column_name = 'type_code'
+) THEN
 INSERT INTO fdc_document_type_t (type_code, type_name, description, enable_flag, parent_code, level_num, ancestor_path, sort_order, delete_flag, created_by, creation_date, last_updated_by, last_update_date)
 SELECT 'FIN_ACC_VCH', '会计凭证', NULL, 'Y', 'FIN_ACC', 2, 'FIN_ACC', 1, 'N', 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP
 WHERE EXISTS (SELECT 1 FROM fdc_document_type_t WHERE type_code = 'FIN_ACC' AND delete_flag = 'N')
@@ -358,3 +367,5 @@ SELECT 'NON_FIN_IT_ASSET', 'IT资产台账', NULL, 'Y', 'NON_FIN_IT', 3, 'NON_FI
 WHERE EXISTS (SELECT 1 FROM fdc_document_type_t WHERE type_code = 'NON_FIN_IT' AND delete_flag = 'N')
   AND NOT EXISTS (SELECT 1 FROM fdc_document_type_t WHERE type_code = 'NON_FIN_IT_ASSET' AND delete_flag = 'N');
 
+END IF;
+END $$;

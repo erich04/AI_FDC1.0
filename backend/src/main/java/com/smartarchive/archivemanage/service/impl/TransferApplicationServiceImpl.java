@@ -198,7 +198,12 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
                         .in(DocumentType::getTypeCode, codes)
                         .eq(DocumentType::getDeleteFlag, "N"))
                     .stream()
-                    .collect(Collectors.toMap(DocumentType::getTypeCode, DocumentType::getTypeName, (left, right) -> left));
+                    .filter(item -> StringUtils.hasText(item.getTypeCode()))
+                    .collect(Collectors.toMap(
+                        DocumentType::getTypeCode,
+                        item -> StringUtils.hasText(item.getTypeName()) ? item.getTypeName() : item.getTypeCode(),
+                        (left, right) -> left
+                    ));
             }));
         List<TransferApplicationRecordRowResponse> records = rows.stream()
             .map(item -> toRecordRow(item, busiModuleNameMap))
@@ -245,11 +250,15 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
     }
 
     private TransferApplicationRecordRowResponse toRecordRow(TransferApplication item, Map<String, String> busiModuleNameMap) {
+        String busiModuleCode = item.getBusiModuleCode();
+        String busiModuleName = StringUtils.hasText(busiModuleCode)
+            ? busiModuleNameMap.getOrDefault(busiModuleCode, busiModuleCode)
+            : null;
         return TransferApplicationRecordRowResponse.builder()
             .applicationId(item.getApplicationId())
             .applicationNumber(item.getApplicationNumber())
-            .busiModuleCode(item.getBusiModuleCode())
-            .busiModuleName(busiModuleNameMap.getOrDefault(item.getBusiModuleCode(), item.getBusiModuleCode()))
+            .busiModuleCode(busiModuleCode)
+            .busiModuleName(busiModuleName)
             .applicant(item.getApplicant())
             .applicantName(formatUserDisplay(item.getApplicant()))
             .applicationDate(item.getApplicationDate())
