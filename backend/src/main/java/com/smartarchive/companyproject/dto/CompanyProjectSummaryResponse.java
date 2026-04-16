@@ -10,6 +10,7 @@ public class CompanyProjectSummaryResponse {
     private String companyProjectName;
     private String countryCode;
     private String managementArea;
+    private String companyTag;
     private String enabledFlag;
     private Integer organizationCount;
     private Long lastUpdatedBy;

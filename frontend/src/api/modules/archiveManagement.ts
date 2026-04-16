@@ -1,4 +1,5 @@
-import http, { apiRequest } from '../http'
+import http, { apiRequest, type ApiResponse } from '../http'
+import { CURRENT_OPERATOR_USER_ID } from '../../constants/currentUser'
 import type {
   ArchiveAskResult,
   ArchiveAiModelSummary,
@@ -7,6 +8,7 @@ import type {
   ArchiveDefaultResolve,
   ArchiveQueryResult,
   ArchiveRecordSummary,
+  AuditRecord,
   BindBatch,
   BindOptions,
   BindPreviewResult,
@@ -17,7 +19,8 @@ import type {
   StorageBatch,
   StorageLedger,
   StorageOptions,
-  StorageQueryResult
+  StorageQueryResult,
+  WorkspaceIoJobSummary
 } from '../../types'
 
 export interface DocumentTypeExtFieldCreateCommand {
@@ -91,6 +94,61 @@ export interface ArchiveAskCommand {
   companyProjectCode?: string
 }
 
+export interface PendingDocumentQueryCommand {
+  documentTypeCode?: string
+  companyCode?: string
+  archiveTypeCode?: string
+  carrierType?: string
+  businessCode?: string
+  /** 多条业务编码（优先于 businessCode 文本）；避免 JSON 内换行在传输中丢失 */
+  businessCodes?: string[]
+  /** 多个值空格分隔，与 refNo、businessCode 同时存在时取交集 */
+  invoiceNo?: string
+  refNo?: string
+  /** 多条其他相关编号（优先于 refNo 文本） */
+  refNos?: string[]
+  docOrganization?: string
+  beginPeriod?: string
+  endPeriod?: string
+  docGenerationStart?: string
+  docGenerationEnd?: string
+  custodyStatus?: string
+  country?: string
+  repOffice?: string
+  region?: string
+  /** 与后端登录用户 id 对齐；未传则不按创建人过滤 */
+  createdByUserId?: number
+}
+
+export interface PendingDocumentRowResponse {
+  docId: string
+  businessCode: string
+  companyEntity: string
+  businessModule: string
+  startPeriod: string
+  endPeriod: string
+  archivePlace: string
+  originPlace: string
+  docOrganization: string
+  docStatus: string
+  documentName: string
+  docGenerationDate: string
+  owner: string
+  responsibleDept: string
+  carrierType: string
+  visibility: string
+  sourceSystem: string
+  securityLevelCode: string
+  securityLevelName?: string
+  /** 列表展示用，等同 securityLevelName */
+  securityLevel: string
+  description: string
+  creationTime: string
+  createdBy: string
+  updatedBy: string
+  updatedAt: string
+}
+
 export interface ArchiveTransferCommand {
   archiveIds: number[]
   assigneeId: string
@@ -108,7 +166,6 @@ export interface ArchiveTransferResponse {
   processInstanceId: string
   workflowInstanceId: number
   archiveCount: number
-  archiveFilingCodes: string[]
 }
 
 export interface BindPreviewCommand {
@@ -253,6 +310,147 @@ export function askArchiveQuestion(data: ArchiveAskCommand) {
   return apiRequest<ArchiveAskResult>(http.post('/api/archive-management/create/ask', data))
 }
 
+export function queryPendingDocuments(data: PendingDocumentQueryCommand) {
+  return apiRequest<PendingDocumentRowResponse[]>(http.post('/api/archive-management/pending-documents/query', data))
+}
+
+export interface PendingAuditAttachmentRef {
+  fileId: number
+  fileName?: string
+  storageKey?: string
+  fileSize?: number
+}
+
+export interface PendingDocumentWriteCommand {
+  operatorUserId?: number
+  documentTypeCode: string
+  companyProjectCode: string
+  archiveTypeCode: string
+  businessCode?: string
+  beginPeriod: string
+  endPeriod?: string
+  archiveDestination?: string
+  originPlace?: string
+  documentName: string
+  documentDate: string
+  dutyPerson: string
+  dutyDepartment?: string
+  carrierTypeCode: string
+  sourceSystem?: string
+  securityLevelCode: string
+  remark?: string
+  documentOrganizationCode: string
+  retentionPeriodYears?: number
+  custodyStatus?: string
+  /** SUBMIT（默认）| DRAFT */
+  submitMode?: 'SUBMIT' | 'DRAFT'
+  operationRemark?: string
+  operationTypeCode?: 'CREATE' | 'UPDATE' | 'DRAFT_SAVE' | 'ATTACH_INTEGRATE' | 'BATCH_CREATE' | 'BATCH_UPDATE'
+  auditAttachments?: PendingAuditAttachmentRef[]
+  extValues?: Record<string, string>
+}
+
+export interface PendingDocumentExportCommand {
+  docIds: number[]
+  exportFileFormat?: 'CSV' | 'EXCEL' | 'PDF'
+  exportScope?: 'DOCUMENT_QUERY' | 'PENDING_ARCHIVE'
+}
+
+export function createPendingDocument(data: PendingDocumentWriteCommand) {
+  return apiRequest<ArchiveRecordSummary>(http.post('/api/archive-management/pending-documents', data))
+}
+
+export function updatePendingDocument(docId: number, data: PendingDocumentWriteCommand) {
+  return apiRequest<ArchiveRecordSummary>(http.put(`/api/archive-management/pending-documents/${docId}`, data))
+}
+
+export function batchDeletePendingDocuments(docIds: number[]) {
+  return apiRequest<void>(http.post('/api/archive-management/pending-documents/batch-delete', { docIds }))
+}
+
+export function duplicatePendingDocument(docId: number) {
+  return apiRequest<ArchiveRecordSummary>(http.post(`/api/archive-management/pending-documents/${docId}/duplicate`, {}))
+}
+
+export function createPendingDocumentsExportJob(data: PendingDocumentExportCommand) {
+  return apiRequest<WorkspaceIoJobSummary>(http.post('/api/archive-management/pending-documents/export-jobs', data))
+}
+
+export function submitPendingArchiveBatchImport(params: {
+  file: File
+  documentTypeCode: string
+  operationRemark?: string
+  auditAttachments?: PendingAuditAttachmentRef[]
+}) {
+  const form = new FormData()
+  form.append('file', params.file)
+  form.append('documentTypeCode', params.documentTypeCode)
+  if (params.operationRemark) {
+    form.append('operationRemark', params.operationRemark)
+  }
+  if (params.auditAttachments?.length) {
+    form.append('auditAttachmentsJson', JSON.stringify(params.auditAttachments))
+  }
+  return apiRequest<WorkspaceIoJobSummary>(
+    http.post('/api/archive-management/pending-documents/batch-import', form)
+  )
+}
+
+export function submitArchiveImportQueryJob(params: {
+  file: File
+  documentTypeCode: string
+}) {
+  const form = new FormData()
+  form.append('file', params.file)
+  form.append('documentTypeCode', params.documentTypeCode)
+  return apiRequest<WorkspaceIoJobSummary>(
+    http.post('/api/archive-management/archives/import-query-jobs', form)
+  )
+}
+
+export function submitPendingImportQueryJob(params: {
+  file: File
+  documentTypeCode: string
+}) {
+  const form = new FormData()
+  form.append('file', params.file)
+  form.append('documentTypeCode', params.documentTypeCode)
+  return apiRequest<WorkspaceIoJobSummary>(
+    http.post('/api/archive-management/pending-documents/import-query-jobs', form)
+  )
+}
+
+export async function downloadArchiveAttachment(attachmentId: number): Promise<Blob> {
+  const res = await http.get(`/api/archive-management/attachments/${attachmentId}/download`, { responseType: 'blob' })
+  return res.data as Blob
+}
+
+export function previewArchiveAttachmentUrl(attachmentId: number): string {
+  return `/api/archive-management/attachments/${attachmentId}/preview`
+}
+
+export async function downloadArchiveAttachmentsZip(archiveId: number): Promise<Blob> {
+  const res = await http.get(`/api/archive-management/archives/${archiveId}/attachments/download-all`, { responseType: 'blob' })
+  return res.data as Blob
+}
+
+export async function uploadPendingAuditAttachment(file: File): Promise<PendingAuditAttachmentRef> {
+  const fd = new FormData()
+  fd.append('file', file)
+  // 使用 fetch 避免 axios 在部分环境下把 FormData 按 JSON 处理，导致后端 consumes 不匹配并返回「POST 不支持」
+  const res = await fetch('/api/archive-management/pending-documents/audit-attachments', {
+    method: 'POST',
+    headers: { 'X-User-Id': String(CURRENT_OPERATOR_USER_ID) },
+    body: fd
+  })
+  const payload = (await res.json()) as ApiResponse<PendingAuditAttachmentRef>
+  const isSuccess = typeof payload.code === 'number' ? payload.code === 0 : payload.success === true
+  if (!isSuccess) {
+    throw new Error(payload.msg || payload.message || 'Request failed')
+  }
+  return payload.data
+}
+
 export function transferArchives(data: ArchiveTransferCommand) {
   return apiRequest<ArchiveTransferResponse>(http.post('/api/archive-management/archives/transfer', data))
 }
@@ -263,6 +461,15 @@ export function fetchArchiveAiModels() {
 
 export function getArchiveDetail(archiveId: number) {
   return apiRequest<ArchiveRecordSummary>(http.get(`/api/archive-management/archives/${archiveId}`))
+}
+
+/** 按模块 + 业务主键查操作审计（如应归档：PENDING_ARCHIVE + docId） */
+export function fetchOperationAuditsByBusinessKey(moduleCode: string, businessKey: string) {
+  return apiRequest<AuditRecord[]>(
+    http.get(
+      `/api/common/audits/modules/${encodeURIComponent(moduleCode)}/business-keys/${encodeURIComponent(businessKey)}`
+    )
+  )
 }
 
 export function fetchBindOptions() {

@@ -1,6 +1,11 @@
 # 需求总述
 重构发起移交功能，重构内容包括前端和后端，设计规范如下：
 
+## 统一字段口径（强制）
+1. 除“开始档期/结束档期”外，所有日期时间字段底表统一存储为 `TIMESTAMP`。
+2. 前端查询筛选统一使用“年月日”控件；列表与详情展示统一为 `yyyy-MM-dd HH:mm:ss`。
+3. 申请行扩展字段（`fdc_application_ext_t.attr1~attr300`）统一为 `NVARCHAR(500)`（数据库实现口径可为 `VARCHAR(500)`）。
+
 # 页面设计
 查询数据来源于fdc_application_t和fdc_application_detail_t表
 ## 申请头（表单）

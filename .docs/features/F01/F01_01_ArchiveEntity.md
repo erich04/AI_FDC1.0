@@ -1,10 +1,10 @@
-# F01_01 归档主体管理
+# F01_01 公司主数据管理（原「归档主体」口径已统一为「公司」）
 
-> 按 `/.docs/features/Template.md` 补充完整规格。
+> 按 `/.docs/features/Template.md` 补充完整规格。领域术语：**公司编码** `company_code`、**公司名称** `company_name`；与系统既有持久化字段 `company_project_code` / `company_project_name` 对应。
 
 ## 1. 功能目标
 
-- 管理归档主体主数据，供归档流程与检索统一引用。
+- 管理公司主数据，供归档流程与检索统一引用。
 
 ## 2. 关键数据对象
 

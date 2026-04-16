@@ -1,5 +1,6 @@
-﻿import http, { apiRequest } from '../http'
+import http, { apiRequest } from '../http'
 import type { AuditRecord, DocumentTypePermissionPreview, DocumentTypeTreeNode } from '../../types'
+import type { LabelValueOption } from '../../types'
 
 export interface DocumentTypeCreateCommand {
   typeCode: string
@@ -38,6 +39,10 @@ export function deleteDocumentType(typeCode: string) {
 
 export function fetchDocumentTypePermissionPreview() {
   return apiRequest<DocumentTypePermissionPreview>(http.get('/api/base-data/document-types/permissions/preview'))
+}
+
+export function fetchLevel3Modules(documentTypeCode: string) {
+  return apiRequest<LabelValueOption[]>(http.get('/api/base-data/document-types/level3-modules', { params: { documentTypeCode } }))
 }
 
 export function fetchModuleAudits(moduleCode: string) {

@@ -7,10 +7,13 @@ import lombok.Data;
 @Data
 public class CompanyProjectDetailResponse {
     private Long id;
+    /** 公司编码（domain: company_code） */
     private String companyProjectCode;
+    /** 公司名称（domain: company_name） */
     private String companyProjectName;
     private String countryCode;
     private String managementArea;
+    private String companyTag;
     private String enabledFlag;
     private String deleteFlag;
     private Long createdBy;

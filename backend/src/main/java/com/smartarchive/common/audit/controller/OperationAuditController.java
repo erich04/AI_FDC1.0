@@ -20,4 +20,12 @@ public class OperationAuditController {
     public ApiResponse<List<AuditRecordResponse>> listByModule(@PathVariable String moduleCode) {
         return ApiResponse.success(operationAuditService.listByModule(moduleCode));
     }
+
+    @GetMapping("/modules/{moduleCode}/business-keys/{businessKey}")
+    public ApiResponse<List<AuditRecordResponse>> listByModuleAndBusinessKey(
+        @PathVariable String moduleCode,
+        @PathVariable String businessKey
+    ) {
+        return ApiResponse.success(operationAuditService.listByModuleAndBusinessKey(moduleCode, businessKey));
+    }
 }

@@ -107,6 +107,11 @@
             <el-button type="primary" @click="goToCreate">发起移交</el-button>
             <el-button @click="hintTodo('导出')">导出</el-button>
           </div>
+          <div class="table-toolbar__right">
+            <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+            <el-tooltip :content="tableFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="tableFullPage = !tableFullPage" /></el-tooltip>
+            <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="runQuery" :disabled="loading" /></el-tooltip>
+          </div>
         </div>
 
         <div v-if="loading" class="loading-container">
@@ -191,7 +196,7 @@
               <el-table-column type="index" label="#" width="50" />
               <el-table-column prop="docBusiNo" label="文档业务编码" min-width="120" show-overflow-tooltip />
               <el-table-column prop="docName" label="文档名称" min-width="160" show-overflow-tooltip />
-              <el-table-column label="公司/项目" min-width="120" show-overflow-tooltip>
+              <el-table-column label="公司" min-width="120" show-overflow-tooltip>
                 <template #default="{ row }">{{ labelOf(companyOptions, row.companyProjectCode) }}</template>
               </el-table-column>
               <el-table-column label="业务模块" width="120">
@@ -220,6 +225,7 @@ import axios from 'axios'
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { FullScreen, RefreshRight, Setting } from '@element-plus/icons-vue'
 import { fetchArchiveCreateOptions } from '../../api/modules/archiveManagement'
 import { fetchDictionaryItems } from '../../api/modules/dictionary'
 import {
@@ -244,6 +250,7 @@ const filterExpanded = ref(false)
 const archiveOptions = ref<ArchiveCreateOptions | null>(null)
 
 const tableRecords = ref<TransferApplicationRecordRow[]>([])
+const tableFullPage = ref(false)
 const pagination = reactive({
   page: 1,
   pageSize: 20,
@@ -465,6 +472,10 @@ function hintTodo(action: string) {
   ElMessage.info(`${action}功能开发中`)
 }
 
+function notifyColumnSetting() {
+  ElMessage.info('列设置入口已保留，当前版本不展示具体列配置面板。')
+}
+
 onMounted(async () => {
   try {
     const options = await fetchArchiveCreateOptions()
@@ -550,11 +561,16 @@ onMounted(async () => {
 .table-toolbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
 .table-toolbar__left {
   display: flex;
   gap: 10px;
+}
+.table-toolbar__right {
+  display: flex;
+  gap: 8px;
 }
 
 .loading-container {

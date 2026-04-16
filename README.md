@@ -33,10 +33,12 @@
 
 后端配置文件：`backend/src/main/resources/application.yml`
 
+本地私有配置建议使用：`backend/src/main/resources/application-local.yml`（已加入 `.gitignore`，不会提交），可参考模板：`backend/src/main/resources/application-local.example.yml`。
+
 默认配置如下：
 
 - 后端端口：`8080`
-- PostgreSQL：`jdbc:postgresql://localhost:5432/smart_archive`
+- 默认（不带 profile）PostgreSQL：`jdbc:postgresql://localhost:5432/postgres`
 - Redis：`localhost:6379`
 - OCR：默认开启
 - Tesseract 路径：`C:/Program Files/Tesseract-OCR/tesseract.exe`
@@ -54,33 +56,33 @@
 
 ### 前端配置
 
-前端接口地址写在：`frontend/src/api/http.ts`
+开发环境前端通过 Vite 代理转发到后端，配置在：`frontend/vite.config.ts`
 
-默认请求后端地址：
+- 代理规则：`/api` -> `http://localhost:8080`
 
-- `http://localhost:8080`
-
-如果你修改了后端端口或部署地址，请同步修改这里的 `baseURL`。
+`frontend/src/api/http.ts` 默认使用同源 `baseURL: ''`，无需再手工改写 API 主机地址。
 
 ## 快速启动
 
 ### 1. 准备数据库和缓存
 
-先启动 PostgreSQL 和 Redis，并创建数据库：
+先启动 PostgreSQL 和 Redis，并创建数据库（用于 local profile）：
 
 ```sql
-CREATE DATABASE smart_archive;
+CREATE DATABASE smart_archive_clean;
 ```
 
 如果你准备开启 OCR，还需要确认 Tesseract 已安装，并且 `tessdata` 目录可用。
 
-### 2. 启动后端
+### 2. 启动后端（推荐 local）
 
 进入 `backend/` 目录后执行：
 
 ```bash
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+说明：仓库默认不强制激活 `local`，请通过启动参数指定，避免本地私有配置影响团队。
 
 或者直接双击/运行：
 
@@ -151,8 +153,8 @@ npm run dev
 ## 首次部署建议
 
 1. 先确认 PostgreSQL、Redis、JDK、Node.js 都已安装。
-2. 修改 `backend/src/main/resources/application.yml` 中的数据库、Redis 和 OCR 路径。
-3. 修改 `frontend/src/api/http.ts` 中的后端地址。
+2. 复制 `backend/src/main/resources/application-local.example.yml` 为 `application-local.yml`，按本机环境修改数据库、Redis 和 OCR 路径。
+3. 保持 `frontend/vite.config.ts` 的 `/api` 代理与后端端口一致（默认 `8080`）。
 4. 先启动后端，再启动前端。
 5. 如果页面报接口错误，优先检查后端是否已启动，以及前端 `baseURL` 是否正确。
 
@@ -161,13 +163,13 @@ npm run dev
 ### 1. 后端连不上数据库
 
 - 确认 PostgreSQL 已启动
-- 确认数据库 `smart_archive` 已创建
-- 确认用户名和密码与 `application.yml` 一致
+- 确认数据库 `smart_archive_clean` 已创建（如果使用 `local`）
+- 确认用户名和密码与 `application-local.yml`（或启动参数）一致
 
 ### 2. 前端请求失败
 
 - 确认后端是否运行在 `8080`
-- 确认 `frontend/src/api/http.ts` 的 `baseURL` 是否正确
+- 确认 `frontend/vite.config.ts` 中 `/api` 的代理目标是否为正确后端地址
 - 检查浏览器控制台和后端日志
 
 ### 3. OCR 不生效

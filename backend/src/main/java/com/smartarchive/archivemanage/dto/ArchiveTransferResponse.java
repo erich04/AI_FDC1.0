@@ -11,5 +11,4 @@ public class ArchiveTransferResponse {
     private String processInstanceId;
     private Long workflowInstanceId;
     private Integer archiveCount;
-    private List<String> archiveFilingCodes;
 }

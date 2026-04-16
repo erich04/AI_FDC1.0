@@ -168,7 +168,6 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
 
         ArchiveRecord archive = new ArchiveRecord();
         archive.setArchiveCode(generateCode("ARC"));
-        archive.setArchiveFilingCode(generateCode("FILE"));
         archive.setCreateMode("MANUAL");
         archive.setArchiveStatus("TRANSFERRED");
         archive.setBusiModuleCode(application.getBusiModuleCode());
@@ -180,7 +179,7 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         archive.setDocumentName(firstNonBlank(detail.getDocName(), "未命名文档"));
         archive.setDutyPerson(dutyPerson);
         archive.setDutyDepartment(dutyDepartment);
-        archive.setDocumentDate(docDate);
+        archive.setDocumentDate(docDate.atStartOfDay());
         archive.setSecurityLevelCode(securityLevelCode);
         archive.setSourceSystem("TRANSFER_APPLICATION:" + application.getApplicationNumber());
         archive.setArchiveDestination(firstNonBlank(defaults.getArchiveDestination(), trimToNull(detail.getArchPlaceAlpha2Code())));
@@ -338,7 +337,7 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
 
     private CompanyProject requireCompanyProject(String companyProjectCode) {
         if (!StringUtils.hasText(companyProjectCode)) {
-            throw new BusinessException("公司/项目编码不能为空");
+            throw new BusinessException("公司编码不能为空");
         }
         CompanyProject project = companyProjectMapper.selectOne(new LambdaQueryWrapper<CompanyProject>()
             .eq(CompanyProject::getCompanyProjectCode, companyProjectCode.trim())
@@ -346,7 +345,7 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
             .eq(CompanyProject::getEnabledFlag, "Y")
             .last("limit 1"));
         if (project == null) {
-            throw new BusinessException("公司/项目不存在或已停用: " + companyProjectCode);
+            throw new BusinessException("公司不存在或已停用: " + companyProjectCode);
         }
         return project;
     }

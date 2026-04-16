@@ -17,10 +17,10 @@
             <el-form-item label="申请日期" prop="applicationDate">
               <el-input :model-value="headerForm.applicationDate" class="input-w180" disabled />
             </el-form-item>
-            <el-form-item label="业务模块" prop="busiModuleCode">
+            <el-form-item label="文档类型" prop="documentTypeCode">
               <CommonTreeSelect
-                v-model="headerForm.busiModuleCode"
-                :data="documentTypeTree"
+                v-model="headerForm.documentTypeCode"
+                :data="documentTypeLevel1Tree"
                 :props="{ label: 'typeName', value: 'typeCode' }"
                 class="input-w180"
                 @change="handleHeaderDocTypeChange"
@@ -76,79 +76,31 @@
           </el-table-column>
           <el-table-column label="公司" min-width="160">
             <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ optionLabel(companyOptions, row.companyProjectCode) }}</span>
-              <el-select v-else v-model="row.companyProjectCode" filterable clearable><el-option v-for="o in companyOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select>
+              <el-select v-model="row.companyProjectCode" filterable clearable><el-option v-for="o in companyOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select>
             </template>
           </el-table-column>
-          <el-table-column label="文档业务编码" min-width="160">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.docBusiNo || '—' }}</span>
-              <el-input v-else v-model="row.docBusiNo" />
-            </template>
-          </el-table-column>
-          <el-table-column label="文档名称" min-width="180">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.docName || '—' }}</span>
-              <el-input v-else v-model="row.docName" />
-            </template>
-          </el-table-column>
+          <el-table-column label="文档业务编码" min-width="160"><template #default="{ row }"><el-input v-model="row.docBusiNo" /></template></el-table-column>
+          <el-table-column label="文档名称" min-width="180"><template #default="{ row }"><el-input v-model="row.docName" /></template></el-table-column>
           <el-table-column label="业务模块" min-width="160">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ optionLabel(busiModuleOptions, row.busiModuleCode) }}</span>
-              <el-select v-else v-model="row.busiModuleCode" filterable clearable><el-option v-for="o in busiModuleOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select>
-            </template>
+            <template #default="{ row }"><el-select v-model="row.busiModuleCode" filterable clearable><el-option v-for="o in busiModuleOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select></template>
           </el-table-column>
           <el-table-column label="归档地" min-width="160"><template #default="{ row }"><el-input v-model="row.archPlaceAlpha2Code" /></template></el-table-column>
-          <el-table-column label="开始档期" min-width="150">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.startArchPeriod || '—' }}</span>
-              <el-date-picker v-else v-model="row.startArchPeriod" type="month" value-format="YYYY-MM" />
-            </template>
-          </el-table-column>
-          <el-table-column label="结束档期" min-width="150">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.endArchPeriod || '—' }}</span>
-              <el-date-picker v-else v-model="row.endArchPeriod" type="month" value-format="YYYY-MM" />
-            </template>
-          </el-table-column>
-          <el-table-column label="文档生成日期" min-width="150">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.docGenerationDate || '—' }}</span>
-              <el-date-picker v-else v-model="row.docGenerationDate" type="date" value-format="YYYY-MM-DD" />
-            </template>
-          </el-table-column>
+          <el-table-column label="开始档期" min-width="150"><template #default="{ row }"><el-date-picker v-model="row.startArchPeriod" type="month" value-format="YYYY-MM" /></template></el-table-column>
+          <el-table-column label="结束档期" min-width="150"><template #default="{ row }"><el-date-picker v-model="row.endArchPeriod" type="month" value-format="YYYY-MM" /></template></el-table-column>
+          <el-table-column label="文档生成日期" min-width="150"><template #default="{ row }"><el-date-picker v-model="row.docGenerationDate" type="date" value-format="YYYY-MM-DD" /></template></el-table-column>
           <el-table-column label="载体类型" min-width="140">
             <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ optionLabel(carrierTypeOptions, row.carrierType) }}</span>
-              <el-select v-else v-model="row.carrierType" clearable>
+              <el-select v-model="row.carrierType" clearable>
                 <el-option v-for="o in carrierTypeOptions" :key="o.code" :label="o.name" :value="o.code" />
               </el-select>
             </template>
           </el-table-column>
           <el-table-column v-for="f in extFields" :key="f.fieldCode" :label="f.fieldName" min-width="150">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.extValues[f.fieldCode] || '—' }}</span>
-              <el-input v-else v-model="row.extValues[f.fieldCode]" />
-            </template>
+            <template #default="{ row }"><el-input v-model="row.extValues[f.fieldCode]" /></template>
           </el-table-column>
-          <el-table-column label="份数" min-width="120">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.archCopies }}</span>
-              <el-input-number v-else v-model="row.archCopies" :min="1" :precision="0" />
-            </template>
-          </el-table-column>
-          <el-table-column label="备注" min-width="150">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.remark || '—' }}</span>
-              <el-input v-else v-model="row.remark" />
-            </template>
-          </el-table-column>
-          <el-table-column label="描述" min-width="180">
-            <template #default="{ row }">
-              <span v-if="isPendingArchiveRow(row)" class="detail-cell-readonly">{{ row.description || '—' }}</span>
-              <el-input v-else v-model="row.description" type="textarea" :rows="1" />
-            </template>
-          </el-table-column>
+          <el-table-column label="份数" min-width="120"><template #default="{ row }"><el-input-number v-model="row.archCopies" :min="1" :precision="0" /></template></el-table-column>
+          <el-table-column label="备注" min-width="150"><template #default="{ row }"><el-input v-model="row.remark" /></template></el-table-column>
+          <el-table-column label="描述" min-width="180"><template #default="{ row }"><el-input v-model="row.description" type="textarea" :rows="1" /></template></el-table-column>
           </el-table>
         </el-collapse-item>
       </el-collapse>
@@ -162,7 +114,7 @@
 
     <el-dialog v-model="pickerVisible" title="添加待归档数据" width="80%">
       <el-form :inline="true" :model="pickerFilter" class="picker-form">
-        <el-form-item label="业务模块"><el-input :model-value="headerForm.busiModuleCode" class="picker-input" disabled /></el-form-item>
+        <el-form-item label="文档类型"><el-input :model-value="headerForm.documentTypeCode" class="picker-input" disabled /></el-form-item>
         <el-form-item label="文档名称"><el-input v-model="pickerFilter.documentName" /></el-form-item>
         <el-form-item label="业务编码"><el-input v-model="pickerFilter.businessCode" /></el-form-item>
         <el-form-item label="公司"><el-select v-model="pickerFilter.companyProjectCode" class="picker-input" clearable><el-option v-for="o in companyOptions" :key="o.code" :label="o.name" :value="o.code" /></el-select></el-form-item>
@@ -173,7 +125,7 @@
         <el-table-column prop="businessCode" label="文档业务编码" min-width="160" />
         <el-table-column prop="documentName" label="文档名称" min-width="180" />
         <el-table-column prop="companyProjectCode" label="公司" min-width="120" />
-        <el-table-column prop="archiveTypeCode" label="业务模块" min-width="120" />
+        <el-table-column prop="archiveTypeCode" label="文档类型" min-width="120" />
       </el-table>
       <template #footer>
         <el-button @click="pickerVisible = false">取消</el-button>
@@ -207,7 +159,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import axios from 'axios'
 import CommonTreeSelect from '../../components/CommonTreeSelect.vue'
-import { fetchDocumentTypeTree } from '../../api/modules/documentType'
+import { fetchDocumentTypeTree, fetchLevel3Modules } from '../../api/modules/documentType'
 import { fetchArchiveCreateOptions, fetchEffectiveDocumentTypeExtFields, queryArchives } from '../../api/modules/archiveManagement'
 import { fetchDictionaryItems } from '../../api/modules/dictionary'
 import {
@@ -230,8 +182,6 @@ import type {
 interface LabelOption { code: string; name: string }
 interface TransferDetailRow {
   applicationDetailId?: number
-  /** 通过「添加待归档数据」加入的行：除归档地外仅展示不可改 */
-  fromPendingArchive?: boolean
   companyProjectCode: string
   docBusiNo: string
   docName: string
@@ -262,6 +212,7 @@ const pickerRows = ref<any[]>([])
 const pickerSelection = ref<any[]>([])
 const extFields = ref<DocumentTypeExtField[]>([])
 const documentTypeTree = ref<DocumentTypeTreeNode[]>([])
+const documentTypeLevel1Tree = computed(() => (Array.isArray(documentTypeTree.value) ? documentTypeTree.value : []).map((n) => ({ ...n, children: [] })))
 const companyOptions = ref<LabelOption[]>([])
 const carrierTypeOptions = ref<LabelOption[]>([])
 const busiModuleOptions = ref<LabelOption[]>([])
@@ -281,7 +232,7 @@ const currentUserName = ref('张三')
 const currentUserDept = ref('财务部')
 const headerForm = reactive({
   applicationDate: '',
-  busiModuleCode: '',
+  documentTypeCode: '',
   applyMethod: 'DIRECT',
   expressType: '',
   expressNumber: '',
@@ -297,7 +248,7 @@ const pickerFilter = reactive({
 })
 
 const headerRules: FormRules = {
-  busiModuleCode: [{ required: true, message: '请选择业务模块', trigger: 'change' }],
+  documentTypeCode: [{ required: true, message: '请选择文档类型', trigger: 'change' }],
   applyMethod: [{ required: true, message: '请选择移交方式', trigger: 'change' }],
   documentRecipient: [{ required: true, message: '请选择文档接收人', trigger: 'change' }],
   expressType: [{ validator: (_r, v, cb) => (headerForm.applyMethod === 'MAIL' && !v ? cb(new Error('邮寄方式必填')) : cb()), trigger: 'change' }],
@@ -316,21 +267,10 @@ function findDocumentTypeNameByCode(nodes: DocumentTypeTreeNode[], code: string)
 }
 
 const selectedDocumentTypeName = computed(() =>
-  findDocumentTypeNameByCode(documentTypeTree.value, headerForm.busiModuleCode)
+  findDocumentTypeNameByCode(documentTypeTree.value, headerForm.documentTypeCode)
 )
 
 const showHandoverFormField = computed(() => selectedDocumentTypeName.value === SPECIAL_DOCUMENT_TYPE_NAME)
-
-function isPendingArchiveRow(row: TransferDetailRow): boolean {
-  return row.fromPendingArchive === true
-}
-
-function optionLabel(options: LabelOption[], code: string): string {
-  const c = String(code ?? '').trim()
-  if (!c) return '—'
-  const found = options.find((o) => o.code === c)
-  return found?.name ?? c
-}
 
 function addRow() {
   detailRows.value.push({
@@ -420,11 +360,18 @@ async function handleHeaderDocTypeChange() {
   if (!showHandoverFormField.value) {
     headerForm.handoverForm = ''
   }
-  if (!headerForm.busiModuleCode) {
+  if (!headerForm.documentTypeCode) {
     extFields.value = []
+    busiModuleOptions.value = []
+    detailRows.value.forEach((r) => { r.busiModuleCode = '' })
     return
   }
-  extFields.value = (await fetchEffectiveDocumentTypeExtFields(headerForm.busiModuleCode))
+  busiModuleOptions.value = await fetchLevel3Modules(headerForm.documentTypeCode)
+  const validModuleCodes = new Set(busiModuleOptions.value.map((o) => o.code))
+  detailRows.value.forEach((r) => {
+    if (r.busiModuleCode && !validModuleCodes.has(r.busiModuleCode)) r.busiModuleCode = ''
+  })
+  extFields.value = (await fetchEffectiveDocumentTypeExtFields(headerForm.documentTypeCode))
     .sort((a, b) => (a.formSortOrder ?? 0) - (b.formSortOrder ?? 0))
   detailRows.value.forEach((r) => {
     extFields.value.forEach((f) => { r.extValues[f.fieldCode] = '' })
@@ -436,7 +383,7 @@ async function loadForEdit(applicationId: number) {
   savedApplicationId.value = detail.applicationId
   applicationNumber.value = detail.applicationNumber || applicationNumber.value
   headerForm.applicationDate = detail.applicationDate ? String(detail.applicationDate).slice(0, 10) : headerForm.applicationDate
-  headerForm.busiModuleCode = detail.busiModuleCode || ''
+  headerForm.documentTypeCode = detail.documentTypeCode || ''
   headerForm.applyMethod = detail.applyMethod || 'DIRECT'
   headerForm.expressType = detail.expressType || ''
   headerForm.expressNumber = detail.expressNumber || ''
@@ -482,7 +429,7 @@ function validateDetails(): boolean {
   }
   for (const [idx, row] of detailRows.value.entries()) {
     if (!row.companyProjectCode || !row.docBusiNo || !row.docName || !row.busiModuleCode || !row.archPlaceAlpha2Code ||
-      !row.startArchPeriod || !row.endArchPeriod || !headerForm.busiModuleCode || !row.archCopies || !row.carrierType) {
+      !row.startArchPeriod || !row.endArchPeriod || !headerForm.documentTypeCode || !row.archCopies || !row.carrierType) {
       ElMessage.error(`第${idx + 1}行存在必填项未填写`)
       return false
     }
@@ -503,7 +450,7 @@ function toCreateCommand(applicationStatus: string): TransferApplicationCreateCo
     applicant: currentUserId.value,
     applicationDate: `${headerForm.applicationDate}T00:00:00`,
     department: currentUserDept.value,
-    busiModuleCode: headerForm.busiModuleCode,
+    documentTypeCode: headerForm.documentTypeCode,
     applyMethod: headerForm.applyMethod,
     expressType: headerForm.expressType || undefined,
     expressNumber: headerForm.expressNumber || undefined,
@@ -520,7 +467,7 @@ function toCreateCommand(applicationStatus: string): TransferApplicationCreateCo
       archPlaceAlpha2Code: row.archPlaceAlpha2Code,
       endArchPeriod: row.endArchPeriod,
       startArchPeriod: row.startArchPeriod,
-      archTypeCode: headerForm.busiModuleCode,
+      archTypeCode: headerForm.documentTypeCode,
       carrierType: row.carrierType,
       docGenerationDate: row.docGenerationDate || undefined,
       archCopies: Number(row.archCopies),
@@ -575,12 +522,12 @@ function cancel() {
 }
 
 async function queryPicker() {
-  if (!headerForm.busiModuleCode) {
-    ElMessage.warning('请先选择申请头业务模块')
+  if (!headerForm.documentTypeCode) {
+    ElMessage.warning('请先选择申请头文档类型')
     return
   }
   const res = await queryArchives({
-    busiModuleCode: headerForm.busiModuleCode,
+    documentTypeCode: headerForm.documentTypeCode,
     documentName: pickerFilter.documentName || undefined,
     businessCode: pickerFilter.businessCode || undefined,
     companyProjectCode: pickerFilter.companyProjectCode || undefined,
@@ -627,16 +574,13 @@ function addFromPicker() {
     if (!businessCode || addedBusinessCodes.has(businessCode)) {
       return
     }
-    const busiFromArchive = String((item as { busiModuleCode?: string }).busiModuleCode ?? '').trim()
-    const carrierFromArchive = String((item as { carrierTypeCode?: string }).carrierTypeCode ?? '').trim()
     const row: TransferDetailRow = {
-      fromPendingArchive: true,
       companyProjectCode: item.companyProjectCode ?? '',
       docBusiNo: businessCode,
       docName: item.documentName ?? '',
-      busiModuleCode: busiFromArchive,
+      busiModuleCode: '',
       archPlaceAlpha2Code: item.archiveDestination ?? '',
-      carrierType: carrierFromArchive || carrierTypeOptions.value[0]?.code || '',
+      carrierType: carrierTypeOptions.value[0]?.code || '',
       startArchPeriod: item.beginPeriod ?? '',
       endArchPeriod: item.endPeriod ?? '',
       docGenerationDate: item.documentDate ?? '',
@@ -687,10 +631,9 @@ function resolveErrorMessage(error: unknown, fallback: string) {
 
 onMounted(async () => {
   headerForm.applicationDate = new Date().toISOString().slice(0, 10)
-  const [tree, options, businessModules, applyMethods, expressTypes, handoverForms] = await Promise.all([
+  const [tree, options, applyMethods, expressTypes, handoverForms] = await Promise.all([
     fetchDocumentTypeTree(),
     fetchArchiveCreateOptions(),
-    fetchDictionaryItems('BUSINESS_MOUDLE').catch(() => []),
     fetchDictionaryItems('TRANSFER_APPLY_METHOD').catch(() => []),
     fetchDictionaryItems('TRANSFER_EXPRESS_TYPE').catch(() => []),
     fetchDictionaryItems('HANDOVER_FORM').catch(() => [])
@@ -698,7 +641,6 @@ onMounted(async () => {
   documentTypeTree.value = tree
   companyOptions.value = (options as ArchiveCreateOptions).companyProjects ?? []
   carrierTypeOptions.value = (options as ArchiveCreateOptions).carrierTypes ?? []
-  busiModuleOptions.value = toLabelOptions(businessModules as DictionaryItem[])
   const applyMethodDict = toLabelOptions(applyMethods as DictionaryItem[])
   const expressDict = toLabelOptions(expressTypes as DictionaryItem[])
   const handoverFormDict = toLabelOptions(handoverForms as DictionaryItem[])
@@ -735,5 +677,4 @@ onMounted(async () => {
 .picker-form { width: 100%; }
 .picker-input { width: 180px; }
 .picker-query-item { margin-left: auto; }
-.detail-cell-readonly { display: inline-block; max-width: 100%; color: var(--el-text-color-regular); word-break: break-word; }
 </style>

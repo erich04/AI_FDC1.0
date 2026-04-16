@@ -71,25 +71,20 @@
         <el-card shadow="never" class="sub-card">
           <template #header><div class="sub-card__title">文档基本信息</div></template>
           <div class="form-grid form-grid--4">
-            <el-form-item label="业务模块" required class="span-2">
+            <el-form-item label="文档类型" required class="span-2">
               <CommonTreeSelect
-                v-model="form.busiModuleCode"
-                :data="documentTypeTree"
-                placeholder="请选择业务模块"
+                v-model="form.documentTypeCode"
+                :data="documentTypeLevel1Tree"
+                placeholder="请选择文档类型"
                 label-key="typeName"
                 value-key="typeCode"
                 children-key="children"
                 @update:model-value="handleDocumentTypeChange"
               />
             </el-form-item>
-            <el-form-item label="公司/项目" required>
+            <el-form-item label="公司" required>
               <el-select v-model="form.companyProjectCode" filterable @change="handleDefaultRefresh">
                 <el-option v-for="item in options.companyProjects" :key="item.code" :label="item.name" :value="item.code" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="业务模块" required>
-              <el-select v-model="form.busiModuleCode" filterable clearable @change="handleDefaultRefresh">
-                <el-option v-for="item in busiModuleOptions" :key="item.code" :label="item.name" :value="item.code" />
               </el-select>
             </el-form-item>
             <el-form-item label="载体类型" required>
@@ -104,9 +99,9 @@
             <el-form-item label="文档业务编码">
               <el-input v-model="form.businessCode" placeholder="请输入业务编码" />
             </el-form-item>
-            <el-form-item label="档案类型" required>
-              <el-select v-model="form.archiveTypeCode">
-                <el-option v-for="item in options.archiveTypes" :key="item.code" :label="item.name" :value="item.code" />
+            <el-form-item label="业务模块" required>
+              <el-select v-model="form.archiveTypeCode" clearable :disabled="!form.documentTypeCode">
+                <el-option v-for="item in businessModuleOptions" :key="item.code" :label="item.name" :value="item.code" />
               </el-select>
             </el-form-item>
 
@@ -154,9 +149,6 @@
             <el-form-item label="产生地">
               <el-input v-model="form.originPlace" placeholder="请输入产生地" />
             </el-form-item>
-            <el-form-item label="文档归档编码">
-              <el-input :model-value="savedArchive?.archiveFilingCode || '保存后自动生成'" disabled />
-            </el-form-item>
           </div>
 
           <el-form-item label="备注">
@@ -177,7 +169,7 @@
 
         <el-card shadow="never" class="sub-card">
           <template #header><div class="sub-card__title">文档扩展信息</div></template>
-          <el-empty v-if="!extFields.length" description="当前业务模块未配置有效扩展字段" />
+          <el-empty v-if="!extFields.length" description="当前文档类型未配置有效扩展字段" />
           <div v-else class="form-grid form-grid--4">
             <el-form-item
               v-for="field in extFields"
@@ -341,15 +333,12 @@ import {
   uploadArchiveAttachment,
   type ArchiveCreateCommand
 } from '../../api/modules/archiveManagement'
-import { fetchDocumentTypeTree } from '../../api/modules/documentType'
-import { fetchDictionaryItems } from '../../api/modules/dictionary'
-import type { ArchiveAttachmentItem, ArchiveCreateOptions, ArchiveCreateSession, DictionaryItem, DocumentTypeExtField } from '../../types'
-
-interface BusiModuleOption { code: string; name: string }
+import { fetchDocumentTypeTree, fetchLevel3Modules } from '../../api/modules/documentType'
+import type { ArchiveAttachmentItem, ArchiveCreateOptions, ArchiveCreateSession, DocumentTypeExtField } from '../../types'
 
 const options = reactive<ArchiveCreateOptions>({
   companyProjects: [],
-  busiModules: [],
+  documentTypes: [],
   archiveDestinations: [],
   documentOrganizations: [],
   securityLevels: [],
@@ -358,7 +347,6 @@ const options = reactive<ArchiveCreateOptions>({
   archiveTypes: [],
   aiModels: []
 })
-const busiModuleOptions = ref<BusiModuleOption[]>([])
 
 const archiveSteps = [
   { code: 'CREATED', label: '创建', meta: '办理人：当前用户 · 时间：待保存' },
@@ -379,15 +367,16 @@ const savedArchive = ref<any>()
 const extFields = ref<DocumentTypeExtField[]>([])
 const extValues = reactive<Record<string, string>>({})
 const documentTypeTree = ref<any[]>([])
+const documentTypeLevel1Tree = computed(() => (Array.isArray(documentTypeTree.value) ? documentTypeTree.value : []).map((n: any) => ({ ...n, children: [] })))
+const businessModuleOptions = ref<{ code: string; name: string }[]>([])
 const parseDialogVisible = ref(false)
 const uploadingCount = ref(0)
 let loadingInstance: LoadingInstance | null = null
 
 const form = reactive({
   createMode: 'AUTO' as 'AUTO' | 'MANUAL',
-  busiModuleCode: '',
+  documentTypeCode: '',
   companyProjectCode: '',
-  busiModuleCode: '',
   beginPeriod: '',
   endPeriod: '',
   businessCode: '',
@@ -433,23 +422,16 @@ const applyAiExtValues = () => {
       if (!extValues[fieldCode] && value) extValues[fieldCode] = value
     })
   }
-  const descriptionFallback = aiResult.extendedValues?.description || aiResult.extractedTextPreview
+  const descriptionFallback = (aiResult.extendedValues?.description || aiResult.extractedTextPreview || '').trim()
   extFields.value
     .filter(field => field.fieldType === 'TEXT' && !extValues[field.fieldCode] && descriptionFallback)
     .forEach(field => { extValues[field.fieldCode] = descriptionFallback })
 }
 
 const loadOptions = async () => {
-  const [result, businessModules] = await Promise.all([
-    fetchArchiveCreateOptions(),
-    fetchDictionaryItems('BUSINESS_MOUDLE').catch(() => [] as DictionaryItem[])
-  ])
+  const result = await fetchArchiveCreateOptions()
   Object.assign(options, result)
-  busiModuleOptions.value = (businessModules as DictionaryItem[])
-    .filter(item => item.enabledFlag === 'Y')
-    .map(item => ({ code: item.itemCode, name: item.itemName }))
   if (!form.carrierTypeCode && options.carrierTypes.length) form.carrierTypeCode = options.carrierTypes[0].code
-  if (!form.archiveTypeCode && options.archiveTypes.length) form.archiveTypeCode = options.archiveTypes[0].code
 }
 
 const ensureSession = async () => {
@@ -470,11 +452,11 @@ const loadSession = async () => {
   if (aiResult.endPeriod && !form.endPeriod) form.endPeriod = aiResult.endPeriod
   if (aiResult.documentDate && !form.documentDate) form.documentDate = aiResult.documentDate
   if (session.value.carrierTypeCodeGuess && !form.carrierTypeCode) form.carrierTypeCode = session.value.carrierTypeCodeGuess
-  if (session.value.busiModuleCodeGuess && !form.busiModuleCode) {
-    form.busiModuleCode = session.value.busiModuleCodeGuess
-    await handleDocumentTypeChange(form.busiModuleCode)
+  if (session.value.documentTypeCodeGuess && !form.documentTypeCode) {
+    form.documentTypeCode = session.value.documentTypeCodeGuess
+    await handleDocumentTypeChange(form.documentTypeCode)
   }
-  if (form.companyProjectCode && form.busiModuleCode) {
+  if (form.companyProjectCode && form.documentTypeCode) {
     await handleDefaultRefresh()
   }
   applyAiExtValues()
@@ -486,10 +468,13 @@ const handleCreateModeChange = async () => {
 }
 
 const handleDocumentTypeChange = async (typeCode?: string) => {
+  form.archiveTypeCode = ''
+  businessModuleOptions.value = []
   if (!typeCode) {
     extFields.value = []
     return
   }
+  businessModuleOptions.value = await fetchLevel3Modules(typeCode)
   extFields.value = await fetchEffectiveDocumentTypeExtFields(typeCode)
   extFields.value.forEach(field => {
     if (!(field.fieldCode in extValues)) extValues[field.fieldCode] = ''
@@ -499,12 +484,11 @@ const handleDocumentTypeChange = async (typeCode?: string) => {
 }
 
 const handleDefaultRefresh = async () => {
-  if (!form.companyProjectCode || !form.busiModuleCode) return
+  if (!form.companyProjectCode || !form.documentTypeCode) return
   const defaults = await resolveArchiveDefaults({
     companyProjectCode: form.companyProjectCode,
-    busiModuleCode: form.busiModuleCode,
-    archiveDestination: form.archiveDestination,
-    customRule: form.busiModuleCode || undefined
+    documentTypeCode: form.documentTypeCode,
+    archiveDestination: form.archiveDestination
   })
   form.securityLevelCode = defaults.securityLevelCode || form.securityLevelCode
   form.archiveDestination = defaults.archiveDestination || form.archiveDestination
@@ -551,7 +535,7 @@ const handleElectronicUpload = async (request: UploadRequestOptions) => {
   try {
     await uploadFiles('ELECTRONIC', request.file as File)
     ElMessage.success('电子附件已上传并完成解析')
-    request.onSuccess?.({}, request.file)
+    request.onSuccess?.({})
   } catch (error: any) {
     request.onError?.(error)
     ElMessage.error(error?.message || '电子附件上传失败')
@@ -562,7 +546,7 @@ const handlePaperUpload = async (request: UploadRequestOptions) => {
   try {
     await uploadFiles('PAPER_SCAN', request.file as File)
     ElMessage.success('纸质扫描件已上传并完成解析')
-    request.onSuccess?.({}, request.file)
+    request.onSuccess?.({})
   } catch (error: any) {
     request.onError?.(error)
     ElMessage.error(error?.message || '纸质扫描件上传失败')
@@ -591,9 +575,8 @@ const handleUploadError = (error: Error) => {
 
 const validateForm = () => {
   const requiredFields = [
-    ['busiModuleCode', '请选择业务模块'],
-    ['companyProjectCode', '请选择公司/项目'],
-    ['busiModuleCode', '请选择业务模块'],
+    ['documentTypeCode', '请选择文档类型'],
+    ['companyProjectCode', '请选择公司'],
     ['carrierTypeCode', '请选择载体类型'],
     ['documentName', '请输入文档名称'],
     ['beginPeriod', '请选择开始档期'],
@@ -603,7 +586,7 @@ const validateForm = () => {
     ['dutyDepartment', '请输入归档责任部门'],
     ['securityLevelCode', '请选择密级'],
     ['documentOrganizationCode', '请选择文档组织'],
-    ['archiveTypeCode', '请选择档案类型']
+    ['archiveTypeCode', '请选择业务模块']
   ] as const
 
   for (const [key, message] of requiredFields) {
@@ -639,9 +622,8 @@ const submitArchive = async () => {
   const payload: ArchiveCreateCommand = {
     sessionCode: session.value?.sessionCode,
     createMode: form.createMode,
-    busiModuleCode: form.busiModuleCode,
+    documentTypeCode: form.documentTypeCode,
     companyProjectCode: form.companyProjectCode,
-    busiModuleCode: form.busiModuleCode,
     beginPeriod: form.beginPeriod,
     endPeriod: form.endPeriod,
     businessCode: form.businessCode,
@@ -681,9 +663,8 @@ const submitArchive = async () => {
 const resetForm = async () => {
   Object.assign(form, {
     createMode: 'AUTO',
-    busiModuleCode: '',
+    documentTypeCode: '',
     companyProjectCode: '',
-    busiModuleCode: '',
     beginPeriod: '',
     endPeriod: '',
     businessCode: '',

@@ -1,104 +1,166 @@
 <template>
-  <div class="query-page">
-    <el-card shadow="never" class="query-card">
-      <template #header>
-        <div class="section-head">
-          <div>
-            <strong>档案查询</strong>
-            <span>支持固定字段、扩展字段和全文检索</span>
-          </div>
-          <div class="section-actions">
-            <el-button @click="goToAiSearch" type="info">AI+档案</el-button>
-          </div>
-        </div>
-      </template>
-
+  <div class="f02-data-maintenance" :class="{ 'f02-data-maintenance--full-table': tableFullPage }">
+    <div class="f02-inner">
+    <section class="f02-card f02-filters">
       <div class="filter-section">
-        <div class="section-actions">
-          <el-button @click="filterForMyArchive" type="primary" plain>待我归档</el-button>
-        </div>
-
-        <div class="form-grid form-grid--4">
-          <el-form-item label="关键字"><el-input v-model="query.keyword" clearable /></el-form-item>
-          <el-form-item label="业务模块">
-            <el-select v-model="query.busiModuleCode" clearable filterable @change="handleQueryTypeChange">
-              <el-option v-for="item in options.busiModules" :key="item.code" :label="item.name" :value="item.code" />
+        <div class="f02-filter-grid">
+          <div class="f02-field f02-field--required" :class="{ 'f02-field--required-missing': !docTypeReady }">
+            <label>
+              <span class="f02-required">*</span>文档类型
+              <el-tooltip content="请选择文档类型后再进行查询与批量操作" placement="top" :disabled="docTypeReady">
+                <el-icon class="f02-required-label-tip" :class="{ 'is-visible': !docTypeReady }"><WarningFilled /></el-icon>
+              </el-tooltip>
+            </label>
+            <el-select v-model="query.documentTypeCode" clearable filterable placeholder="请选择" @change="handleQueryTypeChange" class="f02-control">
+              <el-option v-for="item in options.documentTypes" :key="item.code" :label="item.name" :value="item.code" />
             </el-select>
-          </el-form-item>
-          <el-form-item label="公司/项目">
-            <el-select v-model="query.companyProjectCode" clearable filterable>
+          </div>
+          <div class="f02-field">
+            <label>公司</label>
+            <el-select v-model="query.companyProjectCode" clearable filterable placeholder="请选择公司" class="f02-control">
               <el-option v-for="item in options.companyProjects" :key="item.code" :label="item.name" :value="item.code" />
             </el-select>
-          </el-form-item>
-          <el-form-item label="档案类型">
-            <el-select v-model="query.archiveTypeCode" clearable>
-              <el-option v-for="item in options.archiveTypes" :key="item.code" :label="item.name" :value="item.code" />
+          </div>
+          <div class="f02-field">
+            <label>业务模块</label>
+            <el-select v-model="query.archiveTypeCode" clearable placeholder="请选择" :disabled="!query.documentTypeCode" class="f02-control">
+              <el-option v-for="item in businessModuleOptions" :key="item.code" :label="item.name" :value="item.code" />
             </el-select>
-          </el-form-item>
-          <el-form-item label="载体类型">
-            <el-select v-model="query.carrierTypeCode" clearable>
+          </div>
+          <div class="f02-field">
+            <label>开始档期</label>
+            <el-date-picker v-model="periodRange" type="monthrange" value-format="YYYY-MM" start-placeholder="开始" end-placeholder="结束" range-separator="~" class="f02-control f02-date-range" />
+          </div>
+          <div class="f02-field">
+            <label>载体类型</label>
+            <el-select v-model="query.carrierTypeCode" clearable placeholder="请选择" class="f02-control">
               <el-option v-for="item in options.carrierTypes" :key="item.code" :label="item.name" :value="item.code" />
             </el-select>
-          </el-form-item>
-          <el-form-item label="密级">
-            <el-select v-model="query.securityLevelCode" clearable filterable>
-              <el-option v-for="item in options.securityLevels" :key="item.code" :label="item.name" :value="item.code" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="文档名称"><el-input v-model="query.documentName" clearable /></el-form-item>
-          <el-form-item label="业务编码"><el-input v-model="query.businessCode" clearable /></el-form-item>
-          <el-form-item label="责任人"><el-input v-model="query.dutyPerson" clearable /></el-form-item>
-          <el-form-item label="归档地">
-            <el-select v-model="query.archiveDestination" clearable filterable>
-              <el-option v-for="item in options.archiveDestinations" :key="item.code" :label="item.name" :value="item.code" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="系统来源"><el-input v-model="query.sourceSystem" clearable /></el-form-item>
-          <el-form-item label="文档组织">
-            <el-select v-model="query.documentOrganizationCode" clearable filterable placeholder="请选择或输入文档组织">
+          </div>
+          <div class="f02-field">
+            <label>文档生成时间</label>
+            <el-date-picker v-model="docGenerationRange" type="daterange" value-format="YYYY-MM-DD" start-placeholder="开始" end-placeholder="结束" range-separator="~" class="f02-control f02-date-range" />
+          </div>
+          <div class="f02-field">
+            <label>文档业务编码</label>
+            <F03MultiLineFilterInput
+              v-model="query.businessCode"
+              drawer-title="文档业务编码（多行）"
+              placeholder="单行模糊；多行请点右侧图标，每行精确（忽略大小写）"
+              drawer-hint="主框仅一行时：模糊匹配。在抽屉中每行一条时：精确匹配（忽略大小写），多行之间为「或」，与其它筛选条件为「且」。最多100 行。"
+              class="f02-control"
+            />
+          </div>
+          <div class="f02-field">
+            <label>文档组织</label>
+            <el-select v-model="query.documentOrganizationCode" clearable filterable placeholder="请选择" class="f02-control">
               <el-option v-for="item in options.documentOrganizations" :key="item.code" :label="item.name" :value="item.code" />
             </el-select>
-          </el-form-item>
+          </div>
+        </div>
+
+        <div class="f02-filter-actions">
+          <el-button link type="primary" :disabled="!docTypeReady" @click="showMoreFilters = !showMoreFilters">
+            {{ showMoreFilters ? '收起筛选条件' : '更多筛选条件' }}
+            <el-icon class="el-icon--right"><ArrowDown v-if="!showMoreFilters" /><ArrowUp v-else /></el-icon>
+          </el-button>
+        </div>
+
+        <div v-show="showMoreFilters" class="f02-filter-grid f02-filter-grid--more">
+          <div class="f02-field">
+            <label>文档名称</label>
+            <el-input v-model="query.documentName" clearable placeholder="请输入" class="f02-control" />
+          </div>
+          <div v-for="field in visibleMoreFilterFields" :key="field.key" class="f02-field">
+            <label>{{ field.label }}</label>
+            <el-select
+              v-if="field.type === 'select'"
+              v-model="(advancedFilters as any)[field.key]"
+              clearable
+              filterable
+              :multiple="field.multiple ?? false"
+              :placeholder="field.placeholder || '请选择'"
+              class="f02-control"
+            >
+              <el-option v-for="opt in (field.options || moreFieldOptionsMap[field.key] || [])" :key="opt.value" :label="opt.label" :value="opt.value" />
+            </el-select>
+            <el-date-picker
+              v-else-if="field.type === 'daterange'"
+              v-model="(advancedFilters as any)[field.key]"
+              type="daterange"
+              value-format="YYYY-MM-DD"
+              start-placeholder="开始"
+              end-placeholder="结束"
+              range-separator="~"
+              class="f02-control f02-date-range"
+            />
+            <F03MultiLineFilterInput
+              v-else-if="field.type === 'input' && field.multilineDrawer"
+              v-model="(advancedFilters as any)[field.key]"
+              :placeholder="field.placeholder || '请输入'"
+              :drawer-title="`编辑：${field.label}`"
+              drawer-hint="每行一条，空行忽略；与其它筛选组合为「且」，本字段多行为「或」。最多 100 行。"
+              class="f02-control"
+            />
+            <el-input
+              v-else
+              v-model="(advancedFilters as any)[field.key]"
+              clearable
+              :placeholder="field.placeholder || '请输入'"
+              class="f02-control"
+            />
+          </div>
         </div>
 
         <div v-if="queryFields.length" class="query-extra">
           <div class="query-extra__title">扩展字段</div>
-          <div class="form-grid form-grid--4">
-            <el-form-item v-for="field in queryFields" :key="field.fieldCode" :label="field.fieldName">
-              <el-input v-model="queryExtFilters[field.fieldCode]" clearable />
-            </el-form-item>
+          <div class="f02-filter-grid">
+            <div v-for="field in queryFields" :key="field.fieldCode" class="f02-field">
+              <label>{{ field.fieldName }}</label>
+              <el-input v-model="queryExtFilters[field.fieldCode]" clearable class="f02-control" />
+            </div>
           </div>
         </div>
 
-        <div class="action-buttons">
+        <div class="f02-query-buttons fdc-query-action-buttons">
           <el-button @click="resetFilters">重置</el-button>
-          <el-button type="primary" @click="runQuery">查询</el-button>
+          <el-button type="primary" @click="runQuery" :disabled="!docTypeReady">查询</el-button>
         </div>
       </div>
 
-      <div class="table-section">
-        <div class="table-header">
-          <div class="table-actions">
-            <el-dropdown @command="handleBatchAction">
-              <el-button type="primary" plain>
-                批量操作
-                <el-icon class="el-icon--right"><arrow-down /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="transfer">批量移交</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            <el-button @click="showColumnSetting">自定义字段</el-button>
-          </div>
-        </div>
+    </section>
 
+    <section class="f02-toolbar">
+      <div class="f02-toolbar__left">
+        <el-button type="primary" @click="importQueryDialogVisible = true" :disabled="!docTypeReady">
+          <el-icon class="el-icon--left"><Search /></el-icon>
+          批量导入查询
+        </el-button>
+        <el-button @click="exportCsv" :disabled="!docTypeReady">批量导出</el-button>
+      </div>
+      <div class="f02-toolbar__right">
+        <el-tooltip content="列设置" placement="top">
+          <el-button circle :icon="Setting" @click="handleColumnSettingClick" />
+        </el-tooltip>
+        <el-tooltip :content="tableFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top">
+          <el-button circle :icon="FullScreen" @click="tableFullPage = !tableFullPage" />
+        </el-tooltip>
+        <el-tooltip content="刷新数据" placement="top">
+          <el-button circle :icon="RefreshRight" @click="runQuery" :disabled="!docTypeReady" />
+        </el-tooltip>
+      </div>
+    </section>
+
+    <section class="f02-card f02-table-wrap">
+      <div class="table-section">
         <el-table :data="queryResult.records" border @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="55" />
           <el-table-column v-for="column in visibleColumns" :key="column.prop" :prop="column.prop" :label="column.label" :width="column.width" :min-width="column.minWidth" show-overflow-tooltip>
-            <template v-if="column.prop === 'archiveFilingCode' || column.prop === 'documentName'" #default="{ row }">
-              <el-link type="primary" @click="viewArchiveDetail(row.archiveId)">{{ row[column.prop] }}</el-link>
+            <template v-if="column.prop === 'businessCode'" #default="{ row }">
+              <el-link type="primary" @click="viewArchiveDetail(row)">{{ row[column.prop] }}</el-link>
+            </template>
+            <template v-else-if="isDateTimeColumn(column.prop)" #default="{ row }">
+              {{ formatDateTime(row[column.prop]) }}
             </template>
           </el-table-column>
         </el-table>
@@ -106,7 +168,7 @@
         <div class="pagination-container" v-if="queryResult.total > 0">
           <div class="pagination-info">
             共 {{ queryResult.total }} 条记录，每页显示
-            <el-select v-model="query.pageSize" size="small" @change="runQuery" style="width: 100px; margin: 0 8px;">
+            <el-select v-model="query.pageSize" size="small" @change="runQuery" style="width: 100px; margin: 0 8px;" :disabled="!docTypeReady">
               <el-option v-for="size in pageSizeOptions" :key="size" :label="size" :value="size" />
             </el-select>
             条
@@ -122,91 +184,88 @@
           />
         </div>
       </div>
-    </el-card>
+    </section>
 
-    <!-- 移交对话框 -->
-    <el-dialog v-model="transferDialogVisible" title="批量移交" width="600px">
-      <div class="transfer-dialog">
-        <p>已选择 {{ selectedRecords.length }} 份档案</p>
-        <el-form label-width="120px">
-          <el-form-item label="签收人" required>
-            <el-select v-model="transferForm.assigneeId" placeholder="请选择签收人">
-              <el-option v-for="user in userOptions" :key="user.id" :label="user.name" :value="user.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="移交方式" required>
-            <el-radio-group v-model="transferForm.transferMethod" @change="handleTransferMethodChange">
-              <el-radio-button label="DIRECT">直接移交</el-radio-button>
-              <el-radio-button label="MAIL">邮寄</el-radio-button>
-            </el-radio-group>
-          </el-form-item>
-          <el-form-item v-if="transferForm.transferMethod === 'MAIL'" label="物流公司">
-            <el-select v-model="transferForm.logisticsCompany" placeholder="请选择物流公司">
-              <el-option v-for="company in logisticsCompanies" :key="company.value" :label="company.label" :value="company.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item v-if="transferForm.transferMethod === 'MAIL'" label="邮寄单号">
-            <el-input v-model="transferForm.trackingNumber" placeholder="请输入邮寄单号" />
-          </el-form-item>
-          <el-form-item label="备注">
-            <el-input v-model="transferForm.remark" type="textarea" :rows="3" placeholder="请输入备注" />
-          </el-form-item>
-        </el-form>
-      </div>
+    <F03BatchImportModal
+      v-model="importQueryDialogVisible"
+      title="批量导入查询"
+      header-icon="upload"
+      :hint="importQueryModalHint"
+      :template-csv="importQueryTemplateCsv"
+      :download-file-name="importQueryDownloadFileName"
+      accept=".csv,text/csv"
+      accept-hint="仅支持 CSV（UTF-8）；模板固定6列，首行为表头"
+      confirm-label="确认导入"
+      :loading="importing"
+      @confirm="handleImportQueryModalConfirm"
+    />
+
+    <el-dialog v-model="columnSettingVisible" title="列设置" width="500px">
+      <el-checkbox-group v-model="selectedColumnKeys" class="column-checks">
+        <el-checkbox v-for="col in allColumns" :key="col.prop" :label="col.prop" :disabled="col.prop === 'businessCode'">
+          {{ col.label }}{{ col.prop === 'businessCode' ? '（必选）' : '' }}
+        </el-checkbox>
+      </el-checkbox-group>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="transferDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitTransfer" :loading="submitting">提交移交</el-button>
-        </span>
+        <el-button @click="columnSettingVisible = false">关闭</el-button>
       </template>
     </el-dialog>
 
-    <!-- 字段设置对话框 -->
-    <el-dialog v-model="columnSettingVisible" title="自定义字段" width="500px">
-      <div class="column-setting">
-        <el-tree
-          v-model="selectedColumnKeys"
-          :data="allColumns"
-          show-checkbox
-          node-key="prop"
-          default-expand-all
-        />
+    <el-dialog v-model="exportSuccessVisible" title="提示" width="460px">
+      <div class="export-success-tip">
+        导出提交成功，系统正在处理，稍后请到
+        <el-link type="primary" @click="goMyExports">我的导出</el-link>
+        中查看导出结果。
       </div>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="columnSettingVisible = false">取消</el-button>
-          <el-button type="primary" @click="saveColumnSetting">保存设置</el-button>
-        </span>
+        <el-button @click="exportSuccessVisible = false">关闭</el-button>
+        <el-button type="primary" @click="goMyExports">前往我的导出</el-button>
       </template>
     </el-dialog>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, FullScreen, RefreshRight, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref, computed } from 'vue'
+import { onActivated, onMounted, reactive, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchArchiveCreateOptions, fetchEffectiveDocumentTypeExtFields, queryArchives, transferArchives, type ArchiveQueryCommand } from '../../api/modules/archiveManagement'
+import { createPendingDocumentsExportJob, fetchArchiveCreateOptions, fetchEffectiveDocumentTypeExtFields, queryArchives, submitArchiveImportQueryJob, type ArchiveQueryCommand } from '../../api/modules/archiveManagement'
 import type { ArchiveCreateOptions, ArchiveQueryResult, DocumentTypeExtField } from '../../types'
+import { validateMultiValueInput } from '../../utils/multiValueQuery'
+import { fetchLevel3Modules } from '../../api/modules/documentType'
+import { useLayoutStore } from '../../stores/useLayoutStore'
+import F03BatchImportModal from '../../components/f03/F03BatchImportModal.vue'
+import F03MultiLineFilterInput from '../../components/f03/F03MultiLineFilterInput.vue'
+import { archiveQueryPageConfig, getVisibleMoreFilterFields } from './queryPageConfig'
+import { EXT_DETAIL_FIELD_ORDER, hardCodedExtLabelMap, isHardCodedFieldVisible } from './extFieldDisplayConfig'
 
 const route = useRoute()
 const router = useRouter()
 const options = reactive<ArchiveCreateOptions>({
   companyProjects: [],
-  busiModules: [],
+  documentTypes: [],
   archiveDestinations: [],
   documentOrganizations: [],
   securityLevels: [],
   carrierTypes: [],
   attachmentTypes: [],
   archiveTypes: [],
-  aiModels: []
+  aiModels: [],
+  geoCountries: [],
+  geoRepOffices: [],
+  geoRegions: [],
+  custodyStatuses: []
 })
 
-const query = reactive<ArchiveQueryCommand>({
+type ArchiveQueryCommandWithPage = ArchiveQueryCommand & { page: number; pageSize: number }
+
+const layout = useLayoutStore()
+
+const query = reactive<ArchiveQueryCommandWithPage>({
   keyword: '',
-  busiModuleCode: '',
+  documentTypeCode: '',
   companyProjectCode: '',
   archiveTypeCode: '',
   carrierTypeCode: '',
@@ -221,75 +280,113 @@ const query = reactive<ArchiveQueryCommand>({
   pageSize: 20
 })
 
+const businessModuleOptions = ref<{ code: string; name: string }[]>([])
+const docTypeReady = computed(() => Boolean(query.documentTypeCode && query.documentTypeCode.trim()))
+const selectedDocTypeName = computed(() => {
+  const item = options.documentTypes.find((d) => d.code === query.documentTypeCode)
+  return item?.name || ''
+})
+const showMoreFilters = ref(false)
+const periodRange = ref<[string, string] | null>(null)
+const docGenerationRange = ref<[string, string] | null>(null)
+const advancedFilters = reactive<Record<string, any>>({
+  country: [],
+  repOffice: [],
+  region: [],
+  custodyStatus: [],
+  securityLevelCode: [],
+  description: '',
+  archiveDestination: '',
+  originPlace: '',
+  dutyPerson: '',
+  respDept: '',
+  createdBy: '',
+  creationDateRange: null,
+  sourceSystem: [],
+  visibility: [],
+  archivedEntityName: '',
+  barcodeModule: '',
+  archiveBarcodeRange: '',
+  verificationDateRange: null,
+  verifiedBy: '',
+  volumeSeqNo: '',
+  volumeBarcodeRange: '',
+  volumizationDateRange: null,
+  assembledBy: '',
+  volumeNoRange: '',
+  repository: '',
+  storageLocationRange: '',
+  storageDateRange: null,
+  storedBy: '',
+  copies: '',
+  remainingCopies: '',
+  archiveType: '',
+  invoiceNo: '',
+  refNo: '',
+  accountant: '',
+  scannedBy: '',
+  issueDateRange: null,
+  maturityDateRange: null,
+  lgExpiryDateRange: null,
+  lgLedgerStatus: [],
+  bankName: '',
+  currency: [],
+  amount: '',
+  issuingAuthority: '',
+  disposalTimeRange: null,
+  businessVolumeNo: '',
+  lgWorkflowNo: '',
+  lgNo: ''
+})
+
+const visibleMoreFilterFields = computed(() => getVisibleMoreFilterFields(archiveQueryPageConfig.moreFilterFields, selectedDocTypeName.value))
+const moreFieldOptionsMap = computed<Record<string, Array<{ label: string; value: string }>>>(() => ({
+  country: options.geoCountries.map((item) => ({ label: item.name, value: item.code })),
+  repOffice: options.geoRepOffices.map((item) => ({ label: item.name, value: item.name })),
+  region: options.geoRegions.map((item) => ({ label: item.name, value: item.name })),
+  custodyStatus: options.custodyStatuses.map((item) => ({ label: item.name, value: item.code })),
+  securityLevelCode: options.securityLevels.map((item) => ({ label: item.name, value: item.code })),
+  sourceSystem: []
+}))
+
 const queryFields = ref<DocumentTypeExtField[]>([])
 const queryExtFilters = reactive<Record<string, string>>({})
 const queryResult = reactive<ArchiveQueryResult>({ records: [], queryFields: [], total: 0, page: 1, pageSize: 20 })
 const pageSizeOptions = [20, 50, 100, 500, 1000]
 
-// 批量操作相关
 const selectedRecords = ref<any[]>([])
-const transferDialogVisible = ref(false)
-const submitting = ref(false)
-
-// 移交表单
-const transferForm = reactive({
-  assigneeId: '',
-  transferMethod: 'DIRECT',
-  logisticsCompany: '',
-  trackingNumber: '',
-  remark: ''
-})
-
-// 选项数据
-const userOptions = ref([
-  { id: 1, name: '张三' },
-  { id: 2, name: '李四' },
-  { id: 3, name: '王五' }
-])
-
-const logisticsCompanies = ref([
-  { value: 'SF', label: '顺丰速运' },
-  { value: 'STO', label: '申通快递' },
-  { value: 'YTO', label: '圆通速递' },
-  { value: 'ZTO', label: '中通快递' },
-  { value: 'YD', label: '韵达快递' }
-])
-
-// 自定义字段相关
+const tableFullPage = ref(false)
+const allColumns = ref(archiveQueryPageConfig.columns)
+const selectedColumnKeys = ref([...archiveQueryPageConfig.defaultVisibleColumns])
 const columnSettingVisible = ref(false)
-const allColumns = ref([
-  { label: '归档编码', prop: 'archiveFilingCode', width: '180' },
-  { label: '文档名称', prop: 'documentName', minWidth: '220' },
-  { label: '业务模块', prop: 'busiModuleName', width: '160' },
-  { label: '公司/项目', prop: 'companyProjectName', width: '180' },
-  { label: '载体类型', prop: 'carrierTypeCode', width: '120' },
-  { label: '归档状态', prop: 'archiveStatus', width: '120' },
-  { label: '责任人', prop: 'dutyPerson', width: '120' },
-  { label: '附件数', prop: 'attachmentCount', width: '90' },
-  { label: 'AI摘要', prop: 'aiArchiveSummary', minWidth: '280' },
-  { label: '业务编码', prop: 'businessCode', width: '150' },
-  { label: '归档地', prop: 'archiveDestination', width: '150' },
-  { label: '系统来源', prop: 'sourceSystem', width: '150' },
-  { label: '文档组织', prop: 'documentOrganizationCode', width: '150' }
-])
+const importQueryDialogVisible = ref(false)
+const importing = ref(false)
+const exportSuccessVisible = ref(false)
 
-const defaultVisibleColumns = [
-  'archiveFilingCode',
-  'documentName',
-  'busiModuleName',
-  'companyProjectName',
-  'carrierTypeCode',
-  'archiveStatus',
-  'dutyPerson',
-  'attachmentCount',
-  'aiArchiveSummary'
-]
-
-const selectedColumnKeys = ref([...defaultVisibleColumns])
+const importQueryTemplateCsv = '文档业务编码,发票号,其他相关编号,公司,业务模块,开始档期\n'
+const importQueryModalHint =
+  '模板固定 6 列；每行至少填写「文档业务编码/发票号/其他相关编号」之一。行内条件为且（AND），逐行查询后合并为最终结果。'
+const importQueryDownloadFileName = computed(() => {
+  const d = new Date().toISOString().slice(0, 10)
+  return `archive-query-import-${d}.csv`
+})
 
 const visibleColumns = computed(() => {
   return allColumns.value.filter(column => selectedColumnKeys.value.includes(column.prop))
 })
+
+const formatDateTime = (value: unknown) => {
+  if (value === null || value === undefined || value === '') return '-'
+  const text = String(value).trim()
+  if (!text) return '-'
+  const normalized = text.includes('T') ? text : text.replace(' ', 'T')
+  const date = new Date(normalized)
+  if (Number.isNaN(date.getTime())) return text
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+const isDateTimeColumn = (prop: string) => ['documentDate', 'creationDate', 'lastUpdateDate'].includes(prop)
 
 const loadOptions = async () => {
   const result = await fetchArchiveCreateOptions()
@@ -298,25 +395,107 @@ const loadOptions = async () => {
 }
 
 const handleQueryTypeChange = async (typeCode?: string) => {
+  layout.setDocumentTypeCode(typeCode || '')
+  query.archiveTypeCode = ''
+  businessModuleOptions.value = []
+  if (typeCode?.trim()) {
+    try {
+      businessModuleOptions.value = await fetchLevel3Modules(typeCode)
+    } catch (e: any) {
+      businessModuleOptions.value = []
+      ElMessage.error(e?.message || '加载业务模块失败')
+    }
+  }
   queryFields.value = typeCode ? await fetchEffectiveDocumentTypeExtFields(typeCode) : []
   queryFields.value = queryFields.value.filter(item => item.queryEnabledFlag === 'Y')
   Object.keys(queryExtFilters).forEach(key => delete queryExtFilters[key])
 }
 
-const runQuery = async () => {
-  const result = await queryArchives({ ...query, extFilters: { ...queryExtFilters } })
-  queryResult.records = result.records
-  queryResult.queryFields = result.queryFields
-  queryResult.total = result.total
-  queryResult.page = result.page
-  queryResult.pageSize = result.pageSize
-  queryFields.value = result.queryFields
+const buildStringExtFilters = () => {
+  const normalized: Record<string, string> = {
+    ...queryExtFilters,
+    docGenerationStart: docGenerationRange.value?.[0] || '',
+    docGenerationEnd: docGenerationRange.value?.[1] || ''
+  }
+
+  Object.entries(advancedFilters).forEach(([key, value]) => {
+    if (value === null || value === undefined) return
+    if (Array.isArray(value)) {
+      const first = value.find((item) => item !== null && item !== undefined && String(item).trim() !== '')
+      if (first !== undefined) normalized[key] = String(first)
+      return
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      if (trimmed) normalized[key] = trimmed
+      return
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      normalized[key] = String(value)
+    }
+  })
+
+  return normalized
 }
+
+const runQuery = async () => {
+  if (!docTypeReady.value) return
+  const multiErr = validateMultiValueInput({
+    文档业务编码: query.businessCode,
+    发票号: String((advancedFilters as any).invoiceNo || ''),
+    其他相关编号: String((advancedFilters as any).refNo || '')
+  })
+  if (multiErr) {
+    ElMessage.warning(multiErr)
+    return
+  }
+  const command: ArchiveQueryCommand = {
+    ...query,
+    beginPeriod: periodRange.value?.[0] || undefined,
+    endPeriod: periodRange.value?.[1] || undefined,
+    securityLevelCode:
+      Array.isArray((advancedFilters as any).securityLevelCode) && (advancedFilters as any).securityLevelCode.length
+        ? (advancedFilters as any).securityLevelCode[0]
+        : query.securityLevelCode,
+    sourceSystem:
+      Array.isArray((advancedFilters as any).sourceSystem) && (advancedFilters as any).sourceSystem.length
+        ? (advancedFilters as any).sourceSystem[0]
+        : query.sourceSystem,
+    archiveDestination: ((advancedFilters as any).archiveDestination as string) || query.archiveDestination,
+    dutyPerson: ((advancedFilters as any).dutyPerson as string) || query.dutyPerson,
+    extFilters: buildStringExtFilters()
+  }
+  try {
+    const result = await queryArchives(command)
+    queryResult.records = result.records
+    queryResult.queryFields = result.queryFields
+    queryResult.total = result.total
+    queryResult.page = result.page
+    queryResult.pageSize = result.pageSize
+    queryFields.value = result.queryFields
+    if (!result.records?.length) {
+      ElMessage.info('未查询到匹配数据，请调整筛选条件后重试')
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '文档查询失败，请稍后重试')
+  }
+}
+
+watch(
+  () => layout.documentTypeCode,
+  (next) => {
+    if (next && next !== query.documentTypeCode) {
+      query.documentTypeCode = next
+      handleQueryTypeChange(next)
+    }
+  },
+  { immediate: true }
+)
 
 const resetFilters = async () => {
   Object.assign(query, {
     keyword: '',
-    busiModuleCode: '',
+    documentTypeCode: '',
     companyProjectCode: '',
     archiveTypeCode: '',
     carrierTypeCode: '',
@@ -329,6 +508,57 @@ const resetFilters = async () => {
     documentOrganizationCode: '',
     page: 1,
     pageSize: 20
+  })
+  periodRange.value = null
+  docGenerationRange.value = null
+  Object.assign(advancedFilters, {
+    country: [],
+    repOffice: [],
+    region: [],
+    custodyStatus: [],
+    description: '',
+    originPlace: '',
+    respDept: '',
+    createdBy: '',
+    creationDateRange: null,
+    visibility: [],
+    archivedEntityName: '',
+    barcodeModule: '',
+    archiveBarcodeRange: '',
+    verificationDateRange: null,
+    verifiedBy: '',
+    volumeSeqNo: '',
+    volumeBarcodeRange: '',
+    volumizationDateRange: null,
+    assembledBy: '',
+    volumeNoRange: '',
+    repository: '',
+    storageLocationRange: '',
+    storageDateRange: null,
+    storedBy: '',
+    copies: '',
+    remainingCopies: '',
+    archiveType: [],
+    invoiceNo: '',
+    refNo: '',
+    accountant: '',
+    scannedBy: '',
+    issueDateRange: null,
+    maturityDateRange: null,
+    lgExpiryDateRange: null,
+    lgLedgerStatus: [],
+    bankName: '',
+    currency: [],
+    amount: '',
+    issuingAuthority: '',
+    disposalTimeRange: null,
+    businessVolumeNo: '',
+    lgWorkflowNo: '',
+    lgNo: '',
+    securityLevelCode: [],
+    sourceSystem: [],
+    archiveDestination: '',
+    dutyPerson: ''
   })
   Object.keys(queryExtFilters).forEach(key => delete queryExtFilters[key])
   queryFields.value = []
@@ -351,275 +581,457 @@ const handleCurrentChange = (current: number) => {
   runQuery()
 }
 
-const viewArchiveDetail = (archiveId: number) => {
-  router.push(`/archive-management/detail/${archiveId}`)
+const viewArchiveDetail = (row: any) => {
+  const archiveId = Number(row?.archiveId)
+  const resolved = router.resolve({
+    path: `/archive-management/detail/${Number.isFinite(archiveId) ? archiveId : encodeURIComponent(String(row?.businessCode || '0'))}`,
+    query: {
+      from: 'query',
+      businessCode: String(row?.businessCode || ''),
+      documentName: String(row?.documentName || '')
+    }
+  })
+  window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
 // 快捷筛选
 const filterForMyArchive = () => {
-  // 模拟当前用户
-  const currentUser = '当前用户'
-  query.dutyPerson = currentUser
-  // 假设状态字段为archiveStatus
-  // query.archiveStatus = 'PENDING'
+  // 不再写死“当前用户”条件，避免把结果过滤为空
+  query.dutyPerson = ''
   runQuery()
 }
 
-// 批量操作
 const handleSelectionChange = (selection: any[]) => {
   selectedRecords.value = selection
 }
 
-const handleBatchAction = (command: string) => {
-  if (selectedRecords.value.length === 0) {
-    ElMessage.warning('请先选择要操作的档案')
-    return
-  }
-  
-  if (command === 'transfer') {
-    transferDialogVisible.value = true
-  }
-}
-
-// 移交功能
-const handleTransferMethodChange = () => {
-  if (transferForm.transferMethod !== 'MAIL') {
-    transferForm.logisticsCompany = ''
-    transferForm.trackingNumber = ''
-  }
-}
-
-const submitTransfer = async () => {
-  if (!transferForm.assigneeId) {
-    ElMessage.warning('请选择签收人')
-    return
-  }
-  
-  if (transferForm.transferMethod === 'MAIL' && (!transferForm.logisticsCompany || !transferForm.trackingNumber)) {
-    ElMessage.warning('请填写物流公司和邮寄单号')
-    return
-  }
-  
-  const assignee = userOptions.value.find(user => String(user.id) === String(transferForm.assigneeId))
-  submitting.value = true
-  try {
-    const response = await transferArchives({
-      archiveIds: selectedRecords.value.map(record => Number(record.archiveId)).filter(id => Number.isFinite(id)),
-      assigneeId: String(transferForm.assigneeId),
-      assigneeName: assignee?.name,
-      transferMethod: transferForm.transferMethod as 'DIRECT' | 'MAIL',
-      logisticsCompany: transferForm.transferMethod === 'MAIL' ? transferForm.logisticsCompany : '',
-      trackingNumber: transferForm.transferMethod === 'MAIL' ? transferForm.trackingNumber : '',
-      remark: transferForm.remark,
-      initiatorId: '1',
-      initiatorName: '张三'
-    })
-    ElMessage.success(`移交申请已提交，已发起 ${response.archiveCount} 份档案的电子流`)
-    transferDialogVisible.value = false
-    transferForm.assigneeId = ''
-    transferForm.transferMethod = 'DIRECT'
-    transferForm.logisticsCompany = ''
-    transferForm.trackingNumber = ''
-    transferForm.remark = ''
-    selectedRecords.value = []
-    await runQuery()
-  } finally {
-    submitting.value = false
-  }
-  return
-  submitting.value = true
-  // 模拟提交
-  setTimeout(() => {
-    ElMessage.success('移交申请已提交')
-    transferDialogVisible.value = false
-    submitting.value = false
-    // 重置表单
-    transferForm.assigneeId = ''
-    transferForm.transferMethod = 'DIRECT'
-    transferForm.logisticsCompany = ''
-    transferForm.trackingNumber = ''
-    transferForm.remark = ''
-    // 刷新列表
-    runQuery()
-  }, 1000)
-}
-
-// 自定义字段
-const showColumnSetting = () => {
+const handleColumnSettingClick = () => {
   columnSettingVisible.value = true
 }
 
-const saveColumnSetting = () => {
-  if (selectedColumnKeys.value.length === 0) {
-    ElMessage.warning('请至少选择一个字段')
-    return
+const toCsv = (data: any[]) => {
+  const cols = visibleColumns.value
+  const headers = cols.map((c) => c.label)
+  const props = cols.map((c) => c.prop)
+  const escapeCell = (v: any) => {
+    const s = String(v ?? '')
+    const needsQuote = /[",\n\r]/.test(s)
+    const escaped = s.replaceAll('"', '""')
+    return needsQuote ? `"${escaped}"` : escaped
   }
-  columnSettingVisible.value = false
-  ElMessage.success('字段设置已保存')
+  const lines = [headers.join(',')]
+  for (const row of data) lines.push(props.map((p) => escapeCell(row[p])).join(','))
+  return lines.join('\n')
 }
 
-// AI+档案跳转
-const goToAiSearch = () => {
-  router.push('/archive-management/ai-search')
+const formatDateTimeForExport = (value: unknown) => {
+  if (value === null || value === undefined || value === '') return ''
+  const text = String(value).trim()
+  if (!text) return ''
+  const normalized = text.includes('T') ? text : text.replace(' ', 'T')
+  const date = new Date(normalized)
+  if (Number.isNaN(date.getTime())) return text
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+const isPureElectronicCarrierForExport = (carrier: string | undefined) => {
+  if (carrier == null) return false
+  const s = String(carrier).trim()
+  if (!s) return false
+  const u = s.toUpperCase()
+  if (u === 'HYBRID' || u === 'PAPER') return false
+  if (s.includes('纸质') || s.includes('+')) return false
+  if (s === '纸质件') return false
+  if (u === 'ELECTRONIC') return true
+  if (s === '电子件' || s === '纯电子件') return true
+  return false
+}
+
+type DetailExportColumn = { label: string; prop: string }
+const buildDetailExportSchema = (records: any[]): DetailExportColumn[] => {
+  const base: DetailExportColumn[] = [
+    { label: '文档类型', prop: 'documentTypeName' },
+    { label: '文档业务编码', prop: 'businessCode' },
+    { label: '公司', prop: 'companyProjectName' },
+    { label: '业务模块', prop: 'archiveTypeCode' },
+    { label: '开始档期', prop: 'beginPeriod' },
+    { label: '结束档期', prop: 'endPeriod' },
+    { label: '归档地', prop: 'archiveDestination' },
+    { label: '产生地', prop: 'originPlace' },
+    { label: '文档名称', prop: 'documentName' },
+    { label: '文档生成日期', prop: 'documentDate' },
+    { label: '归档责任人', prop: 'dutyPerson' },
+    { label: '文档责任部门', prop: 'dutyDepartment' },
+    { label: '载体类型', prop: 'carrierTypeCode' },
+    { label: '系统来源', prop: 'sourceSystem' },
+    { label: '密级', prop: 'securityLevelName' },
+    { label: '创建时间', prop: 'lastUpdateDate' },
+    { label: '创建人', prop: 'createdBy' },
+    { label: '描述', prop: 'remark' }
+  ]
+  const docTypeName = String(records?.[0]?.documentTypeName || records?.[0]?.documentTypeCode || '')
+  const ext: DetailExportColumn[] = EXT_DETAIL_FIELD_ORDER
+    .filter((k) => isHardCodedFieldVisible(k, docTypeName))
+    .map((k) => ({ label: hardCodedExtLabelMap[k] || k, prop: `ext.${k}` }))
+  const archive: DetailExportColumn[] = [
+    { label: '文档组织', prop: 'documentOrganizationCode' },
+    { label: '档案类型', prop: 'archiveTypeCode' },
+    { label: '是否可见', prop: 'documentVisibility' },
+    { label: '条码模块', prop: 'ext.barcodeModule' },
+    { label: '档案条码', prop: 'ext.archiveBarcodeRange' },
+    { label: '文档编号', prop: 'ext.volumeSeqNo' },
+    { label: '册号', prop: 'ext.volumeNoRange' },
+    { label: '册条码', prop: 'ext.volumeBarcodeRange' },
+    { label: '保管状态', prop: 'custodyStatus' },
+    { label: '库房', prop: 'currentWarehouseCode' },
+    { label: '库位', prop: 'currentLocationCode' },
+    { label: '份数', prop: 'ext.copies' },
+    { label: '剩余份数', prop: 'ext.remainingCopies' }
+  ]
+  return [...base, ...ext, ...archive]
+}
+
+const resolveDetailExportValue = (row: any, prop: string) => {
+  const ext = (row?.extValues || {}) as Record<string, string>
+  if (prop.startsWith('ext.')) return ext[prop.slice(4)] ?? ''
+  if (prop === 'documentDate' || prop === 'lastUpdateDate') return formatDateTimeForExport(row?.[prop])
+  if (prop === 'securityLevelName') return row?.securityLevelName || row?.securityLevelCode || ''
+  if (prop === 'companyProjectName') return row?.companyProjectName || row?.companyProjectCode || ''
+  if (prop === 'documentTypeName') return row?.documentTypeName || row?.documentTypeCode || ''
+  if (prop === 'documentVisibility') return row?.documentVisibility ?? ext.visibility ?? '是'
+  if (prop === 'custodyStatus') return row?.custodyStatus || row?.archiveStatus || ''
+  return row?.[prop] ?? ''
+}
+
+const toDetailCsv = (records: any[]) => {
+  const cols = buildDetailExportSchema(records)
+  const headers = cols.map((c) => c.label)
+  const props = cols.map((c) => c.prop)
+  const escapeCell = (v: any) => {
+    const s = String(v ?? '')
+    const needsQuote = /[",\n\r]/.test(s)
+    const escaped = s.replaceAll('"', '""')
+    return needsQuote ? `"${escaped}"` : escaped
+  }
+  const lines = [headers.join(',')]
+  for (const row of records) {
+    const isElectronic = isPureElectronicCarrierForExport(row?.carrierTypeCode)
+    lines.push(props.map((p) => {
+      if (
+        isElectronic &&
+        ['ext.archiveBarcodeRange', 'ext.volumeSeqNo', 'ext.volumeNoRange', 'ext.volumeBarcodeRange', 'currentWarehouseCode', 'currentLocationCode', 'ext.copies', 'ext.remainingCopies'].includes(p)
+      ) return ''
+      return escapeCell(resolveDetailExportValue(row, p))
+    }).join(','))
+  }
+  return lines.join('\n')
+}
+
+const downloadText = (filename: string, content: string, mime: string) => {
+  const blob = new Blob([content], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+const exportCsv = async () => {
+  if (!docTypeReady.value) return
+  const data = selectedRecords.value.length > 0 ? selectedRecords.value : queryResult.records
+  if (!data.length) {
+    ElMessage.warning('暂无可导出的数据')
+    return
+  }
+  const ids = data
+    .map((row: any) => Number(row.archiveId || row.docId))
+    .filter((v: number) => Number.isFinite(v) && v > 0)
+  if (!ids.length) {
+    ElMessage.warning('未找到可导出文档标识')
+    return
+  }
+  await createPendingDocumentsExportJob({
+    docIds: ids,
+    exportFileFormat: 'CSV',
+    exportScope: 'DOCUMENT_QUERY'
+  })
+  exportSuccessVisible.value = true
+}
+
+const applyImportQuery = async (file: File) => {
+  importing.value = true
+  try {
+    if (!query.documentTypeCode?.trim()) {
+      ElMessage.warning('请先选择文档类型')
+      return
+    }
+    await submitArchiveImportQueryJob({
+      file,
+      documentTypeCode: query.documentTypeCode
+    })
+    importQueryDialogVisible.value = false
+    ElMessage.success('已提交批量导入查询，请前往「我的工作空间 → 我的导入」查看结果查询')
+  } finally {
+    importing.value = false
+  }
+}
+
+const handleImportQueryModalConfirm = async (payload: { file: File | null }) => {
+  if (!payload.file) return
+  await applyImportQuery(payload.file)
 }
 
 onMounted(async () => {
+  tableFullPage.value = false
   const routeKeyword = typeof route.query.q === 'string' ? route.query.q.trim() : ''
   if (routeKeyword) {
     query.keyword = routeKeyword
   }
   await loadOptions()
-  await runQuery()
+  if (route.query.mine === '1') {
+    filterForMyArchive()
+  } else {
+    await runQuery()
+  }
 })
+
+onActivated(() => {
+  tableFullPage.value = false
+})
+
+watch(
+  selectedColumnKeys,
+  (next) => {
+    if (!next.includes('businessCode')) {
+      selectedColumnKeys.value = [...next, 'businessCode']
+    }
+  },
+  { deep: true }
+)
+
+const goMyExports = () => {
+  exportSuccessVisible.value = false
+  router.push('/workspace/export-query')
+}
 </script>
 
 <style scoped>
-.query-page { display: grid; gap: 16px; }
-.query-card {
+.f02-data-maintenance {
+  --f02-primary: #1173d4;
+  --f02-bg: #f6f7f8;
+  --f02-border: #dbe0e6;
+  --f02-text: #111418;
+  --f02-text-sec: #617589;
+  min-height: 100%;
+  background: linear-gradient(135deg, #f6f7f8 0%, #e8f0f7 100%);
+  font-family: 'Microsoft YaHei', 'Inter', 'Noto Sans SC', sans-serif;
+  color: var(--f02-text);
+  margin: -20px;
+  padding: 24px;
+}
+.f02-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.f02-card {
+  background: #fff;
+  border: 1px solid var(--f02-border);
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  margin-bottom: 24px;
   overflow: hidden;
-}
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f2f5;
-}
-.section-head strong {
-  display: block;
-  font-size: 18px;
-  color: #24324a;
-  font-weight: 600;
-}
-.section-head span {
-  color: #7a879a;
-  font-size: 13px;
-  margin-top: 4px;
-  display: block;
 }
 .section-actions {
   display: flex;
   gap: 8px;
 }
-.filter-section {
-  padding: 20px 0;
-}
-.quick-filters {
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f2f5;
-}
-.form-grid {
-  display: grid;
-  gap: 16px 20px;
-}
-.form-grid--4 {
+.f02-filters { overflow: hidden; }
+.filter-section { overflow: hidden; }
+.f02-filter-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: grid;
+  gap: 16px 24px;
+  align-items: end;
+}
+.f02-field {
+  min-width: 0;
+}
+.f02-field label {
+  display: block;
+  font-size: 14px;
+  color: var(--f02-text-sec);
+  margin-bottom: 6px;
+}
+.f02-required {
+  color: #ef4444;
+  font-weight: 700;
+  margin-right: 4px;
+}
+.f02-field--required-missing label {
+  color: #c2410c;
+}
+.f02-field--required-missing :deep(.el-select .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #f59e0b inset;
+  background-color: #fffaf0;
+}
+.f02-required-label-tip {
+  margin-left: 6px;
+  vertical-align: text-bottom;
+  font-size: 14px;
+  color: #f59e0b;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.f02-required-label-tip.is-visible {
+  opacity: 1;
+}
+.f02-control {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.f02-field :deep(.el-select),
+.f02-field :deep(.el-date-editor),
+.f02-field :deep(.el-input) {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.f02-field :deep(.el-select .el-input__wrapper),
+.f02-field :deep(.el-date-editor .el-input__wrapper),
+.f02-field :deep(.el-input .el-input__wrapper) {
+  max-width: 100%;
+}
+.f02-field :deep(.el-date-editor.el-input__wrapper) {
+  width: 100%;
+  max-width: 100%;
+}
+.f02-date-range :deep(.el-range-input) {
+  min-width: 0;
 }
 .query-extra {
   margin: 20px 0;
   padding: 16px;
   background-color: #f9fafb;
   border-radius: 6px;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--f02-border);
+}
+.f02-filter-grid--more {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--f02-border);
+}
+.f02-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 .query-extra__title {
   margin-bottom: 16px;
   font-size: 14px;
   font-weight: 600;
-  color: #4b587c;
+  color: var(--f02-text-sec);
 }
-.action-buttons {
+.f02-toolbar {
   display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid #f0f2f5;
-}
-.action-buttons .el-button {
-  min-width: 120px;
-  padding: 10px 20px;
-  font-size: 14px;
-}
-.table-section {
-  margin-top: 20px;
-}
-.table-header {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f2f5;
-}
-.table-actions {
-  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
   gap: 12px;
 }
-.table-actions .el-button {
-  font-size: 13px;
-  padding: 8px 16px;
+.f02-toolbar__left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.el-table {
-  border-radius: 6px;
+.f02-toolbar__right {
+  display: flex;
+  gap: 8px;
+}
+.f02-table-wrap {
+  border: 1px solid #dbe0e6;
+  border-radius: 12px;
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.04);
+  padding: 18px;
   overflow: hidden;
 }
-.el-table th {
-  background-color: #f7f8fa !important;
-  font-weight: 600;
-  color: #24324a;
-  font-size: 13px;
+.table-section {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
 }
-.el-table td {
-  font-size: 13px;
-  color: #303133;
+.f02-data-maintenance--full-table .f02-inner {
+  max-width: none;
+}
+.f02-data-maintenance--full-table .f02-filters {
+  padding: 12px 24px;
+}
+.f02-data-maintenance--full-table .f02-filters .f02-filter-grid,
+.f02-data-maintenance--full-table .f02-filters .f02-filter-actions,
+.f02-data-maintenance--full-table .f02-filters .f02-filter-grid--more,
+.f02-data-maintenance--full-table .f02-filters .query-extra,
+.f02-data-maintenance--full-table .f02-filters .el-alert {
+  display: none;
+}
+.f02-data-maintenance--full-table .f02-filters .f02-query-buttons {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.column-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.el-table {
+  width: 100%;
+}
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 700;
+}
+:deep(.el-table td.el-table__cell) {
+  color: #334155;
 }
 .pagination-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #e4e7ed;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
 }
 .pagination-info {
   font-size: 13px;
-  color: #606266;
+  color: #64748b;
 }
-.transfer-dialog p {
-  margin-bottom: 16px;
-  color: #606266;
-  font-size: 13px;
+.export-success-tip {
+  line-height: 1.8;
+  color: #475569;
 }
-.column-setting .el-tree {
-  max-height: 400px;
-  overflow-y: auto;
+:deep(.el-button--primary) {
+  --el-button-bg-color: var(--f02-primary);
+  --el-button-border-color: var(--f02-primary);
 }
 @media (max-width: 1280px) {
-  .form-grid--4 {
+  .f02-filter-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 @media (max-width: 1024px) {
-  .form-grid--4 {
+  .f02-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .table-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  .table-actions {
-    width: 100%;
-    justify-content: space-between;
   }
 }
 @media (max-width: 768px) {
-  .form-grid--4 {
+  .f02-filter-grid {
     grid-template-columns: 1fr;
   }
   .section-head {
@@ -629,12 +1041,6 @@ onMounted(async () => {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-  }
-  .action-buttons {
-    flex-direction: column;
-  }
-  .action-buttons .el-button {
-    width: 100%;
   }
 }
 </style>

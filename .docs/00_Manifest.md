@@ -12,13 +12,13 @@
 
 F01 基础数据管理
 
-    管理配置：归档主体、文档类型、业务模块、文档组织
+    管理配置：公司（公司编码 company_code、公司名称 company_name）、文档类型、业务模块、文档组织
 
     管理规则：条码生成规则、文档编码生成规则、归档流向匹配规则
 
     管理库房：库房维护、库位维护
 
-F02 应归数据：自动集成应归档数据、手工创建应归档数据、批量调整应归档数据、应归档数据查询、编辑应归档数据
+F02 应归档数据：自动集成应归档数据、手工创建应归档数据、批量调整应归档数据、应归档数据查询、编辑应归档数据（前端页面名称：应归档数据管理，原型 @.docs/features/F03/reference_html/pages/data_maintenance.html；创建/编辑页面对应 document_create.html、document_edit.html；规范见 @.docs/07_FrontendDesignSpec.md）
 
 F03 文档查询：查询文档、文档详情、文档导出、附件预览、附件下载、智能搜索、文档推荐
 
@@ -75,7 +75,7 @@ Lookup 快码: @.docs/06_Lookup.md (全局字典取值；库表仅存码值时�
 
 规则约束: @.cursorrules (全局开发风格限制)
 
-交互规范： @.docs/07_Interface.md（全局前端交互规范，包括页面布局、按钮规范、字段填写规范等）
+前端设计规范（视觉 + 交互）： @.docs/07_FrontendDesignSpec.md（含页面布局、组件视觉、按钮与表单规范等）
 
 features输出模板: @.docs/features/Template.md
 

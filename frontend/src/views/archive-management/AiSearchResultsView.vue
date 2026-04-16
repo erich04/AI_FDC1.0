@@ -93,18 +93,18 @@
 
           <div class="filters-form">
             <div class="filter-item">
-              <label>公司/项目</label>
+              <label>公司</label>
               <el-select v-model="filters.companyProjectCode" clearable filterable @change="applyFilters">
                 <el-option v-for="item in options.companyProjects" :key="item.code" :label="item.name" :value="item.code" />
               </el-select>
             </div>
 
             <div class="filter-item">
-              <label>业务模块</label>
+              <label>文档类型</label>
               <CommonTreeSelect
-                v-model="filters.busiModuleCode"
-                :data="documentTypeTree"
-                placeholder="请选择业务模块"
+                v-model="filters.documentTypeCode"
+                :data="documentTypeLevel1Tree"
+                placeholder="请选择文档类型"
                 label-key="typeName"
                 value-key="typeCode"
                 children-key="children"
@@ -231,7 +231,7 @@
                   @click="selectDocument(reference)"
                 >
                   <strong>{{ reference.documentName }}</strong>
-                  <span>{{ reference.busiModuleName || reference.archiveTypeCode || '未分类' }} / {{ reference.companyProjectName || '未标注项目' }}</span>
+                  <span>{{ reference.documentTypeName || reference.archiveTypeCode || '未分类' }} / {{ reference.companyProjectName || '未标注公司' }}</span>
                 </button>
               </div>
               <el-empty v-else description="当前没有可直接引用的依据文档，建议从下方相关文档继续查看。" />
@@ -271,8 +271,8 @@
                     <div class="document-card__title">
                       <button type="button" class="link-button" @click="selectDocument(record)">{{ record.documentName }}</button>
                       <div class="document-card__meta">
-                        <el-tag size="small">{{ record.busiModuleName || record.archiveTypeCode || '未分类' }}</el-tag>
-                        <el-tag size="small" type="success">{{ record.companyProjectName || '默认项目' }}</el-tag>
+                        <el-tag size="small">{{ record.documentTypeName || record.archiveTypeCode || '未分类' }}</el-tag>
+                        <el-tag size="small" type="success">{{ record.companyProjectName || '默认公司' }}</el-tag>
                         <el-tag size="small" :type="relevanceTag(record).type">{{ relevanceTag(record).label }}</el-tag>
                       </div>
                     </div>
@@ -303,7 +303,7 @@
                   </div>
                 </article>
               </div>
-              <el-empty v-else description="未找到相关文档，建议补充年份、项目名称或业务模块后重新搜索。" class="empty-state" />
+              <el-empty v-else description="未找到相关文档，建议补充年份、项目名称或文档类型后重新搜索。" class="empty-state" />
             </div>
           </el-card>
         </template>
@@ -324,8 +324,8 @@
             <div class="preview-header">
               <strong>{{ selectedDocument.documentName }}</strong>
               <div class="preview-header__meta">
-                <el-tag size="small">{{ selectedDocument.busiModuleName || selectedDocument.archiveTypeCode || '未分类' }}</el-tag>
-                <el-tag size="small" type="success">{{ selectedDocument.companyProjectName || '默认项目' }}</el-tag>
+                <el-tag size="small">{{ selectedDocument.documentTypeName || selectedDocument.archiveTypeCode || '未分类' }}</el-tag>
+                <el-tag size="small" type="success">{{ selectedDocument.companyProjectName || '默认公司' }}</el-tag>
               </div>
             </div>
 
@@ -351,7 +351,7 @@
             <div class="preview-section">
               <span class="preview-section__label">元信息</span>
               <div class="meta-grid">
-                <span>档号：{{ selectedDocument.archiveFilingCode || selectedDocument.archiveCode }}</span>
+                <span>档案编码：{{ selectedDocument.archiveCode }}</span>
                 <span>责任人：{{ selectedDocument.dutyPerson || '未标注' }}</span>
                 <span>更新时间：{{ formatDocumentDate(selectedDocument.lastUpdateDate || selectedDocument.documentDate) }}</span>
                 <span>状态：{{ selectedDocument.archiveStatus || '已归档' }}</span>
@@ -417,15 +417,16 @@ const selectedTags = ref<string[]>([])
 const loading = ref(false)
 const searchElapsed = ref('0.0')
 const answerResult = ref<ArchiveAskResult | null>(null)
-const queryResult = ref<ArchiveQueryResult>({ records: [], queryFields: [] })
+const queryResult = ref<ArchiveQueryResult>({ records: [], queryFields: [], total: 0, page: 1, pageSize: 20 })
 const aiModels = ref<ArchiveAiModelSummary[]>([])
 const documentTypeTree = ref<DocumentTypeTreeNode[]>([])
+const documentTypeLevel1Tree = computed(() => (Array.isArray(documentTypeTree.value) ? documentTypeTree.value : []).map((n) => ({ ...n, children: [] })))
 const selectedDocument = ref<ArchiveRecordSummary | null>(null)
 const favorites = ref(new Set<string>())
 
 const options = reactive<ArchiveCreateOptions>({
   companyProjects: [],
-  busiModules: [],
+  documentTypes: [],
   archiveDestinations: [],
   documentOrganizations: [],
   securityLevels: [],
@@ -437,11 +438,11 @@ const options = reactive<ArchiveCreateOptions>({
 
 const filters = reactive({
   companyProjectCode: '',
-  busiModuleCode: '',
+  documentTypeCode: '',
   documentOrganizationCode: ''
 })
 
-const searchModes = [
+const searchModes: Array<{ label: string; value: SearchMode }> = [
   { label: '智能问答', value: 'qa' },
   { label: '文档搜索', value: 'document' }
 ]
@@ -487,7 +488,7 @@ const lowConfidence = computed(() => references.value.length < 2)
 
 const selectedCompanyName = computed(() => findOptionName(options.companyProjects, filters.companyProjectCode))
 const selectedOrganizationName = computed(() => findOptionName(options.documentOrganizations, filters.documentOrganizationCode))
-const selectedDocumentTypeName = computed(() => findDocumentTypeName(documentTypeTree.value, filters.busiModuleCode))
+const selectedDocumentTypeName = computed(() => findDocumentTypeName(documentTypeTree.value, filters.documentTypeCode))
 
 const scopeDescription = computed(() => {
   const scopes = ['全库档案、制度资料与操作手册']
@@ -531,7 +532,7 @@ const displayedAnswer = computed(() => {
     return `系统已结合 ${references.value.length} 份命中文档生成摘要。若需要确认条款细节、版本差异或执行边界，建议继续查看右侧原文依据。`
   }
   if (displayedRecords.value.length) {
-    return '当前检索到了相关文档，但证据还不足以给出确定性结论。建议补充年份、项目名称、制度名称或业务模块后再次搜索。'
+    return '当前检索到了相关文档，但证据还不足以给出确定性结论。建议补充年份、项目名称、制度名称或文档类型后再次搜索。'
   }
   return '当前没有检索到足够相关的文档内容。可以尝试换一种问法，或先从下方相关文档列表继续排查。'
 })
@@ -539,7 +540,7 @@ const displayedAnswer = computed(() => {
 const answerHighlights = computed(() => {
   if (!displayedRecords.value.length) {
     return [
-      '暂未命中足够文档，建议补充年份、项目、制度名称或业务模块。',
+      '暂未命中足够文档，建议补充年份、项目、制度名称或文档类型。',
       '如果你是在找具体文件，可以切换到“文档搜索”模式再试。'
     ]
   }
@@ -553,11 +554,11 @@ const answerHighlights = computed(() => {
 
 const applicableScopes = computed(() => {
   const scopes: string[] = []
-  if (selectedDocumentTypeName.value) scopes.push(`当前优先覆盖业务模块：${selectedDocumentTypeName.value}`)
-  if (selectedCompanyName.value) scopes.push(`当前限定公司/项目：${selectedCompanyName.value}`)
+  if (selectedDocumentTypeName.value) scopes.push(`当前优先覆盖文档类型：${selectedDocumentTypeName.value}`)
+  if (selectedCompanyName.value) scopes.push(`当前限定公司：${selectedCompanyName.value}`)
   if (selectedOrganizationName.value) scopes.push(`当前限定文档组织：${selectedOrganizationName.value}`)
 
-  const typeNames = Array.from(new Set(displayedRecords.value.map(item => item.busiModuleName || item.archiveTypeCode).filter(Boolean))).slice(0, 3)
+  const typeNames = Array.from(new Set(displayedRecords.value.map(item => item.documentTypeName || item.archiveTypeCode).filter(Boolean))).slice(0, 3)
   if (!scopes.length && typeNames.length) scopes.push(`当前结果主要覆盖：${typeNames.join('、')}`)
   if (!scopes.length) scopes.push('当前问题会在全库档案、制度资料与操作手册中综合检索')
   scopes.push(activeMode.value === 'document' ? '当前更偏向返回具体文档结果' : '当前更偏向返回可解释的知识总结')
@@ -583,7 +584,7 @@ const answerRisks = computed(() => {
 const availableTags = computed(() => {
   const tagSet = new Set<string>()
   queryResult.value.records.forEach(record => {
-    if (record.busiModuleName) tagSet.add(record.busiModuleName)
+    if (record.documentTypeName) tagSet.add(record.documentTypeName)
     if (record.archiveTypeCode) tagSet.add(record.archiveTypeCode)
     if (record.companyProjectName) tagSet.add(record.companyProjectName)
     if (record.archiveStatus) tagSet.add(record.archiveStatus)
@@ -597,7 +598,7 @@ const filteredRecords = computed(() => {
   if (selectedTags.value.length) {
     records = records.filter(record =>
       selectedTags.value.some(tag =>
-        [record.busiModuleName, record.archiveTypeCode, record.companyProjectName, record.archiveStatus]
+        [record.documentTypeName, record.archiveTypeCode, record.companyProjectName, record.archiveStatus]
           .filter(Boolean)
           .includes(tag)
       )
@@ -629,8 +630,8 @@ const filteredRecords = computed(() => {
 
 const activeFilterTags = computed(() => {
   const tags: string[] = []
-  if (selectedCompanyName.value) tags.push(`公司/项目：${selectedCompanyName.value}`)
-  if (selectedDocumentTypeName.value) tags.push(`业务模块：${selectedDocumentTypeName.value}`)
+  if (selectedCompanyName.value) tags.push(`公司：${selectedCompanyName.value}`)
+  if (selectedDocumentTypeName.value) tags.push(`文档类型：${selectedDocumentTypeName.value}`)
   if (selectedOrganizationName.value) tags.push(`文档组织：${selectedOrganizationName.value}`)
   if (timeRange.value !== 'all') tags.push(`时间范围：${timeRangeOptions.find(item => item.value === timeRange.value)?.label}`)
   if (selectedTags.value.length) tags.push(...selectedTags.value.map(tag => `标签：${tag}`))
@@ -685,13 +686,13 @@ async function runSearch() {
     const queryCommand: ArchiveQueryCommand = {
       keyword: text,
       companyProjectCode: filters.companyProjectCode || undefined,
-      busiModuleCode: filters.busiModuleCode || undefined,
+      documentTypeCode: filters.documentTypeCode || undefined,
       documentOrganizationCode: filters.documentOrganizationCode || undefined
     }
     const askCommand: ArchiveAskCommand = {
       question: text,
       companyProjectCode: filters.companyProjectCode || undefined,
-      busiModuleCode: filters.busiModuleCode || undefined
+      documentTypeCode: filters.documentTypeCode || undefined
     }
     const [queryResponse, askResponse] = await Promise.all([
       queryArchives(queryCommand),
@@ -754,7 +755,7 @@ function applyFilters() {
 
 function resetFilters() {
   filters.companyProjectCode = ''
-  filters.busiModuleCode = ''
+  filters.documentTypeCode = ''
   filters.documentOrganizationCode = ''
   timeRange.value = 'all'
   customDateRange.value = []
@@ -762,8 +763,8 @@ function resetFilters() {
 }
 
 function removeFilterTag(tag: string) {
-  if (tag.startsWith('公司/项目')) filters.companyProjectCode = ''
-  if (tag.startsWith('业务模块')) filters.busiModuleCode = ''
+  if (tag.startsWith('公司：') || tag.startsWith('公司/项目')) filters.companyProjectCode = ''
+  if (tag.startsWith('文档类型')) filters.documentTypeCode = ''
   if (tag.startsWith('文档组织')) filters.documentOrganizationCode = ''
   if (tag.startsWith('时间范围')) {
     timeRange.value = 'all'
@@ -796,7 +797,7 @@ function scoreRecord(record: ArchiveRecordSummary) {
   const text = keyword.value.trim()
   if (record.documentName?.includes(text)) score += 4
   if (record.aiArchiveSummary?.includes(text)) score += 3
-  if (record.busiModuleName?.includes(text)) score += 2
+  if (record.documentTypeName?.includes(text)) score += 2
   score += Math.min(record.attachmentCount || 0, 3)
   return score
 }
@@ -894,8 +895,8 @@ function downloadDocument(record: ArchiveRecordSummary) {
 function showMetadata(record: ArchiveRecordSummary) {
   ElMessageBox.alert(
     [
-      `档号：${record.archiveFilingCode || record.archiveCode}`,
-      `业务模块：${record.busiModuleName || record.archiveTypeCode || '未分类'}`,
+      `档案编码：${record.archiveCode}`,
+      `文档类型：${record.documentTypeName || record.archiveTypeCode || '未分类'}`,
       `责任人：${record.dutyPerson || '未标注'}`,
       `来源系统：${record.sourceSystem || '未标注'}`,
       `文档组织：${record.documentOrganizationCode || '未标注'}`

@@ -4,9 +4,9 @@
       <div class="toolbar">
         <el-form :inline="true" :model="query" class="query-form">
           <el-form-item label="关键字">
-            <el-input v-model.trim="query.keyword" placeholder="公司/项目、业务模块或文档组织" clearable />
+            <el-input v-model.trim="query.keyword" placeholder="公司、文档类型或文档组织" clearable />
           </el-form-item>
-          <el-form-item label="公司/项目">
+          <el-form-item label="公司">
             <el-select v-model="query.companyProjectCode" placeholder="全部" clearable style="width: 220px">
               <el-option v-for="item in companyProjectOptions" :key="item.code" :label="`${item.code} - ${item.name}`" :value="item.code" />
             </el-select>
@@ -42,20 +42,22 @@
         <el-form ref="formRef" :model="form" :rules="rules" label-width="160px" class="editor-form">
           <el-row :gutter="16">
             <el-col :md="8" :xs="24">
-              <el-form-item label="公司/项目" prop="companyProjectCode" required>
-                <el-select v-model="form.companyProjectCode" :disabled="editor.mode !== 'create' || isReadonly" placeholder="请选择公司/项目" filterable style="width: 100%">
+              <el-form-item label="公司" prop="companyProjectCode" required>
+                <el-select v-model="form.companyProjectCode" :disabled="editor.mode !== 'create' || isReadonly" placeholder="请选择公司" filterable style="width: 100%">
                   <el-option v-for="item in companyProjectOptions" :key="item.code" :label="`${item.code} - ${item.name}`" :value="item.code" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
-              <el-form-item label="业务模块" prop="busiModuleCode" required>
-                <TreeCodeSelector v-model="form.busiModuleCode" :data="documentTypeTree" placeholder="请选择业务模块" label-key="typeName" value-key="typeCode" :disabled="isReadonly" />
+              <el-form-item label="文档类型" prop="documentTypeCode" required>
+                <TreeCodeSelector v-model="form.documentTypeCode" :data="documentTypeLevel1Tree" placeholder="请选择文档类型" label-key="typeName" value-key="typeCode" :disabled="isReadonly" />
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
               <el-form-item label="归档地" prop="archiveDestination">
-                <CountryRegionSelector v-model="form.archiveDestination" :disabled="isReadonly" />
+                <el-select v-model="form.archiveDestination" :disabled="isReadonly" placeholder="请选择城市" clearable filterable style="width: 100%">
+                  <el-option v-for="item in cityOptions" :key="item.code" :label="item.name" :value="item.code" />
+                </el-select>
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
@@ -108,9 +110,9 @@
       </div>
 
       <el-table :data="displayedItems" border empty-text="暂无归档流向规则">
-        <el-table-column prop="companyProjectCode" label="公司/项目编码" min-width="180" />
-        <el-table-column prop="companyProjectName" label="公司/项目名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="busiModuleName" label="业务模块" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="companyProjectCode" label="公司编码" min-width="180" />
+        <el-table-column prop="companyProjectName" label="公司名称" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="documentTypeName" label="文档类型" min-width="180" show-overflow-tooltip />
         <el-table-column prop="archiveDestinationName" label="归档地" min-width="140" show-overflow-tooltip />
         <el-table-column prop="documentOrganizationName" label="文档组织" min-width="180" show-overflow-tooltip />
         <el-table-column prop="retentionPeriodYears" label="保存期限（年）" width="130" align="center" />
@@ -166,10 +168,10 @@
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import TreeCodeSelector from '../../components/TreeCodeSelector.vue'
-import CountryRegionSelector from '../../components/CountryRegionSelector.vue'
 import {
   createArchiveFlowRule,
   deleteArchiveFlowRule,
+  fetchArchiveFlowCityOptions,
   fetchArchiveFlowCompanyProjectOptions,
   fetchArchiveFlowDocumentOrganizationOptions,
   fetchArchiveFlowRuleDetail,
@@ -194,8 +196,10 @@ const items = ref<ArchiveFlowRuleSummary[]>([])
 const auditRecords = ref<AuditRecord[]>([])
 const companyProjectOptions = ref<ArchiveFlowRuleOption[]>([])
 const documentOrganizationOptions = ref<ArchiveFlowRuleOption[]>([])
+const cityOptions = ref<ArchiveFlowRuleOption[]>([])
 const securityLevels = ref<SecurityLevelOption[]>([])
 const documentTypeTree = ref<DocumentTypeTreeNode[]>([])
+const documentTypeLevel1Tree = computed(() => (Array.isArray(documentTypeTree.value) ? documentTypeTree.value : []).map((n) => ({ ...n, children: [] })))
 
 const enabledOptions = [
   { label: '启用', value: 'Y' },
@@ -209,7 +213,7 @@ const yesNoOptions = [
 const query = reactive({
   keyword: '',
   companyProjectCode: '',
-  busiModuleCode: '',
+  documentTypeCode: '',
   documentOrganizationCode: '',
   enabledFlag: ''
 })
@@ -222,7 +226,7 @@ const editor = reactive({
 
 const form = reactive<ArchiveFlowRuleCreateCommand>({
   companyProjectCode: '',
-  busiModuleCode: '',
+  documentTypeCode: '',
   customRule: '',
   archiveDestination: '',
   documentOrganizationCode: '',
@@ -244,8 +248,8 @@ watch(retentionPeriodInput, (value) => {
 })
 
 const rules: FormRules<ArchiveFlowRuleCreateCommand> = {
-  companyProjectCode: [{ required: true, message: '请选择公司/项目', trigger: 'change' }],
-  busiModuleCode: [{ required: true, message: '请选择业务模块', trigger: 'change' }],
+  companyProjectCode: [{ required: true, message: '请选择公司', trigger: 'change' }],
+  documentTypeCode: [{ required: true, message: '请选择文档类型', trigger: 'change' }],
   customRule: [{ max: 500, message: '最大长度500', trigger: 'blur' }],
   archiveDestination: [{ max: 64, message: '最大长度64', trigger: 'change' }],
   documentOrganizationCode: [{ required: true, message: '请选择文档组织', trigger: 'change' }],
@@ -275,7 +279,7 @@ const displayedItems = computed(() => {
 
 const resetFormState = () => {
   form.companyProjectCode = ''
-  form.busiModuleCode = ''
+  form.documentTypeCode = ''
   form.customRule = ''
   form.archiveDestination = ''
   form.documentOrganizationCode = ''
@@ -289,7 +293,7 @@ const resetFormState = () => {
 
 const fillForm = (detail: ArchiveFlowRuleDetail) => {
   form.companyProjectCode = detail.companyProjectCode
-  form.busiModuleCode = detail.busiModuleCode
+  form.documentTypeCode = detail.documentTypeCode
   form.customRule = detail.customRule || ''
   form.archiveDestination = detail.archiveDestination || ''
   form.documentOrganizationCode = detail.documentOrganizationCode
@@ -305,21 +309,23 @@ const loadList = async () => {
   items.value = await fetchArchiveFlowRules({
     keyword: query.keyword?.trim() || undefined,
     companyProjectCode: query.companyProjectCode || undefined,
-    busiModuleCode: query.busiModuleCode || undefined,
+    documentTypeCode: query.documentTypeCode || undefined,
     documentOrganizationCode: query.documentOrganizationCode || undefined,
     enabledFlag: query.enabledFlag || undefined
   })
 }
 
 const loadMeta = async () => {
-  const [companyProjects, organizations, levels, typeTree] = await Promise.all([
+  const [companyProjects, organizations, cities, levels, typeTree] = await Promise.all([
     fetchArchiveFlowCompanyProjectOptions(),
     fetchArchiveFlowDocumentOrganizationOptions(),
+    fetchArchiveFlowCityOptions(),
     fetchArchiveFlowSecurityLevels(),
     fetchDocumentTypeTree()
   ])
   companyProjectOptions.value = companyProjects
   documentOrganizationOptions.value = organizations
+  cityOptions.value = cities
   securityLevels.value = levels
   documentTypeTree.value = typeTree
   resetFormState()
@@ -332,7 +338,7 @@ const loadAudits = async () => {
 const resetQuery = async () => {
   query.keyword = ''
   query.companyProjectCode = ''
-  query.busiModuleCode = ''
+  query.documentTypeCode = ''
   query.documentOrganizationCode = ''
   query.enabledFlag = ''
   await loadList()
@@ -373,7 +379,7 @@ const submit = async () => {
     if (editor.mode === 'create') {
       await createArchiveFlowRule({
         companyProjectCode: form.companyProjectCode,
-        busiModuleCode: form.busiModuleCode,
+        documentTypeCode: form.documentTypeCode,
         customRule: form.customRule?.trim() || undefined,
         archiveDestination: form.archiveDestination || undefined,
         documentOrganizationCode: form.documentOrganizationCode,
@@ -385,7 +391,7 @@ const submit = async () => {
       ElMessage.success('归档流向规则创建成功')
     } else {
       await updateArchiveFlowRule(form.companyProjectCode, {
-        busiModuleCode: form.busiModuleCode,
+        documentTypeCode: form.documentTypeCode,
         customRule: form.customRule?.trim() || undefined,
         archiveDestination: form.archiveDestination || undefined,
         documentOrganizationCode: form.documentOrganizationCode,

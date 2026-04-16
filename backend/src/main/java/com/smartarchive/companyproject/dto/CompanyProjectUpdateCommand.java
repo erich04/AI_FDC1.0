@@ -9,8 +9,8 @@ import lombok.Data;
 
 @Data
 public class CompanyProjectUpdateCommand {
-    @NotBlank(message = "公司/项目名称不能为空")
-    @Size(max = 128, message = "公司/项目名称长度不能超过128")
+    @NotBlank(message = "公司名称不能为空")
+    @Size(max = 128, message = "公司名称长度不能超过128")
     private String companyProjectName;
 
     @NotBlank(message = "国家不能为空")
@@ -20,6 +20,9 @@ public class CompanyProjectUpdateCommand {
     @NotBlank(message = "管理区域不能为空")
     @Size(max = 128, message = "管理区域长度不能超过128")
     private String managementArea;
+
+    @Size(max = 128, message = "公司标签长度不能超过128")
+    private String companyTag;
 
     @NotBlank(message = "启用标识不能为空")
     private String enabledFlag;

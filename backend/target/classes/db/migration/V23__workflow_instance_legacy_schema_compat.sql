@@ -16,21 +16,30 @@ ALTER TABLE fdc_workflow_instance_t ADD COLUMN IF NOT EXISTS creation_date TIMES
 ALTER TABLE fdc_workflow_instance_t ADD COLUMN IF NOT EXISTS last_updated_by BIGINT;
 ALTER TABLE fdc_workflow_instance_t ADD COLUMN IF NOT EXISTS last_update_date TIMESTAMP;
 
--- 旧字段到新字段的历史数据回填（仅在目标字段为空时回填，不覆盖新数据）
-UPDATE fdc_workflow_instance_t
-SET process_instance_id = instance_code
-WHERE process_instance_id IS NULL
-  AND instance_code IS NOT NULL;
+-- 旧字段到新字段的历史数据回填（仅在目标字段和旧字段均存在时回填）
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fdc_workflow_instance_t' AND column_name = 'instance_code') THEN
+        UPDATE fdc_workflow_instance_t
+        SET process_instance_id = instance_code
+        WHERE process_instance_id IS NULL
+          AND instance_code IS NOT NULL;
+    END IF;
 
-UPDATE fdc_workflow_instance_t
-SET process_definition_key = definition_code
-WHERE process_definition_key IS NULL
-  AND definition_code IS NOT NULL;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fdc_workflow_instance_t' AND column_name = 'definition_code') THEN
+        UPDATE fdc_workflow_instance_t
+        SET process_definition_key = definition_code
+        WHERE process_definition_key IS NULL
+          AND definition_code IS NOT NULL;
+    END IF;
 
-UPDATE fdc_workflow_instance_t
-SET start_time = started_at
-WHERE start_time IS NULL
-  AND started_at IS NOT NULL;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fdc_workflow_instance_t' AND column_name = 'started_at') THEN
+        UPDATE fdc_workflow_instance_t
+        SET start_time = started_at
+        WHERE start_time IS NULL
+          AND started_at IS NOT NULL;
+    END IF;
+END $$;
 
 UPDATE fdc_workflow_instance_t
 SET creation_date = COALESCE(creation_date, start_time, CURRENT_TIMESTAMP),

@@ -1,6 +1,5 @@
 package com.smartarchive.archivemanage.dto;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -12,9 +11,8 @@ import lombok.Data;
 public class ArchiveSummaryResponse {
     private Long archiveId;
     private String archiveCode;
-    private String archiveFilingCode;
-    private String busiModuleCode;
-    private String busiModuleName;
+    private String documentTypeCode;
+    private String documentTypeName;
     private String companyProjectCode;
     private String companyProjectName;
     private String beginPeriod;
@@ -22,9 +20,12 @@ public class ArchiveSummaryResponse {
     private String documentName;
     private String businessCode;
     private String dutyPerson;
+    private String createdBy;
     private String dutyDepartment;
-    private LocalDate documentDate;
+    private LocalDateTime documentDate;
     private String securityLevelCode;
+    /** 密级中文名，与 securityLevelCode 成对；未知字典值时与编码相同 */
+    private String securityLevelName;
     private String sourceSystem;
     private String archiveDestination;
     private String originPlace;
@@ -34,7 +35,14 @@ public class ArchiveSummaryResponse {
     private String documentOrganizationCode;
     private Integer retentionPeriodYears;
     private String archiveTypeCode;
+    /** 三级业务模块原始 type_code（fdc_document_t.biz_module_code），与 archiveTypeCode（展示名）区分 */
+    private String businessModuleTypeCode;
     private String archiveStatus;
+    /** 生命周期状态原始编码（如 UNARCHIVED/ARCHIVED/DRAFT） */
+    private String lifecycleStatus;
+    private String custodyStatus;
+    /** 是否可见（fdc_document_t.attr1），在归档信息区展示，勿放入扩展信息 */
+    private String documentVisibility;
     private String parseStatus;
     private String vectorStatus;
     private LocalDateTime lastUpdateDate;

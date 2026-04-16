@@ -1,4 +1,5 @@
-import axios from 'axios'
+import axios, { AxiosHeaders } from 'axios'
+import { CURRENT_OPERATOR_USER_ID } from '../constants/currentUser'
 
 export interface ApiResponse<T> {
   code?: number
@@ -12,6 +13,15 @@ const http = axios.create({
   // Keep same-origin requests; API modules already prefix paths with /api.
   baseURL: '',
   timeout: 15000
+})
+
+http.interceptors.request.use((config) => {
+  const headers = AxiosHeaders.from(config.headers ?? {})
+  if (headers.get('X-User-Id') == null && headers.get('x-user-id') == null) {
+    headers.set('X-User-Id', String(CURRENT_OPERATOR_USER_ID))
+  }
+  config.headers = headers
+  return config
 })
 
 http.interceptors.response.use((response) => response, (error) => Promise.reject(error))

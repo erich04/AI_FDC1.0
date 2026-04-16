@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="dict-page">
     <el-card shadow="never" class="dict-left">
       <template #header>

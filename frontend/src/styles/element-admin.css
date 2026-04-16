@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --app-bg: #f5f7fa;
   --panel-bg: #ffffff;
   --panel-border: #e4e7ed;
@@ -100,6 +100,21 @@ select {
   gap: 8px 16px;
 }
 
+/* 选择类控件不超出栅格/卡片：列使用 minmax(0,1fr) 时，单元格需 min-width:0；控件 max-width:100% */
+.page-form-grid > *,
+.page-summary-grid > * {
+  min-width: 0;
+}
+
+.el-form-item__content > .el-select,
+.el-form-item__content > .el-select-v2,
+.el-form-item__content > .el-date-editor,
+.el-form-item__content > .el-input,
+.el-form-item__content > .el-cascader {
+  width: 100%;
+  max-width: 100%;
+}
+
 @media (max-width: 1280px) {
   .page-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -110,5 +125,25 @@ select {
   .page-form-grid,
   .page-summary-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* F02/F03 查询按钮区统一样式（重置 + 查询） */
+.fdc-query-action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #dbe0e6;
+}
+
+@media (max-width: 768px) {
+  .fdc-query-action-buttons {
+    flex-direction: column;
+  }
+
+  .fdc-query-action-buttons > .el-button {
+    width: 100%;
   }
 }

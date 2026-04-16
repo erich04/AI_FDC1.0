@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-page">
     <div class="page-summary-grid">
       <el-card class="summary-card" shadow="never">
@@ -40,7 +40,16 @@
     </el-card>
 
     <el-card class="page-section-card" shadow="never">
-      <template #header>盘点任务</template>
+      <template #header>
+        <div class="page-toolbar">
+          <div class="page-toolbar__left"><span>盘点任务</span></div>
+          <div class="page-toolbar__right">
+            <el-tooltip content="列设置" placement="top"><el-button circle :icon="Setting" @click="notifyColumnSetting" /></el-tooltip>
+            <el-tooltip :content="listFullPage ? '退出全页面展示' : '列表栏信息全页面展示'" placement="top"><el-button circle :icon="FullScreen" @click="listFullPage = !listFullPage" /></el-tooltip>
+            <el-tooltip content="刷新数据" placement="top"><el-button circle :icon="RefreshRight" @click="loadData" /></el-tooltip>
+          </div>
+        </div>
+      </template>
       <el-table :data="tasks" stripe border>
         <el-table-column prop="taskCode" label="任务号" min-width="140" />
         <el-table-column prop="warehouseCode" label="库房" width="120" />
@@ -61,6 +70,7 @@
 </template>
 
 <script setup lang="ts">
+import { FullScreen, RefreshRight, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { createInventoryTask, fetchInventoryTasks, type InventoryCreateCommand } from '../../api/modules/lifecycle'
@@ -68,6 +78,7 @@ import type { InventoryTask } from '../../types'
 
 const form = reactive<InventoryCreateCommand>({ warehouseCode: 'WH-001', inventoryScope: '', owner: '档案管理员', dueDate: '' })
 const tasks = ref<InventoryTask[]>([])
+const listFullPage = ref(false)
 const activeTaskCount = computed(() => tasks.value.filter(item => item.taskStatus !== 'COMPLETED').length)
 const abnormalCount = computed(() => tasks.value.reduce((sum, item) => sum + item.abnormalCount, 0))
 const ownerCount = computed(() => new Set(tasks.value.map(item => item.owner)).size)
@@ -88,6 +99,10 @@ const submit = async () => {
   ElMessage.success('盘点任务已创建')
   resetForm()
   await loadData()
+}
+
+const notifyColumnSetting = () => {
+  ElMessage.info('列设置入口已保留，当前版本不展示具体列配置面板。')
 }
 
 onMounted(loadData)
