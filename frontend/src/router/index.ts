@@ -10,6 +10,8 @@ import BaseDataCompanyProjectDictionaryView from '../views/base-data/BaseDataCom
 import BaseDataCompanyProjectListView from '../views/base-data/BaseDataCompanyProjectListView.vue'
 import BaseDataDocumentOrganizationView from '../views/base-data/BaseDataDocumentOrganizationView.vue'
 import BaseDataWarehouseView from '../views/base-data/BaseDataWarehouseView.vue'
+import BusinessModuleConfigView from '../views/base-data/BusinessModuleConfigView.vue'
+import CompanyInfoView from '../views/base-data/CompanyInfoView.vue'
 import DictionaryManagementView from '../views/base-data/DictionaryManagementView.vue'
 import DocumentTypeManagementView from '../views/base-data/DocumentTypeManagementView.vue'
 import BorrowingView from '../views/borrowing/BorrowingView.vue'
@@ -64,7 +66,78 @@ const router = createRouter({
             breadcrumb: ['我的工作空间', '我的草稿']
           }
         },
-        {          path: 'base-data/warehouse',          name: 'base-data-warehouse',          component: BaseDataWarehouseView,          meta: {            title: '库房管理',            breadcrumb: ['配置中心', '库房管理']          }        },        {          path: 'base-data/document-types',          name: 'base-data-document-types',          component: DocumentTypeManagementView,          meta: {            title: '业务模块管理',            breadcrumb: ['配置中心', '业务模块管理']          }        },        {          path: 'base-data/dictionaries',          name: 'base-data-dictionaries',          component: DictionaryManagementView,          meta: {            title: '字典管理',            breadcrumb: ['配置中心', '字典管理']          }        },        {          path: 'base-data/document-organizations',          name: 'base-data-document-organizations',          component: BaseDataDocumentOrganizationView,          meta: {            title: '文档组织管理',            breadcrumb: ['配置中心', '文档组织管理']          }        },        {          path: 'base-data/archive-flow-rules',          name: 'base-data-archive-flow-rules',          component: BaseDataArchiveFlowRuleView,          meta: {            title: '归档规则管理',            breadcrumb: ['配置中心', '归档规则管理']          }        },        {          path: 'base-data/company-projects',          name: 'base-data-company-project-list',          component: BaseDataCompanyProjectListView,          meta: {            title: '公司管理',            breadcrumb: ['配置中心', '公司管理']          }        },        {          path: 'base-data/company-projects/create',          name: 'base-data-company-project-create',          component: BaseDataCompanyProjectDetailView,          meta: {            title: '新建公司',            breadcrumb: ['配置中心', '公司管理', '新建']          }        },        {          path: 'base-data/company-projects/:companyProjectCode/view',          name: 'base-data-company-project-view',          component: BaseDataCompanyProjectDetailView,          meta: {            title: '查看公司',            breadcrumb: ['配置中心', '公司管理', '查看']          }        },        {          path: 'base-data/company-projects/:companyProjectCode/edit',          name: 'base-data-company-project-edit',          component: BaseDataCompanyProjectDetailView,          meta: {            title: '编辑公司',            breadcrumb: ['配置中心', '公司管理', '编辑']          }        },        {          path: 'base-data/company-project-dictionaries',          name: 'base-data-company-project-dictionaries',          component: BaseDataCompanyProjectDictionaryView,          meta: {            title: '公司字典管理',            breadcrumb: ['配置中心', '公司字典管理']          }        },
+        {
+          path: 'base-data/warehouse',
+          name: 'base-data-warehouse',
+          component: BaseDataWarehouseView,
+          meta: { title: '库房管理', breadcrumb: ['配置中心', '库房管理'] }
+        },
+        {
+          path: 'base-data/document-types',
+          name: 'base-data-document-types',
+          component: DocumentTypeManagementView,
+          meta: { title: '业务模块管理', breadcrumb: ['配置中心', '业务模块管理'] }
+        },
+        {
+          path: 'base-data/business-modules',
+          name: 'base-data-business-modules',
+          component: BusinessModuleConfigView,
+          meta: { title: '业务模块配置', breadcrumb: ['配置中心', '业务模块配置'] }
+        },
+        {
+          path: 'base-data/company-infos',
+          name: 'base-data-company-infos',
+          component: CompanyInfoView,
+          meta: { title: '公司管理', breadcrumb: ['配置中心', '公司管理'] }
+        },
+        {
+          path: 'base-data/dictionaries',
+          name: 'base-data-dictionaries',
+          component: DictionaryManagementView,
+          meta: { title: '字典管理', breadcrumb: ['配置中心', '字典管理'] }
+        },
+        {
+          path: 'base-data/document-organizations',
+          name: 'base-data-document-organizations',
+          component: BaseDataDocumentOrganizationView,
+          meta: { title: '文档组织管理', breadcrumb: ['配置中心', '文档组织管理'] }
+        },
+        {
+          path: 'base-data/archive-flow-rules',
+          name: 'base-data-archive-flow-rules',
+          component: BaseDataArchiveFlowRuleView,
+          meta: { title: '归档规则管理', breadcrumb: ['配置中心', '归档规则管理'] }
+        },
+        {
+          path: 'base-data/company-projects',
+          name: 'base-data-company-project-list',
+          component: BaseDataCompanyProjectListView,
+          meta: { title: '公司项目管理', breadcrumb: ['配置中心', '公司项目管理'] }
+        },
+        {
+          path: 'base-data/company-projects/create',
+          name: 'base-data-company-project-create',
+          component: BaseDataCompanyProjectDetailView,
+          meta: { title: '新建公司项目', breadcrumb: ['配置中心', '公司项目管理', '新建'] }
+        },
+        {
+          path: 'base-data/company-projects/:companyProjectCode/view',
+          name: 'base-data-company-project-view',
+          component: BaseDataCompanyProjectDetailView,
+          meta: { title: '查看公司项目', breadcrumb: ['配置中心', '公司项目管理', '查看'] }
+        },
+        {
+          path: 'base-data/company-projects/:companyProjectCode/edit',
+          name: 'base-data-company-project-edit',
+          component: BaseDataCompanyProjectDetailView,
+          meta: { title: '编辑公司项目', breadcrumb: ['配置中心', '公司项目管理', '编辑'] }
+        },
+        {
+          path: 'base-data/company-project-dictionaries',
+          name: 'base-data-company-project-dictionaries',
+          component: BaseDataCompanyProjectDictionaryView,
+          meta: { title: '公司字典管理', breadcrumb: ['配置中心', '公司字典管理'] }
+        },
         {
           path: 'archive-management/create',
           name: 'archive-management-create',

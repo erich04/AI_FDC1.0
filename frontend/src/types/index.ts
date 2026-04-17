@@ -441,6 +441,81 @@ export interface OrgCategoryDictionaryItem {
   enabledFlag: string
 }
 
+export interface CountryRegionItem {
+  regionCode: string
+  regionName: string
+  regionLevel: 'COUNTRY' | 'PROVINCE' | 'CITY'
+  parentRegionCode?: string
+  sortOrder?: number
+  enabledFlag?: 'Y' | 'N'
+}
+
+export interface DocumentTypeConfig {
+  documentTypeId: number
+  docTypeCode: string
+  docTypeDescription: string
+  enableFlag: 'Y' | 'N'
+  tenantid?: number
+  createdBy?: number
+  creationDate?: string
+  lastUpdatedBy?: number
+  lastUpdateDate?: string
+}
+
+export interface CompanyInfo {
+  companyId: number
+  companyCode: string
+  companyName: string
+  region?: string
+  representativeOffice?: string
+  country?: string
+  description?: string
+  tags?: string[]
+  enabledFlag: 'Y' | 'N'
+  lastUpdateDate?: string
+}
+
+export interface CompanyTag {
+  tagId: number
+  tagValue: string
+  enabledFlag: 'Y' | 'N'
+}
+
+export interface BusinessModuleNode {
+  id: number
+  moduleCode: string
+  moduleName: string
+  parentCode?: string
+  levelNum: number
+  ancestorPath?: string
+  enabledFlag: 'Y' | 'N'
+  securityLevel?: string
+  integrationType?: string
+  description?: string
+  remark?: string
+  sortOrder: number
+  lastUpdatedBy?: number
+  lastUpdateDate?: string
+  children: BusinessModuleNode[]
+}
+
+export interface BusinessModuleExtField {
+  fieldId: number
+  fieldCode: string
+  moduleCode: string
+  fieldScope: 'BASIC' | 'ATTACHMENT'
+  applicationFunctions?: ('应收' | '移交')[]
+  extAttribute?: string
+  fieldName: string
+  englishFieldName?: string
+  dataType: 'TEXT' | 'NUMBER' | 'DATE' | 'DATETIME' | 'DICT' | 'BOOLEAN'
+  queryFlag: 'Y' | 'N'
+  requiredFlag: 'Y' | 'N'
+  enabledFlag: 'Y' | 'N'
+  sortOrder: number
+  lastUpdateDate?: string
+}
+
 
 export interface ArchiveFlowRuleOption {
   code: string

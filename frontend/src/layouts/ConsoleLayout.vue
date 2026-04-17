@@ -50,9 +50,11 @@
               <el-icon><Files /></el-icon>
               <span>配置中心</span>
             </template>
-            <el-menu-item index="/base-data/company-projects">公司管理</el-menu-item>
+            <el-menu-item index="/base-data/company-infos">公司管理</el-menu-item>
+            <el-menu-item index="/base-data/company-projects">公司项目管理</el-menu-item>
             <el-menu-item index="/base-data/document-organizations">文档组织管理</el-menu-item>
             <el-menu-item index="/base-data/document-types">业务模块管理</el-menu-item>
+            <el-menu-item index="/base-data/business-modules">业务模块配置</el-menu-item>
             <el-menu-item index="/base-data/archive-flow-rules">归档规则管理</el-menu-item>
             <el-menu-item index="/base-data/warehouse">库房管理</el-menu-item>
             <el-menu-item index="/base-data/company-project-dictionaries">公司字典</el-menu-item>
@@ -305,7 +307,11 @@ const messages = ref<HeaderMessage[]>([
 
 const todoCount = computed(() => 12)
 const todoBadge = computed(() => (todoCount.value > 99 ? '99+' : todoCount.value))
-const activeMenu = computed(() => route.path.startsWith('/base-data/company-projects') ? '/base-data/company-projects' : route.path)
+const activeMenu = computed(() => {
+  if (route.path.startsWith('/base-data/company-infos')) return '/base-data/company-infos'
+  if (route.path.startsWith('/base-data/company-projects')) return '/base-data/company-projects'
+  return route.path
+})
 const pageTitle = computed(() => (route.meta.title as string) ?? '档案智能工作台')
 const hideLayoutPageHead = computed(() => route.meta.hidePageHead === true)
 const usePageContextBar = computed(
