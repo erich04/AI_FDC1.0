@@ -57,6 +57,7 @@
             <el-menu-item index="/base-data/business-modules">业务模块配置</el-menu-item>
             <el-menu-item index="/base-data/archive-flow-rules">归档规则管理</el-menu-item>
             <el-menu-item index="/base-data/warehouse">库房管理</el-menu-item>
+            <el-menu-item index="/base-data/department-signatories">权签人维护</el-menu-item>
             <el-menu-item index="/base-data/company-project-dictionaries">公司字典</el-menu-item>
             <el-menu-item index="/base-data/dictionaries">字典管理</el-menu-item>
           </el-sub-menu>
@@ -77,6 +78,7 @@
             </el-sub-menu>
             <el-menu-item index="/archive-management/ai-search">AI+档案</el-menu-item>
             <el-menu-item index="/archive-management/borrow">借阅文档</el-menu-item>
+            <el-menu-item index="/archive-management/borrow-renew">续借申请</el-menu-item>
             <el-menu-item index="/archive-management/bind">成册整理</el-menu-item>
             <el-menu-item index="/archive-management/storage">入库上架</el-menu-item>
           </el-sub-menu>
@@ -361,6 +363,10 @@ const pageDescription = computed(() => {
       return '集中展示 AI 回答、相关文档、命中依据和右侧预览，承接自然语言搜索结果。'
     case '/archive-management/borrow':
       return '统一管理档案借阅申请、审批、借出与归还过程。'
+    case '/archive-management/borrow-renew':
+      return '统一处理续借申请发起、审批流转和续借状态跟踪。'
+    case '/base-data/department-signatories':
+      return '维护部门层级权签人，用于借阅与流程审批自动带出处理人。'
     case '/security/user-role-config':
       return '配置用户系统角色及其管辖的公司、业务模块等数据范围。'
     case '/governance':
