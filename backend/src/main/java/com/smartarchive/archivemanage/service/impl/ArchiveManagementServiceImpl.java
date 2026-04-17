@@ -82,6 +82,8 @@ import com.smartarchive.archiveflow.domain.ArchiveFlowRule;
 import com.smartarchive.archiveflow.domain.SecurityLevelDictionary;
 import com.smartarchive.archiveflow.mapper.ArchiveFlowRuleMapper;
 import com.smartarchive.archiveflow.mapper.SecurityLevelDictionaryMapper;
+import com.smartarchive.businessmodule.domain.BusinessModule;
+import com.smartarchive.businessmodule.mapper.BusinessModuleMapper;
 import com.smartarchive.common.audit.dto.OperationAuditAttachment;
 import com.smartarchive.common.audit.service.OperationAuditService;
 import com.smartarchive.common.exception.BusinessException;
@@ -91,8 +93,6 @@ import com.smartarchive.documentorganization.domain.DocumentOrganization;
 import com.smartarchive.documentorganization.domain.DocumentOrganizationCity;
 import com.smartarchive.documentorganization.mapper.DocumentOrganizationCityMapper;
 import com.smartarchive.documentorganization.mapper.DocumentOrganizationMapper;
-import com.smartarchive.documenttype.domain.DocumentType;
-import com.smartarchive.documenttype.mapper.DocumentTypeMapper;
 import com.smartarchive.file.domain.FdcFile;
 import com.smartarchive.file.mapper.FdcFileMapper;
 import com.smartarchive.workspace.dto.WorkspaceIoJobCreateCommand;
@@ -214,7 +214,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private final StorageBatchItemMapper storageBatchItemMapper;
     private final StorageLedgerMapper storageLedgerMapper;
     private final AiModelConfigMapper aiModelConfigMapper;
-    private final DocumentTypeMapper documentTypeMapper;
+    private final BusinessModuleMapper businessModuleMapper;
     private final CompanyProjectMapper companyProjectMapper;
     private final DocumentOrganizationMapper documentOrganizationMapper;
     private final DocumentOrganizationCityMapper documentOrganizationCityMapper;
@@ -251,7 +251,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     public ArchiveCreateOptionsResponse loadCreateOptions() {
         ArchiveCreateOptionsResponse response = new ArchiveCreateOptionsResponse();
         response.setCompanyProjects(listEnabledCompanyProjects());
-        response.setDocumentTypes(listEnabledDocumentTypes());
+        response.setDocumentTypes(listEnabledBusinessModules());
         response.setArchiveDestinations(listEnabledCities());
         response.setDocumentOrganizations(listEnabledDocumentOrganizations());
         response.setSecurityLevels(listSecurityLevels());
@@ -269,7 +269,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     @Override
     public ArchiveDefaultResolveResponse resolveDefaults(String companyProjectCode, String documentTypeCode, String customRule, String archiveDestination) {
         CompanyProject companyProject = requireCompanyProject(companyProjectCode);
-        requireDocumentType(documentTypeCode);
+        requireBusinessModule(documentTypeCode);
         List<ArchiveFlowRule> rules = archiveFlowRuleMapper.selectList(new LambdaQueryWrapper<ArchiveFlowRule>()
             .eq(ArchiveFlowRule::getCompanyProjectCode, companyProjectCode)
             .eq(ArchiveFlowRule::getDocumentTypeCode, documentTypeCode)
@@ -279,7 +279,6 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         ArchiveDefaultResolveResponse response = new ArchiveDefaultResolveResponse();
         response.setCountryCode(companyProject.getCountryCode());
         if (bestMatch != null) {
-            response.setSecurityLevelCode(bestMatch.getSecurityLevelCode());
             response.setArchiveDestination(StringUtils.hasText(archiveDestination) ? archiveDestination : bestMatch.getArchiveDestination());
             response.setDocumentOrganizationCode(bestMatch.getDocumentOrganizationCode());
             response.setRetentionPeriodYears(bestMatch.getRetentionPeriodYears());
@@ -391,7 +390,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         validateRequired(command);
         String documentTypeCode = requireText(command.getDocumentTypeCode(), "documentTypeCode");
         CompanyProject companyProject = requireCompanyProject(command.getCompanyProjectCode());
-        requireDocumentType(documentTypeCode);
+        requireBusinessModule(documentTypeCode);
         ArchiveCreateSession session = StringUtils.hasText(command.getSessionCode()) ? requireSession(command.getSessionCode()) : null;
         List<ArchiveAttachment> sessionAttachments = session == null ? List.of() : listSessionAttachments(session.getSessionId());
         List<ArchiveAttachment> electronicAttachments = sessionAttachments.stream().filter(item -> "ELECTRONIC".equals(item.getAttachmentRole())).toList();
@@ -477,7 +476,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     }
 
     private ArchiveQueryResponse queryArchivesFromDocumentTable(ArchiveQueryCommand command) {
-        Map<String, DocumentType> documentTypeMap = listDocumentTypeMap();
+        Map<String, BusinessModule> businessModuleMap = listBusinessModuleMap();
         Map<String, String> carrierTypeNameMap = listCarrierTypeNameMap();
         StringBuilder sql = new StringBuilder("""
             select doc_id, doc_biz_no, company_code, company_name, biz_module_code, start_period, end_period,
@@ -592,8 +591,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             SecurityLevelResolver.Resolved secLv = securityLevelResolver.resolve(rs.getString("security_level"));
             return ArchiveSummaryResponse.builder()
                 .archiveId(rs.getLong("doc_id"))
-                .documentTypeCode(resolveRootDocumentTypeCode(businessModuleCode, documentTypeMap))
-                .documentTypeName(resolveRootDocumentTypeName(businessModuleCode, documentTypeMap))
+                .documentTypeCode(resolveRootBusinessModuleCode(businessModuleCode, businessModuleMap))
+                .documentTypeName(resolveRootBusinessModuleName(businessModuleCode, businessModuleMap))
                 .companyProjectCode(null)
                 .companyProjectName(rs.getString("company_name"))
                 .beginPeriod(formatYearMonth(startPeriod))
@@ -612,7 +611,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 .carrierTypeCode(carrierTypeNameMap.getOrDefault(rs.getString("carrier_type"), rs.getString("carrier_type")))
                 .remark(rs.getString("description"))
                 .documentOrganizationCode(rs.getString("doc_organization_code"))
-                .archiveTypeCode(resolveBusinessModuleName(businessModuleCode, documentTypeMap))
+                .archiveTypeCode(resolveBusinessModuleDisplayName(businessModuleCode, businessModuleMap))
                 .documentVisibility(StringUtils.hasText(rs.getString("attr1")) ? rs.getString("attr1").trim() : "是")
                 .lifecycleStatus(lifecycleStatus)
                 .archiveStatus("ARCHIVED".equalsIgnoreCase(lifecycleStatus) ? "已归档" : ("DRAFT".equalsIgnoreCase(lifecycleStatus) ? "草稿" : "未归档"))
@@ -866,7 +865,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             }
             String docTypeForFlow = StringUtils.hasText(command.getDocumentTypeCode())
                 ? command.getDocumentTypeCode().trim()
-                : resolveRootDocumentTypeCode(trimToNull(currentBizModule), listDocumentTypeMap());
+                : resolveRootBusinessModuleCode(trimToNull(currentBizModule), listBusinessModuleMap());
             if (!draft) {
                 docTypeForFlow = requireText(docTypeForFlow, "documentTypeCode");
             } else if (!StringUtils.hasText(docTypeForFlow)) {
@@ -920,7 +919,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             String carrier = normalizeCarrierType(StringUtils.hasText(command.getCarrierTypeCode()) ? command.getCarrierTypeCode() : "ELECTRONIC");
             String securityFlowOrInput = StringUtils.hasText(command.getSecurityLevelCode())
                 ? command.getSecurityLevelCode().trim()
-                : flow.getSecurityLevelCode();
+                : null;
             if (!StringUtils.hasText(securityFlowOrInput)) {
                 securityFlowOrInput = "INTERNAL";
             }
@@ -1730,7 +1729,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private String buildPendingExportCsv(List<Long> docIds, String exportScope) {
         boolean pendingArchiveScope = "PENDING_ARCHIVE".equalsIgnoreCase(trimToNull(exportScope));
         String inSql = docIds.stream().map(String::valueOf).collect(Collectors.joining(","));
-        Map<String, DocumentType> documentTypeMap = listDocumentTypeMap();
+        Map<String, BusinessModule> businessModuleMap = listBusinessModuleMap();
         Map<String, String> carrierTypeNameMap = listCarrierTypeNameMap();
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
             """
@@ -1779,15 +1778,15 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         }
         for (Map<String, Object> row : rows) {
             String bizModuleCode = Objects.toString(row.get("biz_module_code"), "");
-            String documentTypeCode = resolveRootDocumentTypeCode(bizModuleCode, documentTypeMap);
-            String documentTypeName = resolveRootDocumentTypeName(bizModuleCode, documentTypeMap);
+            String documentTypeCode = resolveRootBusinessModuleCode(bizModuleCode, businessModuleMap);
+            String documentTypeName = resolveRootBusinessModuleName(bizModuleCode, businessModuleMap);
             SecurityLevelResolver.Resolved secLv = securityLevelResolver.resolve(Objects.toString(row.get("security_level"), ""));
             String lifecycleStatus = Objects.toString(row.get("lifecycle_status"), "");
             List<Object> exportValues = new ArrayList<>(Stream.of(
                 StringUtils.hasText(documentTypeName) ? documentTypeName : documentTypeCode,
                 row.get("doc_biz_no"),
                 row.get("company_name"),
-                resolveBusinessModuleName(bizModuleCode, documentTypeMap),
+                resolveBusinessModuleDisplayName(bizModuleCode, businessModuleMap),
                 row.get("start_period"),
                 row.get("end_period"),
                 row.get("arch_place_alpha2_code"),
@@ -1861,7 +1860,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             String draftLine = buildPendingExportCsvLineForDraft(
                 draftId,
                 pendingArchiveScope,
-                documentTypeMap,
+                businessModuleMap,
                 carrierTypeNameMap
             );
             if (draftLine != null) {
@@ -1877,7 +1876,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private String buildPendingExportCsvLineForDraft(
         long draftId,
         boolean pendingArchiveScope,
-        Map<String, DocumentType> documentTypeMap,
+        Map<String, BusinessModule> documentTypeMap,
         Map<String, String> carrierTypeNameMap
     ) {
         DraftExportMeta meta = jdbcTemplate.query(
@@ -1912,8 +1911,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             return null;
         }
         String bizModule = trimToNull(cmd.getArchiveTypeCode()) != null ? cmd.getArchiveTypeCode().trim() : "";
-        String documentTypeCode = resolveRootDocumentTypeCode(bizModule, documentTypeMap);
-        String documentTypeName = resolveRootDocumentTypeName(bizModule, documentTypeMap);
+        String documentTypeCode = resolveRootBusinessModuleCode(bizModule, documentTypeMap);
+        String documentTypeName = resolveRootBusinessModuleName(bizModule, documentTypeMap);
         SecurityLevelResolver.Resolved secLv = securityLevelResolver.resolve(Objects.toString(cmd.getSecurityLevelCode(), ""));
         Map<String, String> attrCols = buildAttrColumnsFromExt(cmd.getExtValues());
         Map<String, Object> geoRow = loadCompanyGeoRowForExport(trimToNull(cmd.getCompanyProjectCode()));
@@ -1928,7 +1927,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             StringUtils.hasText(documentTypeName) ? documentTypeName : documentTypeCode,
             cmd.getBusinessCode(),
             companyName,
-            resolveBusinessModuleName(bizModule, documentTypeMap),
+            resolveBusinessModuleDisplayName(bizModule, documentTypeMap),
             Objects.toString(cmd.getBeginPeriod(), ""),
             Objects.toString(cmd.getEndPeriod(), ""),
             Objects.toString(cmd.getArchiveDestination(), ""),
@@ -2296,30 +2295,30 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
 
     /**
      * 业务模块须为配置树中二级或三级节点（排除一级根节点）；须启用且归属所选一级文档类型。
-     * 与 {@link com.smartarchive.documenttype.service.impl.DocumentTypeServiceImpl#listLevel3Modules} 以三级为主一致，
+     * 业务模块校验以三级节点优先，
      * 但兼容历史数据中 biz_module_code 落在二级节点的情况。
      */
     private void validateBusinessModuleUnderRoot(String moduleTypeCode, String rootCode) {
-        Map<String, DocumentType> map = listDocumentTypeMap();
-        DocumentType module = documentTypeMapper.selectOne(new LambdaQueryWrapper<DocumentType>()
-            .eq(DocumentType::getTypeCode, moduleTypeCode.trim())
+        Map<String, BusinessModule> map = listBusinessModuleMap();
+        BusinessModule module = businessModuleMapper.selectOne(new LambdaQueryWrapper<BusinessModule>()
+            .eq(BusinessModule::getModuleCode, moduleTypeCode.trim())
             .last("limit 1"));
         if (module == null) {
-            throw new BusinessException("archiveTypeCode is not a valid document type code in business module tree");
+            throw new BusinessException("archiveTypeCode is not a valid business module code in business module tree");
         }
         if (!"Y".equals(module.getEnabledFlag())) {
             throw new BusinessException("archiveTypeCode refers to a disabled business module");
         }
         Integer level = module.getLevelNum();
         if (level != null && level < 2) {
-            throw new BusinessException("archiveTypeCode cannot be a level-1 (root) document type; choose a level-2 or level-3 module");
+            throw new BusinessException("archiveTypeCode cannot be a level-1 (root) business module; choose a level-2 or level-3 module");
         }
         if (level != null && level > 3) {
             throw new BusinessException("archiveTypeCode must be at most level 3 in the business module tree");
         }
-        String resolvedRoot = resolveRootDocumentTypeCode(moduleTypeCode, map);
+        String resolvedRoot = resolveRootBusinessModuleCode(moduleTypeCode, map);
         if (!rootCode.trim().equals(resolvedRoot)) {
-            throw new BusinessException("archiveTypeCode must belong to the selected document type");
+            throw new BusinessException("archiveTypeCode must belong to the selected root business module");
         }
     }
 
@@ -2494,11 +2493,11 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         LocalDateTime lastUpdate,
         long createdById
     ) {
-        Map<String, DocumentType> documentTypeMap = listDocumentTypeMap();
+        Map<String, BusinessModule> businessModuleMap = listBusinessModuleMap();
         String bizModuleCode = trimToNull(c.getArchiveTypeCode());
         String docTypeL1 = trimToNull(c.getDocumentTypeCode());
         if (!StringUtils.hasText(docTypeL1) && StringUtils.hasText(bizModuleCode)) {
-            docTypeL1 = resolveRootDocumentTypeCode(bizModuleCode, documentTypeMap);
+            docTypeL1 = resolveRootBusinessModuleCode(bizModuleCode, businessModuleMap);
         }
         CompanyProject cp = null;
         if (StringUtils.hasText(c.getCompanyProjectCode())) {
@@ -2527,7 +2526,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             .archiveId(draftId)
             .archiveCode(String.valueOf(draftId))
             .documentTypeCode(docTypeL1 != null ? docTypeL1 : "")
-            .documentTypeName(StringUtils.hasText(docTypeL1) ? resolveRootDocumentTypeName(docTypeL1, documentTypeMap) : "")
+            .documentTypeName(StringUtils.hasText(docTypeL1) ? resolveRootBusinessModuleName(docTypeL1, businessModuleMap) : "")
             .companyProjectCode(c.getCompanyProjectCode() != null ? c.getCompanyProjectCode() : "")
             .companyProjectName(cp != null ? cp.getCompanyProjectName() : "")
             .beginPeriod(beginYm != null && beginYm.length() >= 7 ? beginYm.substring(0, 7) : (beginYm != null ? beginYm : ""))
@@ -2547,7 +2546,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             .remark(c.getRemark())
             .documentOrganizationCode(c.getDocumentOrganizationCode() != null ? c.getDocumentOrganizationCode() : "")
             .retentionPeriodYears(c.getRetentionPeriodYears() != null ? c.getRetentionPeriodYears() : 10)
-            .archiveTypeCode(StringUtils.hasText(bizModuleCode) ? resolveBusinessModuleName(bizModuleCode, documentTypeMap) : "")
+            .archiveTypeCode(StringUtils.hasText(bizModuleCode) ? resolveBusinessModuleDisplayName(bizModuleCode, businessModuleMap) : "")
             .businessModuleTypeCode(bizModuleCode != null ? bizModuleCode : "")
             .archiveStatus("草稿")
             .lifecycleStatus("DRAFT")
@@ -2749,7 +2748,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             requireText(command.getBusinessCode(), "businessCode");
             requireText(command.getBeginPeriod(), "beginPeriod");
             requireText(command.getDocumentDate(), "documentDate");
-            requireDocumentType(docTypeL1);
+            requireBusinessModule(docTypeL1);
             validateBusinessModuleUnderRoot(archiveTypeL3, docTypeL1);
             CompanyProject cp = requireCompanyProject(companyCode);
             String archDestParam = StringUtils.hasText(command.getArchiveDestination()) ? command.getArchiveDestination().trim() : null;
@@ -2765,7 +2764,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             }
             String securityFlowOrInput = StringUtils.hasText(command.getSecurityLevelCode())
                 ? command.getSecurityLevelCode().trim()
-                : flow.getSecurityLevelCode();
+                : null;
             if (!StringUtils.hasText(securityFlowOrInput)) {
                 securityFlowOrInput = "INTERNAL";
             }
@@ -3110,7 +3109,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     }
 
     private ArchiveSummaryResponse loadArchiveDetailFromDocumentTable(Long archiveId) {
-        Map<String, DocumentType> documentTypeMap = listDocumentTypeMap();
+        Map<String, BusinessModule> businessModuleMap = listBusinessModuleMap();
         Map<String, String> carrierTypeNameMap = listCarrierTypeNameMap();
         String detailSql = """
             select doc_id, doc_biz_no, fdc_document_t.company_code, company_name, biz_module_code, start_period, end_period,
@@ -3157,8 +3156,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 return ArchiveSummaryResponse.builder()
                     .archiveId(rs.getLong("doc_id"))
                     .archiveCode(String.valueOf(rs.getLong("doc_id")))
-                    .documentTypeCode(resolveRootDocumentTypeCode(businessModuleCode, documentTypeMap))
-                    .documentTypeName(resolveRootDocumentTypeName(businessModuleCode, documentTypeMap))
+                    .documentTypeCode(resolveRootBusinessModuleCode(businessModuleCode, businessModuleMap))
+                    .documentTypeName(resolveRootBusinessModuleName(businessModuleCode, businessModuleMap))
                     .companyProjectCode(rs.getString("company_code"))
                     .companyProjectName(rs.getString("company_name"))
                     .beginPeriod(formatYearMonth(startPeriod))
@@ -3177,7 +3176,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                     .carrierTypeCode(carrierTypeNameMap.getOrDefault(rs.getString("carrier_type"), rs.getString("carrier_type")))
                     .remark(rs.getString("description"))
                     .documentOrganizationCode(rs.getString("doc_organization_code"))
-                    .archiveTypeCode(resolveBusinessModuleName(businessModuleCode, documentTypeMap))
+                    .archiveTypeCode(resolveBusinessModuleDisplayName(businessModuleCode, businessModuleMap))
                     .businessModuleTypeCode(businessModuleCode)
                     .documentVisibility(StringUtils.hasText(visCol) ? visCol : "是")
                     .lifecycleStatus(lifecycleStatus)
@@ -3275,7 +3274,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         }
 
         Map<Long, Map<String, String>> extValueMap = loadExtValueMap(command.getArchiveIds());
-        Map<String, String> typeNameMap = listEnabledDocumentTypes().stream()
+        Map<String, String> typeNameMap = listEnabledBusinessModules().stream()
             .collect(Collectors.toMap(LabelValueOption::getCode, LabelValueOption::getName, (left, right) -> left, LinkedHashMap::new));
 
         String initiatorId = StringUtils.hasText(command.getInitiatorId()) ? command.getInitiatorId().trim() : String.valueOf(SYSTEM_OPERATOR_ID);
@@ -3625,16 +3624,16 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         return companyProjectMapper.selectList(new LambdaQueryWrapper<CompanyProject>().eq(CompanyProject::getDeleteFlag, "N").eq(CompanyProject::getEnabledFlag, "Y").orderByAsc(CompanyProject::getCompanyProjectCode)).stream().map(item -> option(item.getCompanyProjectCode(), item.getCompanyProjectName())).toList();
     }
 
-    private List<LabelValueOption> listEnabledDocumentTypes() {
-        return documentTypeMapper
-            .selectList(new LambdaQueryWrapper<DocumentType>()
-                .eq(DocumentType::getDeleteFlag, "N")
-                .eq(DocumentType::getEnabledFlag, "Y")
-                .eq(DocumentType::getLevelNum, 1)
-                .orderByAsc(DocumentType::getSortOrder)
-                .orderByAsc(DocumentType::getTypeCode))
+    private List<LabelValueOption> listEnabledBusinessModules() {
+        return businessModuleMapper
+            .selectList(new LambdaQueryWrapper<BusinessModule>()
+                .eq(BusinessModule::getDeleteFlag, "N")
+                .eq(BusinessModule::getEnabledFlag, "Y")
+                .eq(BusinessModule::getLevelNum, 1)
+                .orderByAsc(BusinessModule::getSortOrder)
+                .orderByAsc(BusinessModule::getModuleCode))
             .stream()
-            .map(item -> option(item.getTypeCode(), item.getTypeName()))
+            .map(item -> option(item.getModuleCode(), item.getModuleName()))
             .toList();
     }
 
@@ -4208,12 +4207,16 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         return session;
     }
 
-    private DocumentType requireDocumentType(String documentTypeCode) {
-        DocumentType type = documentTypeMapper.selectOne(new LambdaQueryWrapper<DocumentType>().eq(DocumentType::getTypeCode, documentTypeCode).eq(DocumentType::getDeleteFlag, "N").eq(DocumentType::getEnabledFlag, "Y").last("limit 1"));
-        if (type == null) {
-            throw new BusinessException("Document type does not exist or is disabled");
+    private BusinessModule requireBusinessModule(String documentTypeCode) {
+        BusinessModule module = businessModuleMapper.selectOne(new LambdaQueryWrapper<BusinessModule>()
+            .eq(BusinessModule::getModuleCode, documentTypeCode)
+            .eq(BusinessModule::getDeleteFlag, "N")
+            .eq(BusinessModule::getEnabledFlag, "Y")
+            .last("limit 1"));
+        if (module == null) {
+            throw new BusinessException("Business module does not exist or is disabled");
         }
-        return type;
+        return module;
     }
 
     private CompanyProject requireCompanyProject(String companyProjectCode) {
@@ -4377,7 +4380,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     }
 
     private ArchiveSummaryResponse buildArchiveSummary(ArchiveRecord archive, Map<String, String> extValues, List<ArchiveAttachment> attachments) {
-        Map<String, DocumentType> documentTypeMap = listDocumentTypeMap();
+        Map<String, BusinessModule> businessModuleMap = listBusinessModuleMap();
         Map<String, String> companyNameMap = companyProjectMapper.selectList(new LambdaQueryWrapper<CompanyProject>().eq(CompanyProject::getDeleteFlag, "N")).stream().collect(Collectors.toMap(CompanyProject::getCompanyProjectCode, CompanyProject::getCompanyProjectName, (left, right) -> left));
         Map<String, CompanyGeoMeta> companyGeoMetaMap = listCompanyGeoMetaMap();
         Map<Long, String> userNameMap = listUserNameMap();
@@ -4391,7 +4394,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             normalizedExtValues.put("companyTag", companyGeoMeta.companyTag());
         }
         SecurityLevelResolver.Resolved secLv = securityLevelResolver.resolve(archive.getSecurityLevelCode());
-        return ArchiveSummaryResponse.builder().archiveId(archive.getArchiveId()).archiveCode(archive.getArchiveCode()).documentTypeCode(resolveRootDocumentTypeCode(archive.getDocumentTypeCode(), documentTypeMap)).documentTypeName(resolveRootDocumentTypeName(archive.getDocumentTypeCode(), documentTypeMap)).companyProjectCode(archive.getCompanyProjectCode()).companyProjectName(companyNameMap.getOrDefault(archive.getCompanyProjectCode(), archive.getCompanyProjectCode())).beginPeriod(normalizeYearMonth(archive.getBeginPeriod())).endPeriod(normalizeYearMonth(archive.getEndPeriod())).documentName(archive.getDocumentName()).businessCode(archive.getBusinessCode()).dutyPerson(resolveUserNameByIdString(archive.getDutyPerson(), userNameMap)).dutyDepartment(archive.getDutyDepartment()).documentDate(archive.getDocumentDate()).securityLevelCode(secLv.canonicalCode()).securityLevelName(secLv.displayName()).sourceSystem(archive.getSourceSystem()).archiveDestination(archive.getArchiveDestination()).originPlace(archive.getOriginPlace()).carrierTypeCode(carrierTypeNameMap.getOrDefault(archive.getCarrierTypeCode(), archive.getCarrierTypeCode())).remark(archive.getRemark()).aiArchiveSummary(archive.getAiArchiveSummary()).documentOrganizationCode(archive.getDocumentOrganizationCode()).retentionPeriodYears(archive.getRetentionPeriodYears()).archiveTypeCode(resolveBusinessModuleName(archive.getArchiveTypeCode(), documentTypeMap)).archiveStatus(archive.getArchiveStatus()).lifecycleStatus(archive.getArchiveStatus()).custodyStatus(archive.getArchiveStatus()).parseStatus(archive.getParseStatus()).vectorStatus(archive.getVectorStatus()).lastUpdateDate(archive.getLastUpdateDate()).attachmentCount(attachments.size()).extValues(normalizedExtValues).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).build();
+        return ArchiveSummaryResponse.builder().archiveId(archive.getArchiveId()).archiveCode(archive.getArchiveCode()).documentTypeCode(resolveRootBusinessModuleCode(archive.getDocumentTypeCode(), businessModuleMap)).documentTypeName(resolveRootBusinessModuleName(archive.getDocumentTypeCode(), businessModuleMap)).companyProjectCode(archive.getCompanyProjectCode()).companyProjectName(companyNameMap.getOrDefault(archive.getCompanyProjectCode(), archive.getCompanyProjectCode())).beginPeriod(normalizeYearMonth(archive.getBeginPeriod())).endPeriod(normalizeYearMonth(archive.getEndPeriod())).documentName(archive.getDocumentName()).businessCode(archive.getBusinessCode()).dutyPerson(resolveUserNameByIdString(archive.getDutyPerson(), userNameMap)).dutyDepartment(archive.getDutyDepartment()).documentDate(archive.getDocumentDate()).securityLevelCode(secLv.canonicalCode()).securityLevelName(secLv.displayName()).sourceSystem(archive.getSourceSystem()).archiveDestination(archive.getArchiveDestination()).originPlace(archive.getOriginPlace()).carrierTypeCode(carrierTypeNameMap.getOrDefault(archive.getCarrierTypeCode(), archive.getCarrierTypeCode())).remark(archive.getRemark()).aiArchiveSummary(archive.getAiArchiveSummary()).documentOrganizationCode(archive.getDocumentOrganizationCode()).retentionPeriodYears(archive.getRetentionPeriodYears()).archiveTypeCode(resolveBusinessModuleDisplayName(archive.getArchiveTypeCode(), businessModuleMap)).archiveStatus(archive.getArchiveStatus()).lifecycleStatus(archive.getArchiveStatus()).custodyStatus(archive.getArchiveStatus()).parseStatus(archive.getParseStatus()).vectorStatus(archive.getVectorStatus()).lastUpdateDate(archive.getLastUpdateDate()).attachmentCount(attachments.size()).extValues(normalizedExtValues).attachments(attachments.stream().map(this::toAttachmentResponse).toList()).build();
     }
 
     private Map<String, CompanyGeoMeta> listCompanyGeoMetaMap() {
@@ -4431,19 +4434,19 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         );
     }
 
-    private Map<String, DocumentType> listDocumentTypeMap() {
-        return documentTypeMapper.selectList(new LambdaQueryWrapper<>())
+    private Map<String, BusinessModule> listBusinessModuleMap() {
+        return businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>())
             .stream()
-            .collect(Collectors.toMap(DocumentType::getTypeCode, item -> item, (left, right) -> left));
+            .collect(Collectors.toMap(BusinessModule::getModuleCode, item -> item, (left, right) -> left));
     }
 
-    private String resolveBusinessModuleName(String moduleCode, Map<String, DocumentType> documentTypeMap) {
+    private String resolveBusinessModuleDisplayName(String moduleCode, Map<String, BusinessModule> documentTypeMap) {
         if (!StringUtils.hasText(moduleCode)) {
             return moduleCode;
         }
-        DocumentType current = documentTypeMap.get(moduleCode);
-        if (current != null && StringUtils.hasText(current.getTypeName())) {
-            return current.getTypeName();
+        BusinessModule current = documentTypeMap.get(moduleCode);
+        if (current != null && StringUtils.hasText(current.getModuleName())) {
+            return current.getModuleName();
         }
         String matchedCode = null;
         for (String code : documentTypeMap.keySet()) {
@@ -4454,17 +4457,17 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         if (matchedCode == null) {
             return moduleCode;
         }
-        DocumentType matched = documentTypeMap.get(matchedCode);
-        return matched == null || !StringUtils.hasText(matched.getTypeName()) ? moduleCode : matched.getTypeName();
+        BusinessModule matched = documentTypeMap.get(matchedCode);
+        return matched == null || !StringUtils.hasText(matched.getModuleName()) ? moduleCode : matched.getModuleName();
     }
 
-    private String resolveRootDocumentTypeCode(String moduleCode, Map<String, DocumentType> documentTypeMap) {
+    private String resolveRootBusinessModuleCode(String moduleCode, Map<String, BusinessModule> documentTypeMap) {
         if (!StringUtils.hasText(moduleCode)) {
             return moduleCode;
         }
-        DocumentType current = documentTypeMap.get(moduleCode);
+        BusinessModule current = documentTypeMap.get(moduleCode);
         if (current != null && current.getLevelNum() != null && current.getLevelNum() == 1) {
-            return current.getTypeCode();
+            return current.getModuleCode();
         }
         if (current != null && StringUtils.hasText(current.getAncestorPath())) {
             return current.getAncestorPath().split("/")[0];
@@ -4478,17 +4481,17 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         if (matchedRootCode == null) {
             return moduleCode;
         }
-        DocumentType matched = documentTypeMap.get(matchedRootCode);
+        BusinessModule matched = documentTypeMap.get(matchedRootCode);
         if (matched != null && matched.getLevelNum() != null && matched.getLevelNum() > 1 && StringUtils.hasText(matched.getAncestorPath())) {
             return matched.getAncestorPath().split("/")[0];
         }
         return matchedRootCode;
     }
 
-    private String resolveRootDocumentTypeName(String moduleCode, Map<String, DocumentType> documentTypeMap) {
-        String rootCode = resolveRootDocumentTypeCode(moduleCode, documentTypeMap);
-        DocumentType root = documentTypeMap.get(rootCode);
-        return root == null || !StringUtils.hasText(root.getTypeName()) ? rootCode : root.getTypeName();
+    private String resolveRootBusinessModuleName(String moduleCode, Map<String, BusinessModule> documentTypeMap) {
+        String rootCode = resolveRootBusinessModuleCode(moduleCode, documentTypeMap);
+        BusinessModule root = documentTypeMap.get(rootCode);
+        return root == null || !StringUtils.hasText(root.getModuleName()) ? rootCode : root.getModuleName();
     }
 
     private String formatYearMonth(LocalDate date) {
@@ -5107,13 +5110,13 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
 
     private String guessDocumentTypeCode(String filename, String text, String fallbackDocType) {
         String combined = (filename + " " + Objects.toString(text, "") + " " + Objects.toString(fallbackDocType, "")).toLowerCase(Locale.ROOT);
-        return documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>()
-                .eq(DocumentType::getDeleteFlag, "N")
-                .eq(DocumentType::getEnabledFlag, "Y"))
+        return businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>()
+                .eq(BusinessModule::getDeleteFlag, "N")
+                .eq(BusinessModule::getEnabledFlag, "Y"))
             .stream()
-            .filter(item -> combined.contains(item.getTypeName().toLowerCase(Locale.ROOT)) || combined.contains(item.getTypeCode().toLowerCase(Locale.ROOT)))
-            .sorted(Comparator.comparing(DocumentType::getLevelNum).reversed())
-            .map(DocumentType::getTypeCode)
+            .filter(item -> combined.contains(item.getModuleName().toLowerCase(Locale.ROOT)) || combined.contains(item.getModuleCode().toLowerCase(Locale.ROOT)))
+            .sorted(Comparator.comparing(BusinessModule::getLevelNum).reversed())
+            .map(BusinessModule::getModuleCode)
             .findFirst()
             .orElse(null);
     }

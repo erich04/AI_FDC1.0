@@ -4,6 +4,7 @@ import com.smartarchive.businessmodule.dto.BusinessModuleCommand;
 import com.smartarchive.businessmodule.dto.BusinessModuleExtFieldCommand;
 import com.smartarchive.businessmodule.dto.BusinessModuleExtFieldResponse;
 import com.smartarchive.businessmodule.dto.BusinessModuleNodeResponse;
+import com.smartarchive.businessmodule.dto.BusinessModuleParentOptionResponse;
 import com.smartarchive.businessmodule.dto.BusinessModuleUpdateCommand;
 import com.smartarchive.businessmodule.service.BusinessModuleService;
 import com.smartarchive.common.api.ApiResponse;
@@ -29,6 +30,11 @@ public class BusinessModuleController {
     @GetMapping("/tree")
     public ApiResponse<List<BusinessModuleNodeResponse>> tree() {
         return ApiResponse.success(businessModuleService.listTree());
+    }
+
+    @GetMapping("/parent-options")
+    public ApiResponse<List<BusinessModuleParentOptionResponse>> parentOptions() {
+        return ApiResponse.success(businessModuleService.listParentOptions());
     }
 
     @PostMapping

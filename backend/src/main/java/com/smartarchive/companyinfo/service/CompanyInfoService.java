@@ -8,7 +8,7 @@ import com.smartarchive.companyinfo.dto.CompanyTagResponse;
 import java.util.List;
 
 public interface CompanyInfoService {
-    List<CompanyInfoResponse> list(List<String> companyCodes, String region, String representativeOffice, String country, String enabledFlag, List<String> tags);
+    List<CompanyInfoResponse> list(List<String> companyCodes, String companyName, String region, String representativeOffice, String country, String enabledFlag, List<String> tags);
     CompanyInfoResponse create(CompanyInfoCommand command);
     CompanyInfoResponse update(String companyCode, CompanyInfoUpdateCommand command);
     void delete(String companyCode);

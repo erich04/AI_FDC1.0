@@ -8,11 +8,11 @@ import com.smartarchive.archivemanage.dto.DocumentTypeExtFieldResponse;
 import com.smartarchive.archivemanage.dto.DocumentTypeExtFieldUpdateCommand;
 import com.smartarchive.archivemanage.mapper.ArchiveExtFieldConfigMapper;
 import com.smartarchive.archivemanage.service.DocumentTypeExtFieldService;
+import com.smartarchive.businessmodule.domain.BusinessModule;
+import com.smartarchive.businessmodule.mapper.BusinessModuleMapper;
 import com.smartarchive.common.exception.BusinessException;
 import com.smartarchive.dictionary.domain.DictionaryItem;
 import com.smartarchive.dictionary.mapper.DictionaryItemMapper;
-import com.smartarchive.documenttype.domain.DocumentType;
-import com.smartarchive.documenttype.mapper.DocumentTypeMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,35 +33,35 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
     private static final String FUNCTION_MODULE_CATEGORY_CODE = "FUNCTION_MODULE";
 
     private final ArchiveExtFieldConfigMapper archiveExtFieldConfigMapper;
-    private final DocumentTypeMapper documentTypeMapper;
+    private final BusinessModuleMapper businessModuleMapper;
     private final DictionaryItemMapper dictionaryItemMapper;
 
     @Override
     public List<DocumentTypeExtFieldResponse> listDirect(String busiModuleCode) {
-        DocumentType documentType = requireDocumentType(busiModuleCode);
+        BusinessModule module = requireBusinessModule(busiModuleCode);
         return archiveExtFieldConfigMapper.selectList(new LambdaQueryWrapper<ArchiveExtFieldConfig>()
-                .eq(ArchiveExtFieldConfig::getBusiModuleCode, documentType.getTypeCode())
+                .eq(ArchiveExtFieldConfig::getBusiModuleCode, module.getModuleCode())
                 .eq(ArchiveExtFieldConfig::getDeleteFlag, "N")
                 .orderByAsc(ArchiveExtFieldConfig::getFormSortOrder)
                 .orderByAsc(ArchiveExtFieldConfig::getFieldCode))
             .stream()
-            .map(item -> toResponse(item, documentType.getLevelNum(), documentType.getTypeCode()))
+            .map(item -> toResponse(item, module.getLevelNum(), module.getModuleCode()))
             .toList();
     }
 
     @Override
     public List<DocumentTypeExtFieldResponse> listEffective(String busiModuleCode) {
-        DocumentType current = requireDocumentType(busiModuleCode);
+        BusinessModule current = requireBusinessModule(busiModuleCode);
         List<String> typeCodes = new ArrayList<>();
         if (StringUtils.hasText(current.getAncestorPath())) {
             typeCodes.addAll(List.of(current.getAncestorPath().split("/")));
         }
-        typeCodes.add(current.getTypeCode());
-        Map<String, DocumentType> typeMap = documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>()
-                .in(DocumentType::getTypeCode, typeCodes)
-                .eq(DocumentType::getDeleteFlag, "N"))
+        typeCodes.add(current.getModuleCode());
+        Map<String, BusinessModule> typeMap = businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>()
+                .in(BusinessModule::getModuleCode, typeCodes)
+                .eq(BusinessModule::getDeleteFlag, "N"))
             .stream()
-            .collect(Collectors.toMap(DocumentType::getTypeCode, Function.identity(), (left, right) -> left));
+            .collect(Collectors.toMap(BusinessModule::getModuleCode, Function.identity(), (left, right) -> left));
 
         return archiveExtFieldConfigMapper.selectList(new LambdaQueryWrapper<ArchiveExtFieldConfig>()
                 .in(ArchiveExtFieldConfig::getBusiModuleCode, typeCodes)
@@ -74,7 +74,7 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
                 .thenComparing(ArchiveExtFieldConfig::getFormSortOrder)
                 .thenComparing(ArchiveExtFieldConfig::getFieldCode))
             .map(item -> {
-                DocumentType source = typeMap.get(item.getBusiModuleCode());
+                BusinessModule source = typeMap.get(item.getBusiModuleCode());
                 return toResponse(item, source == null ? null : source.getLevelNum(), item.getBusiModuleCode());
             })
             .toList();
@@ -83,13 +83,13 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
     @Override
     @Transactional
     public DocumentTypeExtFieldResponse create(String busiModuleCode, DocumentTypeExtFieldCreateCommand command) {
-        DocumentType documentType = requireDocumentType(busiModuleCode);
+        BusinessModule module = requireBusinessModule(busiModuleCode);
         validateCommand(command.getFieldType(), command.getRequiredFlag(), command.getEnabledFlag(), command.getQueryEnabledFlag(),
             command.getDictCategoryCode(), command.getUsageModule(), command.getRelatedModuleCode(), command.getRelatedField());
 
         ArchiveExtFieldConfig entity = new ArchiveExtFieldConfig();
-        entity.setFieldCode(generateFieldCode(documentType.getTypeCode()));
-        entity.setBusiModuleCode(documentType.getTypeCode());
+        entity.setFieldCode(generateFieldCode(module.getModuleCode()));
+        entity.setBusiModuleCode(module.getModuleCode());
         entity.setUsageModule(trimRequiredText(command.getUsageModule(), "usageModule"));
         entity.setRelatedModuleCode(trimRequiredText(command.getRelatedModuleCode(), "relatedModuleCode"));
         entity.setRelatedField(trimRequiredText(command.getRelatedField(), "relatedField"));
@@ -108,13 +108,13 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
         entity.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
         entity.setLastUpdateDate(LocalDateTime.now());
         archiveExtFieldConfigMapper.insert(entity);
-        return toResponse(entity, documentType.getLevelNum(), documentType.getTypeCode());
+        return toResponse(entity, module.getLevelNum(), module.getModuleCode());
     }
 
     @Override
     @Transactional
     public DocumentTypeExtFieldResponse update(String busiModuleCode, String fieldCode, DocumentTypeExtFieldUpdateCommand command) {
-        DocumentType documentType = requireDocumentType(busiModuleCode);
+        BusinessModule module = requireBusinessModule(busiModuleCode);
         validateCommand(command.getFieldType(), command.getRequiredFlag(), command.getEnabledFlag(), command.getQueryEnabledFlag(),
             command.getDictCategoryCode(), command.getUsageModule(), command.getRelatedModuleCode(), command.getRelatedField());
         ArchiveExtFieldConfig entity = requireField(busiModuleCode, fieldCode);
@@ -133,13 +133,13 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
         entity.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
         entity.setLastUpdateDate(LocalDateTime.now());
         archiveExtFieldConfigMapper.updateById(entity);
-        return toResponse(entity, documentType.getLevelNum(), documentType.getTypeCode());
+        return toResponse(entity, module.getLevelNum(), module.getModuleCode());
     }
 
     @Override
     @Transactional
     public void delete(String busiModuleCode, String fieldCode) {
-        requireDocumentType(busiModuleCode);
+        requireBusinessModule(busiModuleCode);
         ArchiveExtFieldConfig entity = requireField(busiModuleCode, fieldCode);
         archiveExtFieldConfigMapper.update(null, new LambdaUpdateWrapper<ArchiveExtFieldConfig>()
             .eq(ArchiveExtFieldConfig::getFieldId, entity.getFieldId())
@@ -148,15 +148,15 @@ public class DocumentTypeExtFieldServiceImpl implements DocumentTypeExtFieldServ
             .set(ArchiveExtFieldConfig::getLastUpdateDate, LocalDateTime.now()));
     }
 
-    private DocumentType requireDocumentType(String busiModuleCode) {
-        DocumentType documentType = documentTypeMapper.selectOne(new LambdaQueryWrapper<DocumentType>()
-            .eq(DocumentType::getTypeCode, busiModuleCode)
-            .eq(DocumentType::getDeleteFlag, "N")
+    private BusinessModule requireBusinessModule(String busiModuleCode) {
+        BusinessModule module = businessModuleMapper.selectOne(new LambdaQueryWrapper<BusinessModule>()
+            .eq(BusinessModule::getModuleCode, busiModuleCode)
+            .eq(BusinessModule::getDeleteFlag, "N")
             .last("limit 1"));
-        if (documentType == null) {
-            throw new BusinessException("Document type does not exist");
+        if (module == null) {
+            throw new BusinessException("Business module does not exist");
         }
-        return documentType;
+        return module;
     }
 
     private ArchiveExtFieldConfig requireField(String busiModuleCode, String fieldCode) {

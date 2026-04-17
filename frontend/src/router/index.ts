@@ -13,7 +13,7 @@ import BaseDataWarehouseView from '../views/base-data/BaseDataWarehouseView.vue'
 import BusinessModuleConfigView from '../views/base-data/BusinessModuleConfigView.vue'
 import CompanyInfoView from '../views/base-data/CompanyInfoView.vue'
 import DictionaryManagementView from '../views/base-data/DictionaryManagementView.vue'
-import DocumentTypeManagementView from '../views/base-data/DocumentTypeManagementView.vue'
+import DocumentTypeConfigView from '../views/base-data/DocumentTypeConfigView.vue'
 import BorrowingView from '../views/borrowing/BorrowingView.vue'
 import DashboardView from '../views/dashboard/DashboardView.vue'
 import GovernanceView from '../views/governance/GovernanceView.vue'
@@ -73,10 +73,10 @@ const router = createRouter({
           meta: { title: '库房管理', breadcrumb: ['配置中心', '库房管理'] }
         },
         {
-          path: 'base-data/document-types',
-          name: 'base-data-document-types',
-          component: DocumentTypeManagementView,
-          meta: { title: '业务模块管理', breadcrumb: ['配置中心', '业务模块管理'] }
+          path: 'base-data/document-type-configs',
+          name: 'base-data-document-type-configs',
+          component: DocumentTypeConfigView,
+          meta: { title: '文档类型配置', breadcrumb: ['配置中心', '文档类型配置'] }
         },
         {
           path: 'base-data/business-modules',

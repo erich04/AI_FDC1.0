@@ -14,7 +14,6 @@ public class BusinessModuleExtFieldCommand {
     private String extAttribute;
     @NotBlank
     private String fieldName;
-    @NotBlank
     private String englishFieldName;
     @NotBlank
     private String dataType;

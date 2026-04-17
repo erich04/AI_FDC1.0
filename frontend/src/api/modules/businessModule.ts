@@ -38,8 +38,18 @@ export interface BusinessModuleExtFieldCommand {
   sortOrder: number
 }
 
+export interface BusinessModuleParentOption {
+  code: string
+  description?: string
+  sourceType: 'DOCUMENT_TYPE' | 'BUSINESS_MODULE'
+}
+
 export function fetchBusinessModuleTree() {
   return apiRequest<BusinessModuleNode[]>(http.get('/api/base-data/business-modules/tree'))
+}
+
+export function fetchBusinessModuleParentOptions() {
+  return apiRequest<BusinessModuleParentOption[]>(http.get('/api/base-data/business-modules/parent-options'))
 }
 
 export function createBusinessModule(data: BusinessModuleCommand) {

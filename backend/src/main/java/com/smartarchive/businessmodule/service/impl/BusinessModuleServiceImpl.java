@@ -8,16 +8,22 @@ import com.smartarchive.businessmodule.dto.BusinessModuleCommand;
 import com.smartarchive.businessmodule.dto.BusinessModuleExtFieldCommand;
 import com.smartarchive.businessmodule.dto.BusinessModuleExtFieldResponse;
 import com.smartarchive.businessmodule.dto.BusinessModuleNodeResponse;
+import com.smartarchive.businessmodule.dto.BusinessModuleParentOptionResponse;
 import com.smartarchive.businessmodule.dto.BusinessModuleUpdateCommand;
 import com.smartarchive.businessmodule.mapper.BusinessModuleExtFieldMapper;
 import com.smartarchive.businessmodule.mapper.BusinessModuleMapper;
 import com.smartarchive.businessmodule.service.BusinessModuleService;
 import com.smartarchive.common.exception.BusinessException;
+import com.smartarchive.documenttypeconfig.domain.DocumentTypeConfig;
+import com.smartarchive.documenttypeconfig.mapper.DocumentTypeConfigMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +41,11 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
 
     private final BusinessModuleMapper businessModuleMapper;
     private final BusinessModuleExtFieldMapper extFieldMapper;
+    private final DocumentTypeConfigMapper documentTypeConfigMapper;
 
     @Override
     public List<BusinessModuleNodeResponse> listTree() {
+        syncDocumentTypesToBusinessModules();
         List<BusinessModule> modules = businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>()
                 .eq(BusinessModule::getDeleteFlag, "N")
                 .orderByAsc(BusinessModule::getLevelNum)
@@ -57,6 +65,25 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
         }
         sortTree(roots);
         return roots;
+    }
+
+    @Override
+    public List<BusinessModuleParentOptionResponse> listParentOptions() {
+        syncDocumentTypesToBusinessModules();
+        Map<String, BusinessModuleParentOptionResponse> optionMap = new LinkedHashMap<>();
+        List<BusinessModule> businessModules = businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>()
+                .eq(BusinessModule::getDeleteFlag, "N")
+                .orderByAsc(BusinessModule::getLevelNum)
+                .orderByAsc(BusinessModule::getSortOrder)
+                .orderByAsc(BusinessModule::getModuleCode));
+        businessModules.forEach(module -> optionMap.putIfAbsent(module.getModuleCode(), toParentOption(module)));
+
+        List<DocumentTypeConfig> documentTypes = documentTypeConfigMapper.selectList(new LambdaQueryWrapper<DocumentTypeConfig>()
+                .eq(DocumentTypeConfig::getDeleteFlag, "N")
+                .orderByAsc(DocumentTypeConfig::getDocTypeCode));
+        documentTypes.forEach(type -> optionMap.putIfAbsent(type.getDocTypeCode(), toParentOption(type)));
+
+        return new ArrayList<>(optionMap.values());
     }
 
     @Override
@@ -140,18 +167,30 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
     public BusinessModuleExtFieldResponse createField(String moduleCode, BusinessModuleExtFieldCommand command) {
         requireModule(moduleCode);
         validateField(command);
-        BusinessModuleExtField entity = new BusinessModuleExtField();
-        entity.setFieldCode(command.getFieldCode().trim());
-        ensureFieldCodeAvailable(entity.getFieldCode());
-        entity.setModuleCode(moduleCode);
-        applyField(entity, command);
-        entity.setDeleteFlag("N");
-        entity.setCreatedBy(SYSTEM_OPERATOR_ID);
-        entity.setCreationDate(LocalDateTime.now());
-        entity.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
-        entity.setLastUpdateDate(LocalDateTime.now());
-        extFieldMapper.insert(entity);
-        return toFieldResponse(entity);
+        List<String> functions = normalizeApplicationFunctionList(command.getApplicationFunctions());
+        BusinessModuleExtField first = null;
+        for (int i = 0; i < functions.size(); i++) {
+            String function = functions.get(i);
+            String fieldCode = (i == 0)
+                    ? command.getFieldCode().trim()
+                    : buildDerivedFieldCode(command.getFieldCode().trim(), function);
+            ensureFieldCodeAvailable(fieldCode);
+
+            BusinessModuleExtField entity = new BusinessModuleExtField();
+            entity.setFieldCode(fieldCode);
+            entity.setModuleCode(moduleCode);
+            applyField(entity, command, List.of(function));
+            entity.setDeleteFlag("N");
+            entity.setCreatedBy(SYSTEM_OPERATOR_ID);
+            entity.setCreationDate(LocalDateTime.now());
+            entity.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
+            entity.setLastUpdateDate(LocalDateTime.now());
+            extFieldMapper.insert(entity);
+            if (first == null) {
+                first = entity;
+            }
+        }
+        return toFieldResponse(first);
     }
 
     @Override
@@ -163,7 +202,7 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
         if (!fieldCode.equals(command.getFieldCode().trim())) {
             throw new BusinessException("字段编码不允许修改");
         }
-        applyField(entity, command);
+        applyField(entity, command, command.getApplicationFunctions());
         entity.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
         entity.setLastUpdateDate(LocalDateTime.now());
         extFieldMapper.updateById(entity);
@@ -181,9 +220,9 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
                 .set(BusinessModuleExtField::getLastUpdateDate, LocalDateTime.now()));
     }
 
-    private void applyField(BusinessModuleExtField entity, BusinessModuleExtFieldCommand command) {
+    private void applyField(BusinessModuleExtField entity, BusinessModuleExtFieldCommand command, List<String> applicationFunctions) {
         entity.setFieldScope(command.getFieldScope().trim().toUpperCase());
-        entity.setApplicationFunctions(normalizeApplicationFunctions(command.getApplicationFunctions()));
+        entity.setApplicationFunctions(normalizeApplicationFunctions(applicationFunctions));
         entity.setExtAttribute(normalizeExtAttribute(command.getExtAttribute()));
         entity.setFieldName(command.getFieldName().trim());
         entity.setEnglishFieldName(trimToNull(command.getEnglishFieldName()));
@@ -213,7 +252,13 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
         if (parentCode.equals(currentCode)) {
             throw new BusinessException("上级业务模块不能选择自身");
         }
-        BusinessModule parent = requireModule(parentCode);
+        BusinessModule parent = findModule(parentCode);
+        if (parent == null) {
+            if (isBusinessModuleCode(parentCode) || isDocumentTypeCode(parentCode)) {
+                return new TreeMeta(1, parentCode);
+            }
+            throw new BusinessException("上级业务模块不存在");
+        }
         if (parent.getLevelNum() >= MAX_LEVEL) {
             throw new BusinessException("业务模块最多支持 " + MAX_LEVEL + " 层");
         }
@@ -240,14 +285,90 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
     }
 
     private BusinessModule requireModule(String moduleCode) {
-        BusinessModule module = businessModuleMapper.selectOne(new LambdaQueryWrapper<BusinessModule>()
-                .eq(BusinessModule::getModuleCode, moduleCode)
-                .eq(BusinessModule::getDeleteFlag, "N")
-                .last("limit 1"));
+        BusinessModule module = findModule(moduleCode);
         if (module == null) {
             throw new BusinessException("业务模块不存在");
         }
         return module;
+    }
+
+    private BusinessModule findModule(String moduleCode) {
+        return businessModuleMapper.selectOne(new LambdaQueryWrapper<BusinessModule>()
+                .eq(BusinessModule::getModuleCode, moduleCode)
+                .eq(BusinessModule::getDeleteFlag, "N")
+                .last("limit 1"));
+    }
+
+    private boolean isBusinessModuleCode(String parentCode) {
+        return businessModuleMapper.selectCount(new LambdaQueryWrapper<BusinessModule>()
+                .eq(BusinessModule::getModuleCode, parentCode)
+                .eq(BusinessModule::getDeleteFlag, "N")) > 0;
+    }
+
+    private boolean isDocumentTypeCode(String parentCode) {
+        return documentTypeConfigMapper.selectCount(new LambdaQueryWrapper<DocumentTypeConfig>()
+                .eq(DocumentTypeConfig::getDocTypeCode, parentCode)
+                .eq(DocumentTypeConfig::getDeleteFlag, "N")) > 0;
+    }
+
+    @Transactional
+    protected void syncDocumentTypesToBusinessModules() {
+        List<DocumentTypeConfig> documentTypes = documentTypeConfigMapper.selectList(new LambdaQueryWrapper<DocumentTypeConfig>()
+                .eq(DocumentTypeConfig::getDeleteFlag, "N")
+                .orderByAsc(DocumentTypeConfig::getDocTypeCode));
+        if (documentTypes.isEmpty()) {
+            return;
+        }
+        List<BusinessModule> existingModules = businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>()
+                .eq(BusinessModule::getDeleteFlag, "N"));
+        Map<String, BusinessModule> existingModuleMap = existingModules.stream()
+                .filter(module -> StringUtils.hasText(module.getModuleCode()))
+                .collect(Collectors.toMap(BusinessModule::getModuleCode, Function.identity(), (a, b) -> a));
+        Set<String> existingCodes = new HashSet<>(existingModuleMap.keySet());
+
+        int nextSortOrder = nextSortOrder(null);
+        LocalDateTime now = LocalDateTime.now();
+        for (DocumentTypeConfig documentType : documentTypes) {
+            String code = trimToNull(documentType.getDocTypeCode());
+            if (!StringUtils.hasText(code)) {
+                continue;
+            }
+            BusinessModule existing = existingModuleMap.get(code);
+            if (existing != null) {
+                boolean needFixRoot = code.equals(trimToNull(existing.getParentCode()))
+                        || (StringUtils.hasText(existing.getParentCode()) && !existingCodes.contains(existing.getParentCode()))
+                        || !Integer.valueOf(1).equals(existing.getLevelNum());
+                if (needFixRoot) {
+                    businessModuleMapper.update(null, new LambdaUpdateWrapper<BusinessModule>()
+                            .eq(BusinessModule::getId, existing.getId())
+                            .set(BusinessModule::getParentCode, null)
+                            .set(BusinessModule::getLevelNum, 1)
+                            .set(BusinessModule::getAncestorPath, "")
+                            .set(BusinessModule::getLastUpdatedBy, SYSTEM_OPERATOR_ID)
+                            .set(BusinessModule::getLastUpdateDate, now));
+                }
+                continue;
+            }
+            BusinessModule entity = new BusinessModule();
+            entity.setModuleCode(code);
+            entity.setModuleName(StringUtils.hasText(documentType.getDocTypeDescription()) ? documentType.getDocTypeDescription().trim() : code);
+            entity.setParentCode(null);
+            entity.setLevelNum(1);
+            entity.setAncestorPath("");
+            entity.setEnabledFlag(normalizeFlag(documentType.getEnableFlag(), "Y"));
+            entity.setSecurityLevel("公开");
+            entity.setIntegrationType("不集成");
+            entity.setDescription(trimToNull(documentType.getDocTypeDescription()));
+            entity.setRemark(null);
+            entity.setSortOrder(nextSortOrder++);
+            entity.setDeleteFlag("N");
+            entity.setCreatedBy(SYSTEM_OPERATOR_ID);
+            entity.setCreationDate(now);
+            entity.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
+            entity.setLastUpdateDate(now);
+            businessModuleMapper.insert(entity);
+            existingCodes.add(code);
+        }
     }
 
     private BusinessModuleExtField requireField(String moduleCode, String fieldCode) {
@@ -319,18 +440,43 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
     }
 
     private String normalizeApplicationFunctions(List<String> applicationFunctions) {
-        if (applicationFunctions == null || applicationFunctions.isEmpty()) {
-            throw new BusinessException("应用功能不能为空");
-        }
-        List<String> normalized = applicationFunctions.stream()
-                .filter(StringUtils::hasText)
-                .map(String::trim)
-                .distinct()
-                .toList();
+        List<String> normalized = normalizeApplicationFunctionList(applicationFunctions);
         if (normalized.isEmpty() || !SUPPORTED_APPLICATION_FUNCTIONS.containsAll(normalized)) {
             throw new BusinessException("应用功能仅支持：应收、移交");
         }
         return String.join(",", normalized);
+    }
+
+    private List<String> normalizeApplicationFunctionList(List<String> applicationFunctions) {
+        if (applicationFunctions == null || applicationFunctions.isEmpty()) {
+            throw new BusinessException("应用功能不能为空");
+        }
+        return applicationFunctions.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .toList();
+    }
+
+    private String buildDerivedFieldCode(String baseFieldCode, String applicationFunction) {
+        String suffix = switch (applicationFunction) {
+            case "应收" -> "AR";
+            case "移交" -> "TR";
+            default -> "EXT";
+        };
+        int maxBaseLength = Math.max(1, 64 - suffix.length() - 1);
+        String normalizedBase = baseFieldCode.length() > maxBaseLength ? baseFieldCode.substring(0, maxBaseLength) : baseFieldCode;
+        String candidate = normalizedBase + "_" + suffix;
+        int serial = 1;
+        while (extFieldMapper.selectCount(new LambdaQueryWrapper<BusinessModuleExtField>()
+                .eq(BusinessModuleExtField::getFieldCode, candidate)
+                .eq(BusinessModuleExtField::getDeleteFlag, "N")) > 0) {
+            String serialSuffix = "_" + suffix + serial++;
+            int dynamicBaseLength = Math.max(1, 64 - serialSuffix.length());
+            String dynamicBase = baseFieldCode.length() > dynamicBaseLength ? baseFieldCode.substring(0, dynamicBaseLength) : baseFieldCode;
+            candidate = dynamicBase + serialSuffix;
+        }
+        return candidate;
     }
 
     private List<String> parseApplicationFunctions(String applicationFunctions) {
@@ -395,6 +541,22 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
         response.setEnabledFlag(entity.getEnabledFlag());
         response.setSortOrder(entity.getSortOrder());
         response.setLastUpdateDate(entity.getLastUpdateDate());
+        return response;
+    }
+
+    private BusinessModuleParentOptionResponse toParentOption(BusinessModule module) {
+        BusinessModuleParentOptionResponse response = new BusinessModuleParentOptionResponse();
+        response.setCode(module.getModuleCode());
+        response.setDescription(StringUtils.hasText(module.getDescription()) ? module.getDescription() : module.getModuleName());
+        response.setSourceType("BUSINESS_MODULE");
+        return response;
+    }
+
+    private BusinessModuleParentOptionResponse toParentOption(DocumentTypeConfig documentType) {
+        BusinessModuleParentOptionResponse response = new BusinessModuleParentOptionResponse();
+        response.setCode(documentType.getDocTypeCode());
+        response.setDescription(documentType.getDocTypeDescription());
+        response.setSourceType("DOCUMENT_TYPE");
         return response;
     }
 

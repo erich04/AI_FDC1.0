@@ -28,12 +28,13 @@ public class CompanyInfoController {
 
     @GetMapping
     public ApiResponse<List<CompanyInfoResponse>> list(@RequestParam(required = false) List<String> companyCodes,
+                                                       @RequestParam(required = false) String companyName,
                                                        @RequestParam(required = false) String region,
                                                        @RequestParam(required = false) String representativeOffice,
                                                        @RequestParam(required = false) String country,
                                                        @RequestParam(required = false) String enabledFlag,
                                                        @RequestParam(required = false) List<String> tags) {
-        return ApiResponse.success(companyInfoService.list(companyCodes, region, representativeOffice, country, enabledFlag, tags));
+        return ApiResponse.success(companyInfoService.list(companyCodes, companyName, region, representativeOffice, country, enabledFlag, tags));
     }
 
     @PostMapping

@@ -2,26 +2,23 @@ package com.smartarchive.archiveflow.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.smartarchive.archiveflow.domain.ArchiveFlowRule;
-import com.smartarchive.archiveflow.domain.SecurityLevelDictionary;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleCreateCommand;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleDetailResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleOptionResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRulePermissionPreviewResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleSummaryResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleUpdateCommand;
-import com.smartarchive.archiveflow.dto.SecurityLevelOptionResponse;
 import com.smartarchive.archiveflow.mapper.ArchiveFlowLookupMapper;
 import com.smartarchive.archiveflow.mapper.ArchiveFlowRuleMapper;
-import com.smartarchive.archiveflow.mapper.SecurityLevelDictionaryMapper;
 import com.smartarchive.archiveflow.service.ArchiveFlowRuleService;
+import com.smartarchive.businessmodule.domain.BusinessModule;
+import com.smartarchive.businessmodule.mapper.BusinessModuleMapper;
 import com.smartarchive.common.audit.service.OperationAuditService;
 import com.smartarchive.common.exception.BusinessException;
-import com.smartarchive.companyproject.domain.CompanyProject;
-import com.smartarchive.companyproject.mapper.CompanyProjectMapper;
+import com.smartarchive.companyinfo.domain.CompanyInfo;
+import com.smartarchive.companyinfo.mapper.CompanyInfoMapper;
 import com.smartarchive.countryregion.domain.CountryRegion;
 import com.smartarchive.countryregion.mapper.CountryRegionMapper;
-import com.smartarchive.documenttype.domain.DocumentType;
-import com.smartarchive.documenttype.mapper.DocumentTypeMapper;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,10 +39,9 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
     private static final String MODULE_NAME = "Archive Flow Rule Management";
 
     private final ArchiveFlowRuleMapper archiveFlowRuleMapper;
-    private final SecurityLevelDictionaryMapper securityLevelDictionaryMapper;
     private final ArchiveFlowLookupMapper archiveFlowLookupMapper;
-    private final CompanyProjectMapper companyProjectMapper;
-    private final DocumentTypeMapper documentTypeMapper;
+    private final CompanyInfoMapper companyInfoMapper;
+    private final BusinessModuleMapper businessModuleMapper;
     private final CountryRegionMapper countryRegionMapper;
     private final OperationAuditService operationAuditService;
 
@@ -55,15 +51,13 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
                                                      String busiModuleCode,
                                                      String documentOrganizationCode,
                                                      String enabledFlag) {
-        Map<String, String> companyProjectNameMap = listActiveCompanyProjects().stream()
-            .collect(Collectors.toMap(CompanyProject::getCompanyProjectCode, CompanyProject::getCompanyProjectName, (left, right) -> left));
-        Map<String, String> busiModuleNameMap = listActiveDocumentTypes().stream()
-            .collect(Collectors.toMap(DocumentType::getTypeCode, DocumentType::getTypeName, (left, right) -> left));
+        Map<String, String> companyProjectNameMap = listActiveCompanies().stream()
+            .collect(Collectors.toMap(CompanyInfo::getCompanyCode, CompanyInfo::getCompanyName, (left, right) -> left));
+        Map<String, String> busiModuleNameMap = listActiveBusinessModules().stream()
+            .collect(Collectors.toMap(BusinessModule::getModuleCode, BusinessModule::getModuleName, (left, right) -> left));
         Map<String, String> documentOrganizationNameMap = listActiveDocumentOrganizationCodes().stream()
             .collect(Collectors.toMap(Function.identity(), Function.identity(), (left, right) -> left));
         Map<String, String> cityNameMap = buildRegionDisplayMap();
-        Map<String, String> securityLevelNameMap = listActiveSecurityLevels().stream()
-            .collect(Collectors.toMap(SecurityLevelDictionary::getSecurityLevelCode, SecurityLevelDictionary::getSecurityLevelName, (left, right) -> left));
 
         return archiveFlowRuleMapper.selectList(new LambdaQueryWrapper<ArchiveFlowRule>()
                 .eq(ArchiveFlowRule::getDeleteFlag, "N")
@@ -80,13 +74,13 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
                 .orderByDesc(ArchiveFlowRule::getLastUpdateDate)
                 .orderByAsc(ArchiveFlowRule::getCompanyProjectCode))
             .stream()
-            .map(item -> toSummary(item, companyProjectNameMap, busiModuleNameMap, documentOrganizationNameMap, cityNameMap, securityLevelNameMap))
+            .map(item -> toSummary(item, companyProjectNameMap, busiModuleNameMap, documentOrganizationNameMap, cityNameMap))
             .toList();
     }
 
     @Override
-    public ArchiveFlowRuleDetailResponse getDetail(String companyProjectCode) {
-        return toDetail(findActiveByCompanyProjectCode(requireText(companyProjectCode, "companyProjectCode")));
+    public ArchiveFlowRuleDetailResponse getDetail(Long id) {
+        return toDetail(findActiveById(id));
     }
 
     @Override
@@ -98,13 +92,12 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
 
         String busiModuleCode = requireText(command.getBusiModuleCode(), "busiModuleCode");
         String documentOrganizationCode = requireText(command.getDocumentOrganizationCode(), "documentOrganizationCode");
-        String securityLevelCode = requireText(command.getSecurityLevelCode(), "securityLevelCode");
         String archiveDestination = trimToNull(command.getArchiveDestination());
         validateType(busiModuleCode);
         validateDocumentOrganization(documentOrganizationCode);
         validateRegion(archiveDestination);
-        validateSecurityLevel(securityLevelCode);
         validateFlag(requireText(command.getExternalDisplayFlag(), "externalDisplayFlag"), "externalDisplayFlag");
+        validateFlag(requireText(command.getDefaultFlag(), "defaultFlag"), "defaultFlag");
         validateFlag(requireText(command.getEnabledFlag(), "enabledFlag"), "enabledFlag");
         validateRetentionPeriodYears(command.getRetentionPeriodYears());
 
@@ -116,8 +109,8 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
         entity.setArchiveDestination(archiveDestination);
         entity.setDocumentOrganizationCode(documentOrganizationCode);
         entity.setRetentionPeriodYears(command.getRetentionPeriodYears());
-        entity.setSecurityLevelCode(securityLevelCode);
         entity.setExternalDisplayFlag(command.getExternalDisplayFlag().trim());
+        entity.setDefaultFlag(command.getDefaultFlag().trim());
         entity.setEnabledFlag(command.getEnabledFlag().trim());
         entity.setDeleteFlag("N");
         entity.setCreatedBy(SYSTEM_OPERATOR_ID);
@@ -133,19 +126,18 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
 
     @Override
     @Transactional
-    public ArchiveFlowRuleDetailResponse update(String companyProjectCode, ArchiveFlowRuleUpdateCommand command) {
-        ArchiveFlowRule existing = findActiveByCompanyProjectCode(requireText(companyProjectCode, "companyProjectCode"));
+    public ArchiveFlowRuleDetailResponse update(Long id, ArchiveFlowRuleUpdateCommand command) {
+        ArchiveFlowRule existing = findActiveById(id);
         ArchiveFlowRuleDetailResponse before = toDetail(existing);
 
         String busiModuleCode = requireText(command.getBusiModuleCode(), "busiModuleCode");
         String documentOrganizationCode = requireText(command.getDocumentOrganizationCode(), "documentOrganizationCode");
-        String securityLevelCode = requireText(command.getSecurityLevelCode(), "securityLevelCode");
         String archiveDestination = trimToNull(command.getArchiveDestination());
         validateType(busiModuleCode);
         validateDocumentOrganization(documentOrganizationCode);
         validateRegion(archiveDestination);
-        validateSecurityLevel(securityLevelCode);
         validateFlag(requireText(command.getExternalDisplayFlag(), "externalDisplayFlag"), "externalDisplayFlag");
+        validateFlag(requireText(command.getDefaultFlag(), "defaultFlag"), "defaultFlag");
         validateFlag(requireText(command.getEnabledFlag(), "enabledFlag"), "enabledFlag");
         validateRetentionPeriodYears(command.getRetentionPeriodYears());
 
@@ -154,8 +146,8 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
         existing.setArchiveDestination(archiveDestination);
         existing.setDocumentOrganizationCode(documentOrganizationCode);
         existing.setRetentionPeriodYears(command.getRetentionPeriodYears());
-        existing.setSecurityLevelCode(securityLevelCode);
         existing.setExternalDisplayFlag(command.getExternalDisplayFlag().trim());
+        existing.setDefaultFlag(command.getDefaultFlag().trim());
         existing.setEnabledFlag(command.getEnabledFlag().trim());
         existing.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
         existing.setLastUpdateDate(LocalDateTime.now());
@@ -168,8 +160,8 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
 
     @Override
     @Transactional
-    public void delete(String companyProjectCode) {
-        ArchiveFlowRule existing = findActiveByCompanyProjectCode(requireText(companyProjectCode, "companyProjectCode"));
+    public void delete(Long id) {
+        ArchiveFlowRule existing = findActiveById(id);
         ArchiveFlowRuleDetailResponse before = toDetail(existing);
         existing.setDeleteFlag("Y");
         existing.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
@@ -180,15 +172,15 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
 
     @Override
     public List<ArchiveFlowRuleOptionResponse> listCompanyProjectOptions() {
-        return listActiveCompanyProjects().stream()
-            .map(item -> ArchiveFlowRuleOptionResponse.builder().code(item.getCompanyProjectCode()).name(item.getCompanyProjectName()).build())
+        return listActiveCompanies().stream()
+            .map(item -> ArchiveFlowRuleOptionResponse.builder().code(item.getCompanyCode()).name(item.getCompanyName()).build())
             .toList();
     }
 
     @Override
-    public List<ArchiveFlowRuleOptionResponse> listDocumentTypeOptions() {
-        return listActiveDocumentTypes().stream()
-            .map(item -> ArchiveFlowRuleOptionResponse.builder().code(item.getTypeCode()).name(item.getTypeName()).build())
+    public List<ArchiveFlowRuleOptionResponse> listBusinessModuleOptions() {
+        return listActiveBusinessModules().stream()
+            .map(item -> ArchiveFlowRuleOptionResponse.builder().code(item.getModuleCode()).name(item.getModuleName()).build())
             .toList();
     }
 
@@ -211,16 +203,6 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
     }
 
     @Override
-    public List<SecurityLevelOptionResponse> listSecurityLevels() {
-        return listActiveSecurityLevels().stream()
-            .map(item -> SecurityLevelOptionResponse.builder()
-                .securityLevelCode(item.getSecurityLevelCode())
-                .securityLevelName(item.getSecurityLevelName())
-                .build())
-            .toList();
-    }
-
-    @Override
     public ArchiveFlowRulePermissionPreviewResponse getPermissionPreview() {
         return ArchiveFlowRulePermissionPreviewResponse.builder()
             .moduleCode(MODULE_CODE)
@@ -232,26 +214,26 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
             ))
             .dataDimensions(List.of(
                 ArchiveFlowRulePermissionPreviewResponse.DataDimension.builder().code("COMPANY_PROJECT").name("Company/Project").description("Authorize by company/project dimension").build(),
-                ArchiveFlowRulePermissionPreviewResponse.DataDimension.builder().code("DOCUMENT_TYPE").name("Document Type").description("Authorize by document type dimension").build(),
+                ArchiveFlowRulePermissionPreviewResponse.DataDimension.builder().code("BUSINESS_MODULE").name("Business Module").description("Authorize by business module dimension").build(),
                 ArchiveFlowRulePermissionPreviewResponse.DataDimension.builder().code("DOCUMENT_ORGANIZATION").name("Document Organization").description("Authorize by document organization dimension").build()
             ))
             .build();
     }
 
-    private List<CompanyProject> listActiveCompanyProjects() {
-        return companyProjectMapper.selectList(new LambdaQueryWrapper<CompanyProject>()
-            .eq(CompanyProject::getDeleteFlag, "N")
-            .eq(CompanyProject::getEnabledFlag, "Y")
-            .orderByAsc(CompanyProject::getCompanyProjectCode));
+    private List<CompanyInfo> listActiveCompanies() {
+        return companyInfoMapper.selectList(new LambdaQueryWrapper<CompanyInfo>()
+            .eq(CompanyInfo::getDeleteFlag, "N")
+            .eq(CompanyInfo::getEnabledFlag, "Y")
+            .orderByAsc(CompanyInfo::getCompanyCode));
     }
 
-    private List<DocumentType> listActiveDocumentTypes() {
-        return documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>()
-            .eq(DocumentType::getDeleteFlag, "N")
-            .eq(DocumentType::getEnabledFlag, "Y")
-            .eq(DocumentType::getLevelNum, 1)
-            .orderByAsc(DocumentType::getSortOrder)
-            .orderByAsc(DocumentType::getTypeCode));
+    private List<BusinessModule> listActiveBusinessModules() {
+        return businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>()
+            .eq(BusinessModule::getDeleteFlag, "N")
+            .eq(BusinessModule::getEnabledFlag, "Y")
+            .eq(BusinessModule::getLevelNum, 1)
+            .orderByAsc(BusinessModule::getSortOrder)
+            .orderByAsc(BusinessModule::getModuleCode));
     }
 
     private List<String> listActiveDocumentOrganizationCodes() {
@@ -300,17 +282,12 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
             ));
     }
 
-    private List<SecurityLevelDictionary> listActiveSecurityLevels() {
-        return securityLevelDictionaryMapper.selectList(new LambdaQueryWrapper<SecurityLevelDictionary>()
-            .eq(SecurityLevelDictionary::getDeleteFlag, "N")
-            .eq(SecurityLevelDictionary::getEnabledFlag, "Y")
-            .orderByAsc(SecurityLevelDictionary::getSortOrder)
-            .orderByAsc(SecurityLevelDictionary::getSecurityLevelCode));
-    }
-
-    private ArchiveFlowRule findActiveByCompanyProjectCode(String companyProjectCode) {
+    private ArchiveFlowRule findActiveById(Long id) {
+        if (id == null) {
+            throw new BusinessException("id cannot be null");
+        }
         ArchiveFlowRule item = archiveFlowRuleMapper.selectOne(new LambdaQueryWrapper<ArchiveFlowRule>()
-            .eq(ArchiveFlowRule::getCompanyProjectCode, companyProjectCode)
+            .eq(ArchiveFlowRule::getId, id)
             .eq(ArchiveFlowRule::getDeleteFlag, "N")
             .last("limit 1"));
         if (item == null) {
@@ -330,22 +307,22 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
     }
 
     private void ensureCompanyProjectAvailable(String companyProjectCode) {
-        Long count = companyProjectMapper.selectCount(new LambdaQueryWrapper<CompanyProject>()
-            .eq(CompanyProject::getCompanyProjectCode, companyProjectCode)
-            .eq(CompanyProject::getDeleteFlag, "N")
-            .eq(CompanyProject::getEnabledFlag, "Y"));
+        Long count = companyInfoMapper.selectCount(new LambdaQueryWrapper<CompanyInfo>()
+            .eq(CompanyInfo::getCompanyCode, companyProjectCode)
+            .eq(CompanyInfo::getDeleteFlag, "N")
+            .eq(CompanyInfo::getEnabledFlag, "Y"));
         if (count == null || count == 0) {
-            throw new BusinessException("companyProjectCode must come from enabled company/project data");
+            throw new BusinessException("companyProjectCode must come from enabled company data");
         }
     }
 
     private void validateType(String busiModuleCode) {
-        Long count = documentTypeMapper.selectCount(new LambdaQueryWrapper<DocumentType>()
-            .eq(DocumentType::getTypeCode, busiModuleCode)
-            .eq(DocumentType::getDeleteFlag, "N")
-            .eq(DocumentType::getEnabledFlag, "Y"));
+        Long count = businessModuleMapper.selectCount(new LambdaQueryWrapper<BusinessModule>()
+            .eq(BusinessModule::getModuleCode, busiModuleCode)
+            .eq(BusinessModule::getDeleteFlag, "N")
+            .eq(BusinessModule::getEnabledFlag, "Y"));
         if (count == null || count == 0) {
-            throw new BusinessException("busiModuleCode must come from enabled document types");
+            throw new BusinessException("busiModuleCode must come from enabled business modules");
         }
     }
 
@@ -370,16 +347,6 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
         }
     }
 
-    private void validateSecurityLevel(String securityLevelCode) {
-        Long count = securityLevelDictionaryMapper.selectCount(new LambdaQueryWrapper<SecurityLevelDictionary>()
-            .eq(SecurityLevelDictionary::getSecurityLevelCode, securityLevelCode)
-            .eq(SecurityLevelDictionary::getDeleteFlag, "N")
-            .eq(SecurityLevelDictionary::getEnabledFlag, "Y"));
-        if (count == null || count == 0) {
-            throw new BusinessException("securityLevelCode must come from enabled dictionary entries");
-        }
-    }
-
     private void validateRetentionPeriodYears(Integer years) {
         if (years == null || years < 0) {
             throw new BusinessException("retentionPeriodYears must be a non-negative number");
@@ -396,8 +363,7 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
                                                      Map<String, String> companyProjectNameMap,
                                                      Map<String, String> busiModuleNameMap,
                                                      Map<String, String> documentOrganizationNameMap,
-                                                     Map<String, String> cityNameMap,
-                                                     Map<String, String> securityLevelNameMap) {
+                                                     Map<String, String> cityNameMap) {
         ArchiveFlowRuleSummaryResponse response = new ArchiveFlowRuleSummaryResponse();
         response.setId(item.getId());
         response.setCompanyProjectCode(item.getCompanyProjectCode());
@@ -410,9 +376,8 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
         response.setDocumentOrganizationCode(item.getDocumentOrganizationCode());
         response.setDocumentOrganizationName(documentOrganizationNameMap.getOrDefault(item.getDocumentOrganizationCode(), item.getDocumentOrganizationCode()));
         response.setRetentionPeriodYears(item.getRetentionPeriodYears());
-        response.setSecurityLevelCode(item.getSecurityLevelCode());
-        response.setSecurityLevelName(securityLevelNameMap.getOrDefault(item.getSecurityLevelCode(), item.getSecurityLevelCode()));
         response.setExternalDisplayFlag(item.getExternalDisplayFlag());
+        response.setDefaultFlag(item.getDefaultFlag());
         response.setEnabledFlag(item.getEnabledFlag());
         response.setLastUpdatedBy(item.getLastUpdatedBy());
         response.setLastUpdateDate(item.getLastUpdateDate());
@@ -428,8 +393,8 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
         response.setArchiveDestination(item.getArchiveDestination());
         response.setDocumentOrganizationCode(item.getDocumentOrganizationCode());
         response.setRetentionPeriodYears(item.getRetentionPeriodYears());
-        response.setSecurityLevelCode(item.getSecurityLevelCode());
         response.setExternalDisplayFlag(item.getExternalDisplayFlag());
+        response.setDefaultFlag(item.getDefaultFlag());
         response.setEnabledFlag(item.getEnabledFlag());
         response.setDeleteFlag(item.getDeleteFlag());
         response.setCreatedBy(item.getCreatedBy());

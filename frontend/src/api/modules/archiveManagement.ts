@@ -227,23 +227,23 @@ export interface StorageLedgerQueryCommand {
 }
 
 export function fetchDocumentTypeExtFields(busiModuleCode: string) {
-  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/document-types/${busiModuleCode}/ext-fields`))
+  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/business-modules/${busiModuleCode}/ext-fields`))
 }
 
 export function fetchEffectiveDocumentTypeExtFields(busiModuleCode: string) {
-  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/document-types/${busiModuleCode}/ext-fields/effective`))
+  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/business-modules/${busiModuleCode}/ext-fields/effective`))
 }
 
 export function createDocumentTypeExtField(busiModuleCode: string, data: DocumentTypeExtFieldCreateCommand) {
-  return apiRequest<DocumentTypeExtField>(http.post(`/api/base-data/document-types/${busiModuleCode}/ext-fields`, data))
+  return apiRequest<DocumentTypeExtField>(http.post(`/api/base-data/business-modules/${busiModuleCode}/ext-fields`, data))
 }
 
 export function updateDocumentTypeExtField(busiModuleCode: string, fieldCode: string, data: DocumentTypeExtFieldCreateCommand) {
-  return apiRequest<DocumentTypeExtField>(http.put(`/api/base-data/document-types/${busiModuleCode}/ext-fields/${fieldCode}`, data))
+  return apiRequest<DocumentTypeExtField>(http.put(`/api/base-data/business-modules/${busiModuleCode}/ext-fields/${fieldCode}`, data))
 }
 
 export function deleteDocumentTypeExtField(busiModuleCode: string, fieldCode: string) {
-  return apiRequest<void>(http.delete(`/api/base-data/document-types/${busiModuleCode}/ext-fields/${fieldCode}`))
+  return apiRequest<void>(http.delete(`/api/base-data/business-modules/${busiModuleCode}/ext-fields/${fieldCode}`))
 }
 
 export function fetchArchiveCreateOptions() {

@@ -1,90 +1,76 @@
 <template>
-  <div class="page">
-    <el-card shadow="never">
-      <template #header><strong>文档类型配置</strong></template>
-      <el-form :inline="true" :model="queryForm" class="query-form">
-        <el-form-item label="文档类型编码">
-          <el-input v-model="queryForm.docTypeCode" clearable style="width: 180px" />
-        </el-form-item>
-        <el-form-item label="文档类型名称">
-          <el-input v-model="queryForm.docTypeDescription" clearable style="width: 220px" />
-        </el-form-item>
-        <el-form-item label="是否启用">
-          <el-select v-model="queryForm.enableFlag" style="width: 180px">
-            <el-option label="是" value="Y" />
-            <el-option label="否" value="N" />
+  <div class="document-type-config-page">
+    <section class="doc-hero">
+      <div>
+        <span>Document Type Config</span>
+        <h2>文档类型配置</h2>
+        <p>维护文档类型编码、名称、描述和启用状态，为借阅、归档和检索提供统一类型基础数据。</p>
+      </div>
+    </section>
+
+    <el-card shadow="never" class="query-card">
+      <el-form class="doc-query" :model="query" label-position="top">
+        <el-form-item label="文档类型">
+          <el-select v-model="query.typeCodes" multiple filterable collapse-tags collapse-tags-tooltip clearable placeholder="请选择文档类型">
+            <el-option v-for="item in typeOptions" :key="item.docTypeCode" :label="`${item.docTypeCode} ｜ ${item.docTypeDescription}`" :value="item.docTypeCode" />
           </el-select>
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="loadList">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
+        <el-form-item label="启用标志">
+          <el-select v-model="query.enabledFlag" clearable placeholder="请选择启用标志">
+            <el-option label="启用" value="Y" />
+            <el-option label="停用" value="N" />
+          </el-select>
         </el-form-item>
+        <div class="query-actions">
+          <el-button type="primary" @click="applyQuery">查询</el-button>
+          <el-button @click="resetQuery">重置</el-button>
+        </div>
       </el-form>
     </el-card>
 
-    <el-card shadow="never">
+    <el-card shadow="never" class="table-card">
       <template #header>
-        <div class="toolbar">
-          <el-button type="primary" @click="openCreate">新增</el-button>
-          <el-button type="primary" :disabled="!hasEditingRows" @click="saveEditingRows">保存</el-button>
-          <el-dropdown split-button type="default" @click="triggerImportCsv" @command="handleImportCommand">
-            导入CSV
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="csv">导入CSV</el-dropdown-item>
-                <el-dropdown-item command="excel">导入Excel</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <el-dropdown split-button type="default" @click="onExportCsv" @command="handleExportCommand">
-            导出CSV
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="csv">导出CSV</el-dropdown-item>
-                <el-dropdown-item command="excel">导出Excel</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+        <div class="table-head">
+          <strong>文档类型列表</strong>
+          <el-button type="primary" @click="openDialog()">新增</el-button>
         </div>
       </template>
-      <input ref="importCsvRef" type="file" accept=".csv,text/csv" style="display: none" @change="onImportCsvChange" />
-      <input ref="importExcelRef" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display: none" @change="onImportExcelChange" />
-      <el-table :data="listData" border>
-        <el-table-column type="index" label="序号" width="70" />
-        <el-table-column label="操作" width="130">
+      <el-table :data="filteredTypes" border empty-text="暂无文档类型">
+        <el-table-column prop="docTypeCode" label="文档类型编码" min-width="180" />
+        <el-table-column prop="docTypeDescription" label="文档类型名称" min-width="180" />
+        <el-table-column prop="enableFlag" label="启用标志" width="110">
           <template #default="{ row }">
-            <el-button v-if="row.__editing && row.__isNew" link type="danger" @click="cancelNewRow(row)">删除</el-button>
-            <el-button v-if="!row.__editing" link type="primary" @click="startEditRow(row)">编辑</el-button>
+            <el-tag :type="row.enableFlag === 'Y' ? 'success' : 'info'">{{ row.enableFlag === 'Y' ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="文档类型编码" min-width="180">
+        <el-table-column label="操作" width="120" fixed="right" align="center">
           <template #default="{ row }">
-            <el-input v-if="row.__editing" v-model="row.docTypeCode" />
-            <span v-else>{{ row.docTypeCode }}</span>
+            <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
           </template>
-        </el-table-column>
-        <el-table-column label="文档类型名称" min-width="240">
-          <template #default="{ row }">
-            <el-input v-if="row.__editing" v-model="row.docTypeDescription" />
-            <span v-else>{{ row.docTypeDescription }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="是否启用" width="100">
-          <template #default="{ row }">
-            <el-switch v-if="row.__editing" v-model="row.enableFlag" active-value="Y" inactive-value="N" />
-            <span v-else>{{ row.enableFlag === 'Y' ? '是' : '否' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdBy" label="创建人" width="100" />
-        <el-table-column label="创建时间" min-width="120">
-          <template #default="{ row }">{{ formatDate(row.creationDate) }}</template>
-        </el-table-column>
-        <el-table-column prop="lastUpdatedBy" label="最后更新人" width="110" />
-        <el-table-column label="最后更新时间" min-width="120">
-          <template #default="{ row }">{{ formatDate(row.lastUpdateDate) }}</template>
         </el-table-column>
       </el-table>
     </el-card>
+
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新增文档类型' : '编辑文档类型'" width="560px">
+      <el-form :model="form" label-position="top">
+        <el-form-item label="文档类型编码" required>
+          <el-input v-model="form.docTypeCode" :disabled="dialogMode === 'edit'" />
+        </el-form-item>
+        <el-form-item label="文档类型名称" required>
+          <el-input v-model="form.docTypeDescription" />
+        </el-form-item>
+        <el-form-item label="启用标志">
+          <el-radio-group v-model="form.enableFlag">
+            <el-radio value="Y">启用</el-radio>
+            <el-radio value="N">停用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saveLoading" @click="saveType">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -93,194 +79,109 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import {
   createDocumentTypeConfig,
-  exportDocumentTypeConfigsCsv,
-  exportDocumentTypeConfigsExcel,
-  importDocumentTypeConfigsCsv,
-  importDocumentTypeConfigsExcel,
   queryDocumentTypeConfigs,
   updateDocumentTypeConfig,
   type DocumentTypeConfigSaveCommand
 } from '../../api/modules/documentTypeConfig'
 import type { DocumentTypeConfig } from '../../types'
 
-type DocumentTypeConfigRow = DocumentTypeConfig & {
-  __isNew?: boolean
-  __editing?: boolean
+const rawTypes = ref<DocumentTypeConfig[]>([])
+const dialogVisible = ref(false)
+const dialogMode = ref<'create' | 'edit'>('create')
+const editingNode = ref<DocumentTypeConfig>()
+const saveLoading = ref(false)
+
+const query = reactive({ typeCodes: [] as string[], enabledFlag: '' as '' | 'Y' | 'N' })
+const form = reactive<DocumentTypeConfigSaveCommand>({ docTypeCode: '', docTypeDescription: '', enableFlag: 'Y' })
+
+const typeOptions = computed(() => rawTypes.value)
+const filteredTypes = computed(() => rawTypes.value.filter(item => {
+  const typeMatched = !query.typeCodes.length || query.typeCodes.includes(item.docTypeCode)
+  const enabledMatched = !query.enabledFlag || item.enableFlag === query.enabledFlag
+  return typeMatched && enabledMatched
+}))
+
+async function loadTypes() {
+  rawTypes.value = await queryDocumentTypeConfigs({
+    enableFlag: query.enabledFlag || undefined
+  })
 }
 
-const queryForm = reactive({ docTypeCode: '', docTypeDescription: '', enableFlag: 'Y' as 'Y' | 'N' })
-const listData = ref<DocumentTypeConfigRow[]>([])
-const importCsvRef = ref<HTMLInputElement>()
-const importExcelRef = ref<HTMLInputElement>()
-const hasEditingRows = computed(() => listData.value.some(row => row.__editing))
+async function applyQuery() {
+  await loadTypes()
+}
 
-const loadList = async () => {
+async function resetQuery() {
+  query.typeCodes = []
+  query.enabledFlag = ''
+  await loadTypes()
+}
+
+function resetForm() {
+  form.docTypeCode = ''
+  form.docTypeDescription = ''
+  form.enableFlag = 'Y'
+  editingNode.value = undefined
+}
+
+function openDialog(row?: DocumentTypeConfig) {
+  resetForm()
+  dialogMode.value = row ? 'edit' : 'create'
+  if (row) {
+    editingNode.value = row
+    form.docTypeCode = row.docTypeCode
+    form.docTypeDescription = row.docTypeDescription
+    form.enableFlag = row.enableFlag
+  }
+  dialogVisible.value = true
+}
+
+async function saveType() {
+  if (!form.docTypeCode.trim()) return ElMessage.warning('请输入文档类型编码')
+  if (!form.docTypeDescription.trim()) return ElMessage.warning('请输入文档类型名称')
+  saveLoading.value = true
   try {
-    const rows = await queryDocumentTypeConfigs({ ...queryForm })
-    listData.value = rows.map(row => ({ ...row, __isNew: false, __editing: false }))
-  } catch (e: any) {
-    ElMessage.error(e?.message || '查询失败')
-  }
-}
-
-const resetQuery = async () => {
-  queryForm.docTypeCode = ''
-  queryForm.docTypeDescription = ''
-  queryForm.enableFlag = 'Y'
-  await loadList()
-}
-
-const openCreate = () => {
-  const emptyRow: DocumentTypeConfigRow = {
-    documentTypeId: 0,
-    docTypeCode: '',
-    docTypeDescription: '',
-    enableFlag: 'Y',
-    __isNew: true,
-    __editing: true
-  }
-  listData.value = [emptyRow, ...listData.value]
-}
-
-const startEditRow = (row: DocumentTypeConfigRow) => {
-  row.__editing = true
-}
-
-const cancelNewRow = (row: DocumentTypeConfigRow) => {
-  listData.value = listData.value.filter(item => item !== row)
-}
-
-const saveRow = async (row: DocumentTypeConfigRow) => {
-  const payload: DocumentTypeConfigSaveCommand = {
-    docTypeCode: row.docTypeCode?.trim(),
-    docTypeDescription: row.docTypeDescription?.trim(),
-    enableFlag: row.enableFlag
-  }
-  if (!payload.docTypeCode || !payload.docTypeDescription) {
-    return ElMessage.warning('请完整填写文档类型编码和名称')
-  }
-  try {
-    if (row.__isNew) await createDocumentTypeConfig(payload)
-    else await updateDocumentTypeConfig(row.documentTypeId, payload)
-    await loadList()
+    if (dialogMode.value === 'create') {
+      await createDocumentTypeConfig({
+        docTypeCode: form.docTypeCode.trim(),
+        docTypeDescription: form.docTypeDescription.trim(),
+        enableFlag: form.enableFlag
+      })
+    } else if (editingNode.value) {
+      await updateDocumentTypeConfig(editingNode.value.documentTypeId, {
+        docTypeCode: form.docTypeCode.trim(),
+        docTypeDescription: form.docTypeDescription.trim(),
+        enableFlag: form.enableFlag
+      })
+    }
+    dialogVisible.value = false
+    await loadTypes()
     ElMessage.success('保存成功')
-  } catch (e: any) {
-    ElMessage.error(e?.message || '保存失败')
+  } catch (error) {
+    ElMessage.error(resolveErrorMessage(error, '文档类型保存失败，请检查编码是否重复或后端服务是否正常'))
+  } finally {
+    saveLoading.value = false
   }
 }
 
-const saveEditingRows = async () => {
-  const targets = listData.value.filter(row => row.__editing)
-  if (!targets.length) return
-  for (const row of targets) {
-    await saveRow(row)
-  }
+function resolveErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) return error.message
+  const responseMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+  return responseMessage || fallback
 }
 
-const triggerImportCsv = () => {
-  if (!importCsvRef.value) return
-  importCsvRef.value.value = ''
-  importCsvRef.value.click()
-}
-
-const triggerImportExcel = () => {
-  if (!importExcelRef.value) return
-  importExcelRef.value.value = ''
-  importExcelRef.value.click()
-}
-
-const handleImportCommand = (command: string) => {
-  if (command === 'excel') {
-    triggerImportExcel()
-    return
-  }
-  triggerImportCsv()
-}
-
-const onImportCsvChange = async (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-  try {
-    const imported = await importDocumentTypeConfigsCsv(file)
-    ElMessage.success(`CSV 导入完成，共处理 ${imported} 行`)
-    await loadList()
-  } catch (e: any) {
-    ElMessage.error(e?.message || 'CSV 导入失败')
-  }
-}
-
-const onImportExcelChange = async (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-  try {
-    const imported = await importDocumentTypeConfigsExcel(file)
-    ElMessage.success(`Excel 导入完成，共处理 ${imported} 行`)
-    await loadList()
-  } catch (e: any) {
-    ElMessage.error(e?.message || 'Excel 导入失败')
-  }
-}
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  window.URL.revokeObjectURL(url)
-}
-
-const onExportCsv = async () => {
-  try {
-    const blob = await exportDocumentTypeConfigsCsv({ ...queryForm })
-    downloadBlob(blob, 'document-type-configs.csv')
-    ElMessage.success('CSV 导出成功')
-  } catch (e: any) {
-    ElMessage.error(e?.message || 'CSV 导出失败')
-  }
-}
-
-const onExportExcel = async () => {
-  try {
-    const blob = await exportDocumentTypeConfigsExcel({ ...queryForm })
-    downloadBlob(blob, 'document-type-configs.xlsx')
-    ElMessage.success('Excel 导出成功')
-  } catch (e: any) {
-    ElMessage.error(e?.message || 'Excel 导出失败')
-  }
-}
-
-const handleExportCommand = (command: string) => {
-  if (command === 'excel') {
-    void onExportExcel()
-    return
-  }
-  void onExportCsv()
-}
-
-const formatDate = (value?: string) => {
-  if (!value) return ''
-  return value.replace('T', ' ').slice(0, 19)
-}
-
-onMounted(async () => {
-  await loadList()
-})
+onMounted(loadTypes)
 </script>
 
 <style scoped>
-.page {
-  display: grid;
-  gap: 16px;
-}
-.query-form {
-  display: flex;
-  flex-wrap: wrap;
-}
-.toolbar {
-  display: flex;
-  gap: 10px;
-}
+.document-type-config-page { display: grid; gap: 20px; }
+.doc-hero { padding: 24px; border-radius: 24px; color: #17324a; background: linear-gradient(135deg, #eaf4ff 0%, #c8e1f7 48%, #fff5df 48%, #fffaf0 100%); box-shadow: 0 18px 40px rgba(23, 50, 74, .12); }
+.doc-hero span { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .72; }
+.doc-hero h2 { margin: 8px 0; font-size: 30px; }
+.doc-hero p { margin: 0; max-width: 680px; color: #526678; }
+.query-card, .table-card { border-radius: 20px; border: 1px solid #dce8ef; }
+.doc-query { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(160px, 220px) auto; gap: 12px; align-items: end; }
+.query-actions { display: flex; gap: 8px; padding-bottom: 18px; }
+.table-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+@media (max-width: 900px) { .doc-query { grid-template-columns: 1fr; } .query-actions { padding-bottom: 0; } }
 </style>

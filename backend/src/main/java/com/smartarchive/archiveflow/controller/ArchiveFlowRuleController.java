@@ -6,7 +6,6 @@ import com.smartarchive.archiveflow.dto.ArchiveFlowRuleOptionResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRulePermissionPreviewResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleSummaryResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleUpdateCommand;
-import com.smartarchive.archiveflow.dto.SecurityLevelOptionResponse;
 import com.smartarchive.archiveflow.service.ArchiveFlowRuleService;
 import com.smartarchive.common.api.ApiResponse;
 import jakarta.validation.Valid;
@@ -42,9 +41,9 @@ public class ArchiveFlowRuleController {
         return ApiResponse.success(archiveFlowRuleService.listCompanyProjectOptions());
     }
 
-    @GetMapping("/options/document-types")
-    public ApiResponse<List<ArchiveFlowRuleOptionResponse>> listDocumentTypes() {
-        return ApiResponse.success(archiveFlowRuleService.listDocumentTypeOptions());
+    @GetMapping("/options/business-modules")
+    public ApiResponse<List<ArchiveFlowRuleOptionResponse>> listBusinessModules() {
+        return ApiResponse.success(archiveFlowRuleService.listBusinessModuleOptions());
     }
 
     @GetMapping("/options/document-organizations")
@@ -57,19 +56,14 @@ public class ArchiveFlowRuleController {
         return ApiResponse.success(archiveFlowRuleService.listCityOptions());
     }
 
-    @GetMapping("/options/security-levels")
-    public ApiResponse<List<SecurityLevelOptionResponse>> listSecurityLevels() {
-        return ApiResponse.success(archiveFlowRuleService.listSecurityLevels());
-    }
-
     @GetMapping("/permissions/preview")
     public ApiResponse<ArchiveFlowRulePermissionPreviewResponse> permissionPreview() {
         return ApiResponse.success(archiveFlowRuleService.getPermissionPreview());
     }
 
-    @GetMapping("/{companyProjectCode}")
-    public ApiResponse<ArchiveFlowRuleDetailResponse> detail(@PathVariable String companyProjectCode) {
-        return ApiResponse.success(archiveFlowRuleService.getDetail(companyProjectCode));
+    @GetMapping("/{id}")
+    public ApiResponse<ArchiveFlowRuleDetailResponse> detail(@PathVariable Long id) {
+        return ApiResponse.success(archiveFlowRuleService.getDetail(id));
     }
 
     @PostMapping
@@ -77,15 +71,15 @@ public class ArchiveFlowRuleController {
         return ApiResponse.success(archiveFlowRuleService.create(command));
     }
 
-    @PutMapping("/{companyProjectCode}")
-    public ApiResponse<ArchiveFlowRuleDetailResponse> update(@PathVariable String companyProjectCode,
+    @PutMapping("/{id}")
+    public ApiResponse<ArchiveFlowRuleDetailResponse> update(@PathVariable Long id,
                                                              @Valid @RequestBody ArchiveFlowRuleUpdateCommand command) {
-        return ApiResponse.success(archiveFlowRuleService.update(companyProjectCode, command));
+        return ApiResponse.success(archiveFlowRuleService.update(id, command));
     }
 
-    @DeleteMapping("/{companyProjectCode}")
-    public ApiResponse<Void> delete(@PathVariable String companyProjectCode) {
-        archiveFlowRuleService.delete(companyProjectCode);
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        archiveFlowRuleService.delete(id);
         return ApiResponse.success(null);
     }
 }

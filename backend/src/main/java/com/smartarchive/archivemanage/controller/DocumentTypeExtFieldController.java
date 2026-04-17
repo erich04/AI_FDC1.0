@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/base-data/document-types/{busiModuleCode}/ext-fields")
+@RequestMapping("/api/archive-manage/business-modules/{busiModuleCode}/ext-fields")
 @RequiredArgsConstructor
 public class DocumentTypeExtFieldController {
     private final DocumentTypeExtFieldService documentTypeExtFieldService;

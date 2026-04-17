@@ -26,9 +26,9 @@ import com.smartarchive.archivemanage.mapper.TransferApplicationExtMapper;
 import com.smartarchive.archivemanage.mapper.TransferApplicationMapper;
 import com.smartarchive.archivemanage.service.DocumentTypeExtFieldService;
 import com.smartarchive.archivemanage.service.TransferApplicationService;
+import com.smartarchive.businessmodule.domain.BusinessModule;
+import com.smartarchive.businessmodule.mapper.BusinessModuleMapper;
 import com.smartarchive.common.exception.BusinessException;
-import com.smartarchive.documenttype.domain.DocumentType;
-import com.smartarchive.documenttype.mapper.DocumentTypeMapper;
 import com.smartarchive.workflow.domain.WorkflowInstance;
 import com.smartarchive.workflow.dto.StartProcessCommand;
 import com.smartarchive.workflow.mapper.WorkflowInstanceMapper;
@@ -75,7 +75,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
     private final TransferApplicationExtMapper transferApplicationExtMapper;
     private final ArchiveExtFieldConfigMapper archiveExtFieldConfigMapper;
     private final DocumentTypeExtFieldService documentTypeExtFieldService;
-    private final DocumentTypeMapper documentTypeMapper;
+    private final BusinessModuleMapper businessModuleMapper;
     private final WorkflowService workflowService;
     private final WorkflowInstanceMapper workflowInstanceMapper;
 
@@ -194,14 +194,14 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
                 if (codes.isEmpty()) {
                     return Map.<String, String>of();
                 }
-                return documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>()
-                        .in(DocumentType::getTypeCode, codes)
-                        .eq(DocumentType::getDeleteFlag, "N"))
+                return businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>()
+                        .in(BusinessModule::getModuleCode, codes)
+                        .eq(BusinessModule::getDeleteFlag, "N"))
                     .stream()
-                    .filter(item -> StringUtils.hasText(item.getTypeCode()))
+                    .filter(item -> StringUtils.hasText(item.getModuleCode()))
                     .collect(Collectors.toMap(
-                        DocumentType::getTypeCode,
-                        item -> StringUtils.hasText(item.getTypeName()) ? item.getTypeName() : item.getTypeCode(),
+                        BusinessModule::getModuleCode,
+                        item -> StringUtils.hasText(item.getModuleName()) ? item.getModuleName() : item.getModuleCode(),
                         (left, right) -> left
                     ));
             }));

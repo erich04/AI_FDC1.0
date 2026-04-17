@@ -26,12 +26,12 @@ public class ArchiveFlowRuleUpdateCommand {
     private Integer retentionPeriodYears;
 
     @NotBlank(message = "cannot be blank")
-    @Size(max = 32, message = "length cannot exceed 32")
-    private String securityLevelCode;
+    @Pattern(regexp = "[YN]", message = "only supports Y or N")
+    private String externalDisplayFlag;
 
     @NotBlank(message = "cannot be blank")
     @Pattern(regexp = "[YN]", message = "only supports Y or N")
-    private String externalDisplayFlag;
+    private String defaultFlag;
 
     @NotBlank(message = "cannot be blank")
     @Pattern(regexp = "[YN]", message = "only supports Y or N")

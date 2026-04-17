@@ -8,8 +8,8 @@ import com.smartarchive.archivemanage.service.support.SecurityLevelResolver;
 import com.smartarchive.workspace.dto.WorkspaceIoJobCreateCommand;
 import com.smartarchive.workspace.dto.WorkspaceIoJobSummaryResponse;
 import com.smartarchive.workspace.service.WorkspaceIoJobService;
-import com.smartarchive.documenttype.domain.DocumentType;
-import com.smartarchive.documenttype.mapper.DocumentTypeMapper;
+import com.smartarchive.businessmodule.domain.BusinessModule;
+import com.smartarchive.businessmodule.mapper.BusinessModuleMapper;
 import com.smartarchive.common.api.ApiResponse;
 import com.smartarchive.common.exception.BusinessException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -50,7 +50,7 @@ public class PendingDocumentQueryController {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
-    private final DocumentTypeMapper documentTypeMapper;
+    private final BusinessModuleMapper businessModuleMapper;
     private final SecurityLevelResolver securityLevelResolver;
     private final ObjectMapper objectMapper;
     private final PendingArchiveBatchImportService pendingArchiveBatchImportService;
@@ -60,7 +60,7 @@ public class PendingDocumentQueryController {
     private final Executor taskExecutor;
 
     public PendingDocumentQueryController(NamedParameterJdbcTemplate namedParameterJdbcTemplate,
-                                          DocumentTypeMapper documentTypeMapper,
+                                          BusinessModuleMapper businessModuleMapper,
                                           SecurityLevelResolver securityLevelResolver,
                                           ObjectMapper objectMapper,
                                           PendingArchiveBatchImportService pendingArchiveBatchImportService,
@@ -68,7 +68,7 @@ public class PendingDocumentQueryController {
                                           JdbcTemplate jdbcTemplate,
                                           @Qualifier("pendingArchiveBatchExecutor") Executor taskExecutor) {
         this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
-        this.documentTypeMapper = documentTypeMapper;
+        this.businessModuleMapper = businessModuleMapper;
         this.securityLevelResolver = securityLevelResolver;
         this.objectMapper = objectMapper;
         this.pendingArchiveBatchImportService = pendingArchiveBatchImportService;
@@ -141,10 +141,10 @@ public class PendingDocumentQueryController {
 
     @PostMapping("/query")
     public ApiResponse<List<PendingDocumentRowResponse>> query(@RequestBody PendingDocumentQueryCommand command) {
-        Map<String, String> documentTypeNameMap = documentTypeMapper.selectList(new LambdaQueryWrapper<DocumentType>()
-                .eq(DocumentType::getDeleteFlag, "N"))
+        Map<String, String> documentTypeNameMap = businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>()
+                .eq(BusinessModule::getDeleteFlag, "N"))
             .stream()
-            .collect(Collectors.toMap(DocumentType::getTypeCode, DocumentType::getTypeName, (left, right) -> left));
+            .collect(Collectors.toMap(BusinessModule::getModuleCode, BusinessModule::getModuleName, (left, right) -> left));
         Map<String, String> carrierTypeNameMap = loadCarrierTypeNameMap();
         boolean draftOwnerQuery = command.getCreatedByUserId() != null && command.getCreatedByUserId() > 0;
         if (draftOwnerQuery) {

@@ -76,7 +76,7 @@
       </el-form>
       <template #footer>
         <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" @click="save">保存</el-button>
+        <el-button type="primary" :loading="saving" :disabled="saving" @click="save">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -93,6 +93,7 @@ const query = reactive({ companyCode: '', companyName: '' })
 const visible = ref(false)
 const mode = ref<'create' | 'edit'>('create')
 const tagText = ref('')
+const saving = ref(false)
 const form = reactive<CompanyInfoCommand>({
   companyCode: '',
   companyName: '',
@@ -105,11 +106,9 @@ const form = reactive<CompanyInfoCommand>({
 })
 
 const load = async () => {
-  const all = await fetchCompanyInfos()
-  rows.value = all.filter((item) => {
-    const byCode = !query.companyCode || item.companyCode.includes(query.companyCode.trim())
-    const byName = !query.companyName || item.companyName.includes(query.companyName.trim())
-    return byCode && byName
+  rows.value = await fetchCompanyInfos({
+    companyCodes: query.companyCode.trim() ? [query.companyCode.trim()] : undefined,
+    companyName: query.companyName.trim() || undefined
   })
 }
 
@@ -143,19 +142,33 @@ const openEdit = (row: CompanyInfo) => {
 }
 
 const save = async () => {
+  if (saving.value) return
   if (!form.companyCode.trim() || !form.companyName.trim()) {
     ElMessage.warning('请填写公司编码和名称')
     return
   }
-  form.tags = tagText.value.split(',').map((v) => v.trim()).filter(Boolean)
-  if (mode.value === 'create') {
-    await createCompanyInfo({ ...form, companyCode: form.companyCode.trim(), companyName: form.companyName.trim() })
-  } else {
-    await updateCompanyInfo(form.companyCode, { ...form, companyName: form.companyName.trim() })
+
+  saving.value = true
+  try {
+    form.tags = tagText.value.split(',').map((v) => v.trim()).filter(Boolean)
+    if (mode.value === 'create') {
+      await createCompanyInfo({ ...form, companyCode: form.companyCode.trim(), companyName: form.companyName.trim() })
+    } else {
+      await updateCompanyInfo(form.companyCode, { ...form, companyName: form.companyName.trim() })
+    }
+    visible.value = false
+    ElMessage.success('保存成功')
+    try {
+      await load()
+    } catch {
+      ElMessage.warning('保存成功，但列表刷新失败，请手动点击查询刷新')
+    }
+  } catch (error) {
+    const responseMessage = (error as { response?: { data?: { msg?: string; message?: string } } })?.response?.data
+    ElMessage.error(responseMessage?.msg || responseMessage?.message || (error instanceof Error ? error.message : '保存失败'))
+  } finally {
+    saving.value = false
   }
-  visible.value = false
-  await load()
-  ElMessage.success('保存成功')
 }
 
 const remove = async (row: CompanyInfo) => {

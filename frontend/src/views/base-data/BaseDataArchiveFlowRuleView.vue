@@ -4,7 +4,7 @@
       <div class="toolbar">
         <el-form :inline="true" :model="query" class="query-form">
           <el-form-item label="关键字">
-            <el-input v-model.trim="query.keyword" placeholder="公司、文档类型或文档组织" clearable />
+            <el-input v-model.trim="query.keyword" placeholder="公司、业务模块或文档组织" clearable />
           </el-form-item>
           <el-form-item label="公司">
             <el-select v-model="query.companyProjectCode" placeholder="全部" clearable style="width: 220px">
@@ -49,15 +49,31 @@
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
-              <el-form-item label="文档类型" prop="documentTypeCode" required>
-                <TreeCodeSelector v-model="form.documentTypeCode" :data="documentTypeLevel1Tree" placeholder="请选择文档类型" label-key="typeName" value-key="typeCode" :disabled="isReadonly" />
+              <el-form-item label="业务模块" prop="busiModuleCode" required>
+                <el-tree-select
+                  v-model="form.busiModuleCode"
+                  :data="businessModuleTreeOptions"
+                  :props="{ label: 'label', children: 'children', value: 'value' }"
+                  :disabled="isReadonly"
+                  placeholder="请选择业务模块"
+                  check-strictly
+                  filterable
+                  style="width: 100%"
+                />
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
               <el-form-item label="归档地" prop="archiveDestination">
-                <el-select v-model="form.archiveDestination" :disabled="isReadonly" placeholder="请选择城市" clearable filterable style="width: 100%">
-                  <el-option v-for="item in cityOptions" :key="item.code" :label="item.name" :value="item.code" />
-                </el-select>
+                <el-cascader
+                  v-model="archiveDestinationPath"
+                  :options="archiveDestinationOptions"
+                  :props="{ value: 'value', label: 'label', children: 'children', emitPath: true, checkStrictly: false }"
+                  :disabled="isReadonly"
+                  clearable
+                  filterable
+                  placeholder="请选择国家/省份/城市"
+                  style="width: 100%"
+                />
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
@@ -73,15 +89,13 @@
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
-              <el-form-item label="密级" prop="securityLevelCode" required>
-                <el-select v-model="form.securityLevelCode" :disabled="isReadonly" placeholder="请选择密级" style="width: 100%">
-                  <el-option v-for="item in securityLevels" :key="item.securityLevelCode" :label="item.securityLevelName" :value="item.securityLevelCode" />
-                </el-select>
+              <el-form-item label="是否对外展示" prop="externalDisplayFlag" required>
+                <el-segmented v-model="form.externalDisplayFlag" :options="yesNoOptions" :disabled="isReadonly" />
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
-              <el-form-item label="是否对外展示" prop="externalDisplayFlag" required>
-                <el-segmented v-model="form.externalDisplayFlag" :options="yesNoOptions" :disabled="isReadonly" />
+              <el-form-item label="默认规则标识" prop="defaultFlag" required>
+                <el-segmented v-model="form.defaultFlag" :options="yesNoOptions" :disabled="isReadonly" />
               </el-form-item>
             </el-col>
             <el-col :md="8" :xs="24">
@@ -104,7 +118,7 @@
 
         <div class="editor-actions">
           <el-button @click="cancelEditor">取消</el-button>
-          <el-button v-if="editor.mode === 'view'" type="primary" plain @click="startEdit(form.companyProjectCode)">进入编辑</el-button>
+          <el-button v-if="editor.mode === 'view'" type="primary" plain @click="editor.ruleId && startEdit(editor.ruleId)">进入编辑</el-button>
           <el-button v-else type="primary" @click="submit">保存</el-button>
         </div>
       </div>
@@ -112,14 +126,19 @@
       <el-table :data="displayedItems" border empty-text="暂无归档流向规则">
         <el-table-column prop="companyProjectCode" label="公司编码" min-width="180" />
         <el-table-column prop="companyProjectName" label="公司名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="documentTypeName" label="文档类型" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="busiModuleName" label="业务模块" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="customRule" label="自定义匹配条件" min-width="200" show-overflow-tooltip />
         <el-table-column prop="archiveDestinationName" label="归档地" min-width="140" show-overflow-tooltip />
         <el-table-column prop="documentOrganizationName" label="文档组织" min-width="180" show-overflow-tooltip />
         <el-table-column prop="retentionPeriodYears" label="保存期限（年）" width="130" align="center" />
-        <el-table-column prop="securityLevelName" label="密级" width="130" align="center" />
-        <el-table-column label="对外展示" width="100" align="center">
+        <el-table-column label="是否可见" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.externalDisplayFlag === 'Y' ? 'success' : 'info'">{{ row.externalDisplayFlag === 'Y' ? '是' : '否' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="默认规则" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.defaultFlag === 'Y' ? 'success' : 'info'">{{ row.defaultFlag === 'Y' ? '是' : '否' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="启用" width="100" align="center">
@@ -130,9 +149,9 @@
         <el-table-column prop="lastUpdateDate" label="最后更新时间" min-width="180" />
         <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button link type="primary" @click="startView(row.companyProjectCode)">查看</el-button>
-            <el-button link type="primary" @click="startEdit(row.companyProjectCode)">编辑</el-button>
-            <el-popconfirm title="确认软删除该规则吗？" @confirm="removeItem(row.companyProjectCode)">
+            <el-button link type="primary" @click="startView(row.id)">查看</el-button>
+            <el-button link type="primary" @click="startEdit(row.id)">编辑</el-button>
+            <el-popconfirm title="确认软删除该规则吗？" @confirm="removeItem(row.id)">
               <template #reference>
                 <el-button link type="danger">删除</el-button>
               </template>
@@ -167,39 +186,69 @@
 <script setup lang="ts">
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import TreeCodeSelector from '../../components/TreeCodeSelector.vue'
 import {
   createArchiveFlowRule,
   deleteArchiveFlowRule,
-  fetchArchiveFlowCityOptions,
-  fetchArchiveFlowCompanyProjectOptions,
   fetchArchiveFlowDocumentOrganizationOptions,
   fetchArchiveFlowRuleDetail,
   fetchArchiveFlowRules,
-  fetchArchiveFlowSecurityLevels,
   fetchModuleAudits,
   updateArchiveFlowRule,
   type ArchiveFlowRuleCreateCommand
 } from '../../api/modules/archiveFlow'
-import { fetchDocumentTypeTree } from '../../api/modules/documentType'
+import { fetchBusinessModuleTree } from '../../api/modules/businessModule'
+import { fetchCompanyInfos } from '../../api/modules/companyInfo'
+import { fetchCountryRegions } from '../../api/modules/countryRegion'
 import type {
   ArchiveFlowRuleDetail,
   ArchiveFlowRuleOption,
   ArchiveFlowRuleSummary,
   AuditRecord,
-  DocumentTypeTreeNode,
-  SecurityLevelOption
+  BusinessModuleNode,
+  CountryRegionItem
 } from '../../types'
 
 const formRef = ref<FormInstance>()
 const items = ref<ArchiveFlowRuleSummary[]>([])
 const auditRecords = ref<AuditRecord[]>([])
 const companyProjectOptions = ref<ArchiveFlowRuleOption[]>([])
+const businessModuleTree = ref<BusinessModuleNode[]>([])
 const documentOrganizationOptions = ref<ArchiveFlowRuleOption[]>([])
-const cityOptions = ref<ArchiveFlowRuleOption[]>([])
-const securityLevels = ref<SecurityLevelOption[]>([])
-const documentTypeTree = ref<DocumentTypeTreeNode[]>([])
-const documentTypeLevel1Tree = computed(() => (Array.isArray(documentTypeTree.value) ? documentTypeTree.value : []).map((n) => ({ ...n, children: [] })))
+const countryOptions = ref<CountryRegionItem[]>([])
+const provinceOptions = ref<CountryRegionItem[]>([])
+const cityOptions = ref<CountryRegionItem[]>([])
+const archiveDestinationPath = ref<string[]>([])
+
+const businessModuleTreeOptions = computed(() =>
+  (businessModuleTree.value || []).map(mapBusinessModuleToTreeOption)
+)
+
+const archiveDestinationOptions = computed(() => {
+  const provinceByCountry = new Map<string, CountryRegionItem[]>()
+  const cityByProvince = new Map<string, CountryRegionItem[]>()
+  for (const province of provinceOptions.value) {
+    const parent = province.parentRegionCode || ''
+    if (!provinceByCountry.has(parent)) provinceByCountry.set(parent, [])
+    provinceByCountry.get(parent)!.push(province)
+  }
+  for (const city of cityOptions.value) {
+    const parent = city.parentRegionCode || ''
+    if (!cityByProvince.has(parent)) cityByProvince.set(parent, [])
+    cityByProvince.get(parent)!.push(city)
+  }
+  return countryOptions.value.map((country) => ({
+    value: country.regionCode,
+    label: country.regionName,
+    children: (provinceByCountry.get(country.regionCode) || []).map((province) => ({
+      value: province.regionCode,
+      label: province.regionName,
+      children: (cityByProvince.get(province.regionCode) || []).map((city) => ({
+        value: city.regionCode,
+        label: city.regionName
+      }))
+    }))
+  }))
+})
 
 const enabledOptions = [
   { label: '启用', value: 'Y' },
@@ -213,7 +262,7 @@ const yesNoOptions = [
 const query = reactive({
   keyword: '',
   companyProjectCode: '',
-  documentTypeCode: '',
+  busiModuleCode: '',
   documentOrganizationCode: '',
   enabledFlag: ''
 })
@@ -221,18 +270,19 @@ const query = reactive({
 const editor = reactive({
   visible: false,
   mode: 'create' as 'create' | 'edit' | 'view',
+  ruleId: undefined as number | undefined,
   lastUpdateDate: ''
 })
 
 const form = reactive<ArchiveFlowRuleCreateCommand>({
   companyProjectCode: '',
-  documentTypeCode: '',
+  busiModuleCode: '',
   customRule: '',
   archiveDestination: '',
   documentOrganizationCode: '',
   retentionPeriodYears: 0,
-  securityLevelCode: '',
   externalDisplayFlag: 'N',
+  defaultFlag: 'N',
   enabledFlag: 'Y'
 })
 
@@ -247,9 +297,17 @@ watch(retentionPeriodInput, (value) => {
   form.retentionPeriodYears = clean ? Number(clean) : 0
 })
 
+watch(archiveDestinationPath, (path) => {
+  if (!path || path.length === 0) {
+    form.archiveDestination = ''
+    return
+  }
+  form.archiveDestination = path[path.length - 1] || ''
+})
+
 const rules: FormRules<ArchiveFlowRuleCreateCommand> = {
   companyProjectCode: [{ required: true, message: '请选择公司', trigger: 'change' }],
-  documentTypeCode: [{ required: true, message: '请选择文档类型', trigger: 'change' }],
+  busiModuleCode: [{ required: true, message: '请选择业务模块', trigger: 'change' }],
   customRule: [{ max: 500, message: '最大长度500', trigger: 'blur' }],
   archiveDestination: [{ max: 64, message: '最大长度64', trigger: 'change' }],
   documentOrganizationCode: [{ required: true, message: '请选择文档组织', trigger: 'change' }],
@@ -263,8 +321,8 @@ const rules: FormRules<ArchiveFlowRuleCreateCommand> = {
     },
     trigger: 'blur'
   }],
-  securityLevelCode: [{ required: true, message: '请选择密级', trigger: 'change' }],
   externalDisplayFlag: [{ required: true, message: '请选择是否对外展示', trigger: 'change' }],
+  defaultFlag: [{ required: true, message: '请选择默认规则标识', trigger: 'change' }],
   enabledFlag: [{ required: true, message: '请选择启用标识', trigger: 'change' }]
 }
 
@@ -279,29 +337,33 @@ const displayedItems = computed(() => {
 
 const resetFormState = () => {
   form.companyProjectCode = ''
-  form.documentTypeCode = ''
+  form.busiModuleCode = ''
   form.customRule = ''
   form.archiveDestination = ''
   form.documentOrganizationCode = ''
   form.retentionPeriodYears = 0
-  form.securityLevelCode = securityLevels.value[0]?.securityLevelCode || ''
   form.externalDisplayFlag = 'N'
+  form.defaultFlag = 'N'
   form.enabledFlag = 'Y'
+  archiveDestinationPath.value = []
   retentionPeriodInput.value = '0'
+  editor.ruleId = undefined
   editor.lastUpdateDate = ''
 }
 
 const fillForm = (detail: ArchiveFlowRuleDetail) => {
   form.companyProjectCode = detail.companyProjectCode
-  form.documentTypeCode = detail.documentTypeCode
+  form.busiModuleCode = detail.busiModuleCode
   form.customRule = detail.customRule || ''
   form.archiveDestination = detail.archiveDestination || ''
   form.documentOrganizationCode = detail.documentOrganizationCode
   form.retentionPeriodYears = detail.retentionPeriodYears
-  form.securityLevelCode = detail.securityLevelCode
   form.externalDisplayFlag = detail.externalDisplayFlag
+  form.defaultFlag = detail.defaultFlag
   form.enabledFlag = detail.enabledFlag
+  archiveDestinationPath.value = buildArchiveDestinationPath(detail.archiveDestination)
   retentionPeriodInput.value = String(detail.retentionPeriodYears)
+  editor.ruleId = detail.id
   editor.lastUpdateDate = detail.lastUpdateDate
 }
 
@@ -309,25 +371,36 @@ const loadList = async () => {
   items.value = await fetchArchiveFlowRules({
     keyword: query.keyword?.trim() || undefined,
     companyProjectCode: query.companyProjectCode || undefined,
-    documentTypeCode: query.documentTypeCode || undefined,
+    busiModuleCode: query.busiModuleCode || undefined,
     documentOrganizationCode: query.documentOrganizationCode || undefined,
     enabledFlag: query.enabledFlag || undefined
   })
 }
 
 const loadMeta = async () => {
-  const [companyProjects, organizations, cities, levels, typeTree] = await Promise.all([
-    fetchArchiveFlowCompanyProjectOptions(),
+  const [companies, businessModules, organizations, countries] = await Promise.all([
+    fetchCompanyInfos({ enabledFlag: 'Y' }),
+    fetchBusinessModuleTree(),
     fetchArchiveFlowDocumentOrganizationOptions(),
-    fetchArchiveFlowCityOptions(),
-    fetchArchiveFlowSecurityLevels(),
-    fetchDocumentTypeTree()
+    fetchCountryRegions({ regionLevel: 'COUNTRY' })
   ])
-  companyProjectOptions.value = companyProjects
+  const countryCodes = countries.map((item) => item.regionCode).filter(Boolean)
+  const provincesNested = await Promise.all(countryCodes.map((countryCode) =>
+    fetchCountryRegions({ regionLevel: 'PROVINCE', parentRegionCode: countryCode })
+  ))
+  const provinces = provincesNested.flat()
+  const provinceCodes = provinces.map((item) => item.regionCode).filter(Boolean)
+  const citiesNested = await Promise.all(provinceCodes.map((provinceCode) =>
+    fetchCountryRegions({ regionLevel: 'CITY', parentRegionCode: provinceCode })
+  ))
+  const cities = citiesNested.flat()
+
+  companyProjectOptions.value = companies.map((item) => ({ code: item.companyCode, name: item.companyName }))
+  businessModuleTree.value = businessModules
   documentOrganizationOptions.value = organizations
+  countryOptions.value = countries
+  provinceOptions.value = provinces
   cityOptions.value = cities
-  securityLevels.value = levels
-  documentTypeTree.value = typeTree
   resetFormState()
 }
 
@@ -338,7 +411,7 @@ const loadAudits = async () => {
 const resetQuery = async () => {
   query.keyword = ''
   query.companyProjectCode = ''
-  query.documentTypeCode = ''
+  query.busiModuleCode = ''
   query.documentOrganizationCode = ''
   query.enabledFlag = ''
   await loadList()
@@ -350,19 +423,19 @@ const startCreate = () => {
   resetFormState()
 }
 
-const openDetailInEditor = async (companyProjectCode: string, mode: 'edit' | 'view') => {
-  const detail = await fetchArchiveFlowRuleDetail(companyProjectCode)
+const openDetailInEditor = async (id: number, mode: 'edit' | 'view') => {
+  const detail = await fetchArchiveFlowRuleDetail(id)
   editor.visible = true
   editor.mode = mode
   fillForm(detail)
 }
 
-const startEdit = async (companyProjectCode: string) => {
-  await openDetailInEditor(companyProjectCode, 'edit')
+const startEdit = async (id: number) => {
+  await openDetailInEditor(id, 'edit')
 }
 
-const startView = async (companyProjectCode: string) => {
-  await openDetailInEditor(companyProjectCode, 'view')
+const startView = async (id: number) => {
+  await openDetailInEditor(id, 'view')
 }
 
 const cancelEditor = () => {
@@ -379,25 +452,26 @@ const submit = async () => {
     if (editor.mode === 'create') {
       await createArchiveFlowRule({
         companyProjectCode: form.companyProjectCode,
-        documentTypeCode: form.documentTypeCode,
+        busiModuleCode: form.busiModuleCode,
         customRule: form.customRule?.trim() || undefined,
         archiveDestination: form.archiveDestination || undefined,
         documentOrganizationCode: form.documentOrganizationCode,
         retentionPeriodYears: form.retentionPeriodYears,
-        securityLevelCode: form.securityLevelCode,
         externalDisplayFlag: form.externalDisplayFlag,
+        defaultFlag: form.defaultFlag,
         enabledFlag: form.enabledFlag
       })
       ElMessage.success('归档流向规则创建成功')
     } else {
-      await updateArchiveFlowRule(form.companyProjectCode, {
-        documentTypeCode: form.documentTypeCode,
+      if (!editor.ruleId) throw new Error('规则ID缺失，无法更新')
+      await updateArchiveFlowRule(editor.ruleId, {
+        busiModuleCode: form.busiModuleCode,
         customRule: form.customRule?.trim() || undefined,
         archiveDestination: form.archiveDestination || undefined,
         documentOrganizationCode: form.documentOrganizationCode,
         retentionPeriodYears: form.retentionPeriodYears,
-        securityLevelCode: form.securityLevelCode,
         externalDisplayFlag: form.externalDisplayFlag,
+        defaultFlag: form.defaultFlag,
         enabledFlag: form.enabledFlag
       })
       ElMessage.success('归档流向规则更新成功')
@@ -410,17 +484,33 @@ const submit = async () => {
   }
 }
 
-const removeItem = async (companyProjectCode: string) => {
+const removeItem = async (id: number) => {
   try {
-    await deleteArchiveFlowRule(companyProjectCode)
+    await deleteArchiveFlowRule(id)
     ElMessage.success('归档流向规则已软删除')
-    if (form.companyProjectCode === companyProjectCode) {
+    if (editor.ruleId === id) {
       cancelEditor()
     }
     await Promise.all([loadList(), loadAudits()])
   } catch (error: any) {
     ElMessage.error(error?.message || '删除失败')
   }
+}
+
+const mapBusinessModuleToTreeOption = (node: BusinessModuleNode): { value: string; label: string; children: Array<{ value: string; label: string; children: any[] }> } => ({
+  value: node.moduleCode,
+  label: `${node.moduleCode} - ${node.moduleName}`,
+  children: (node.children || []).map(mapBusinessModuleToTreeOption)
+})
+
+const buildArchiveDestinationPath = (cityCode?: string) => {
+  if (!cityCode) return []
+  const city = cityOptions.value.find((item) => item.regionCode === cityCode)
+  if (!city) return [cityCode]
+  const provinceCode = city.parentRegionCode || ''
+  const province = provinceOptions.value.find((item) => item.regionCode === provinceCode)
+  const countryCode = province?.parentRegionCode || ''
+  return [countryCode, provinceCode, cityCode].filter(Boolean)
 }
 
 const formatTime = (value?: string) => value ? value.replace('T', ' ').slice(0, 19) : '-'

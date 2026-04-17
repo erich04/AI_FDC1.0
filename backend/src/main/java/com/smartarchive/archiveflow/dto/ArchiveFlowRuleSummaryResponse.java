@@ -16,9 +16,8 @@ public class ArchiveFlowRuleSummaryResponse {
     private String documentOrganizationCode;
     private String documentOrganizationName;
     private Integer retentionPeriodYears;
-    private String securityLevelCode;
-    private String securityLevelName;
     private String externalDisplayFlag;
+    private String defaultFlag;
     private String enabledFlag;
     private Long lastUpdatedBy;
     private LocalDateTime lastUpdateDate;

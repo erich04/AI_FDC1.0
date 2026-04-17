@@ -53,7 +53,7 @@
             <el-menu-item index="/base-data/company-infos">公司管理</el-menu-item>
             <el-menu-item index="/base-data/company-projects">公司项目管理</el-menu-item>
             <el-menu-item index="/base-data/document-organizations">文档组织管理</el-menu-item>
-            <el-menu-item index="/base-data/document-types">业务模块管理</el-menu-item>
+            <el-menu-item index="/base-data/document-type-configs">文档类型配置</el-menu-item>
             <el-menu-item index="/base-data/business-modules">业务模块配置</el-menu-item>
             <el-menu-item index="/base-data/archive-flow-rules">归档规则管理</el-menu-item>
             <el-menu-item index="/base-data/warehouse">库房管理</el-menu-item>
@@ -351,8 +351,6 @@ const pageDescription = computed(() => {
       return '集中承接待办处理、核心业务发起、经营看板与智能检索，是全系统统一工作入口。'
     case '/base-data/warehouse':
       return '维护库房、区域、货架和库位的可视化基础数据。'
-    case '/base-data/document-types':
-      return '维护档案类型树以及创建档案所需的扩展字段配置。'
     case '/base-data/dictionaries':
       return '维护档案业务所需的标准字典与配置项。'
     case '/archive-management/create':

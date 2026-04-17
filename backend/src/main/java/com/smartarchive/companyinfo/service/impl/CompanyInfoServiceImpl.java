@@ -29,10 +29,11 @@ public class CompanyInfoServiceImpl implements CompanyInfoService {
     private final CompanyTagMapper companyTagMapper;
 
     @Override
-    public List<CompanyInfoResponse> list(List<String> companyCodes, String region, String representativeOffice, String country, String enabledFlag, List<String> tags) {
+    public List<CompanyInfoResponse> list(List<String> companyCodes, String companyName, String region, String representativeOffice, String country, String enabledFlag, List<String> tags) {
         LambdaQueryWrapper<CompanyInfo> wrapper = new LambdaQueryWrapper<CompanyInfo>()
                 .eq(CompanyInfo::getDeleteFlag, "N")
                 .in(companyCodes != null && !companyCodes.isEmpty(), CompanyInfo::getCompanyCode, companyCodes)
+                .like(StringUtils.hasText(companyName), CompanyInfo::getCompanyName, trimToNull(companyName))
                 .eq(StringUtils.hasText(region), CompanyInfo::getRegion, trimToNull(region))
                 .eq(StringUtils.hasText(representativeOffice), CompanyInfo::getRepresentativeOffice, trimToNull(representativeOffice))
                 .eq(StringUtils.hasText(country), CompanyInfo::getCountry, trimToNull(country))

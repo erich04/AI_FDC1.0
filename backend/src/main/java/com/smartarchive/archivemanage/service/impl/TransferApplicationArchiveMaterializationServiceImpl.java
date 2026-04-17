@@ -308,7 +308,6 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         ArchiveDefaultResolveResponse response = new ArchiveDefaultResolveResponse();
         response.setCountryCode(companyProject.getCountryCode());
         if (bestMatch != null) {
-            response.setSecurityLevelCode(bestMatch.getSecurityLevelCode());
             response.setArchiveDestination(StringUtils.hasText(archiveDestination) ? archiveDestination : bestMatch.getArchiveDestination());
             response.setDocumentOrganizationCode(bestMatch.getDocumentOrganizationCode());
             response.setRetentionPeriodYears(bestMatch.getRetentionPeriodYears());

@@ -522,26 +522,20 @@ export interface ArchiveFlowRuleOption {
   name: string
 }
 
-export interface SecurityLevelOption {
-  securityLevelCode: string
-  securityLevelName: string
-}
-
 export interface ArchiveFlowRuleSummary {
   id: number
   companyProjectCode: string
   companyProjectName: string
-  documentTypeCode: string
-  documentTypeName: string
+  busiModuleCode: string
+  busiModuleName: string
   customRule?: string
   archiveDestination?: string
   archiveDestinationName?: string
   documentOrganizationCode: string
   documentOrganizationName: string
   retentionPeriodYears: number
-  securityLevelCode: string
-  securityLevelName: string
   externalDisplayFlag: string
+  defaultFlag: string
   enabledFlag: string
   lastUpdatedBy: number
   lastUpdateDate: string
@@ -550,13 +544,13 @@ export interface ArchiveFlowRuleSummary {
 export interface ArchiveFlowRuleDetail {
   id: number
   companyProjectCode: string
-  documentTypeCode: string
+  busiModuleCode: string
   customRule?: string
   archiveDestination?: string
   documentOrganizationCode: string
   retentionPeriodYears: number
-  securityLevelCode: string
   externalDisplayFlag: string
+  defaultFlag: string
   enabledFlag: string
   deleteFlag: string
   createdBy: number

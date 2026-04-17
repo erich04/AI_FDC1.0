@@ -219,7 +219,7 @@ class ArchiveImporter:
 
     def _load_effective_ext_fields(self, document_type_code: str) -> list[dict[str, Any]]:
         if document_type_code not in self.ext_fields_cache:
-            payload = self._get_json(f"/base-data/document-types/{requests.utils.quote(document_type_code, safe='')}/ext-fields/effective")
+            payload = self._get_json(f"/base-data/business-modules/{requests.utils.quote(document_type_code, safe='')}/ext-fields/effective")
             self.ext_fields_cache[document_type_code] = payload["data"] or []
         return self.ext_fields_cache[document_type_code]
 

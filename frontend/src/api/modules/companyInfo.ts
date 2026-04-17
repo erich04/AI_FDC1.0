@@ -24,6 +24,7 @@ export interface CompanyInfoUpdateCommand {
 
 export interface CompanyInfoQuery {
   companyCodes?: string[]
+  companyName?: string
   region?: string
   representativeOffice?: string
   country?: string

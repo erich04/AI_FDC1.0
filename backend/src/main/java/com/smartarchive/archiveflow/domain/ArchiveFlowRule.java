@@ -13,15 +13,20 @@ import lombok.Data;
 public class ArchiveFlowRule {
     @TableId(value = "archive_rule_id", type = IdType.AUTO)
     private Long id;
+    @TableField("company_code")
     private String companyProjectCode;
-    @TableField("document_type_code")
+    @TableField("module_code")
     private String busiModuleCode;
+    @TableField("cust_mapping_code")
     private String customRule;
+    @TableField("arch_place_alpha2_code")
     private String archiveDestination;
     private String documentOrganizationCode;
+    @TableField("retention_term")
     private Integer retentionPeriodYears;
-    private String securityLevelCode;
+    @TableField("visible_flag")
     private String externalDisplayFlag;
+    private String defaultFlag;
     @TableField("enable_flag")
     private String enabledFlag;
     @TableLogic(value = "N", delval = "Y")

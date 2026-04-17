@@ -12,8 +12,8 @@ public class ArchiveFlowRuleDetailResponse {
     private String archiveDestination;
     private String documentOrganizationCode;
     private Integer retentionPeriodYears;
-    private String securityLevelCode;
     private String externalDisplayFlag;
+    private String defaultFlag;
     private String enabledFlag;
     private String deleteFlag;
     private Long createdBy;
