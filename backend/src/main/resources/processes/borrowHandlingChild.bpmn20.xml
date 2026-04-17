@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:flowable="http://flowable.org/bpmn"
+  xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd"
+  id="Definitions_BorrowHandlingChild"
+  targetNamespace="http://flowable.org/processdef">
+  <bpmn2:process id="borrowHandlingChild" name="Borrow Handling Child Workflow" isExecutable="true">
+    <bpmn2:startEvent id="StartEvent_BorrowHandlingChild" name="Start" />
+    <bpmn2:userTask
+      id="handleBorrowTask"
+      name="Borrow Handling"
+      flowable:assignee="${handlerId}" />
+    <bpmn2:exclusiveGateway id="Gateway_AfterHandling" name="Receipt Decision" default="Flow_H2B" />
+    <bpmn2:userTask
+      id="receiveBorrowTask"
+      name="Applicant Receipt"
+      flowable:assignee="${applicantId}" />
+    <bpmn2:endEvent id="EndEvent_BorrowHandlingChild" name="End" />
+    <bpmn2:sequenceFlow id="Flow_H1" sourceRef="StartEvent_BorrowHandlingChild" targetRef="handleBorrowTask" />
+    <bpmn2:sequenceFlow id="Flow_H2" sourceRef="handleBorrowTask" targetRef="Gateway_AfterHandling" />
+    <bpmn2:sequenceFlow id="Flow_H2A" sourceRef="Gateway_AfterHandling" targetRef="receiveBorrowTask">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression"><![CDATA[${action == '借出'}]]></bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="Flow_H2B" sourceRef="Gateway_AfterHandling" targetRef="EndEvent_BorrowHandlingChild" />
+    <bpmn2:sequenceFlow id="Flow_H3" sourceRef="receiveBorrowTask" targetRef="EndEvent_BorrowHandlingChild" />
+  </bpmn2:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_BorrowHandlingChild">
+    <bpmndi:BPMNPlane id="BPMNPlane_BorrowHandlingChild" bpmnElement="borrowHandlingChild">
+      <bpmndi:BPMNShape id="StartEvent_BorrowHandlingChild_di" bpmnElement="StartEvent_BorrowHandlingChild">
+        <dc:Bounds x="140" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="handleBorrowTask_handling_di" bpmnElement="handleBorrowTask">
+        <dc:Bounds x="250" y="98" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_AfterHandling_di" bpmnElement="Gateway_AfterHandling" isMarkerVisible="true">
+        <dc:Bounds x="425" y="113" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="receiveBorrowTask_di" bpmnElement="receiveBorrowTask">
+        <dc:Bounds x="530" y="98" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_BorrowHandlingChild_di" bpmnElement="EndEvent_BorrowHandlingChild">
+        <dc:Bounds x="760" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_H1_di" bpmnElement="Flow_H1">
+        <di:waypoint x="176" y="138" />
+        <di:waypoint x="250" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_H2_di" bpmnElement="Flow_H2">
+        <di:waypoint x="370" y="138" />
+        <di:waypoint x="425" y="133" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_H2A_di" bpmnElement="Flow_H2A">
+        <di:waypoint x="465" y="133" />
+        <di:waypoint x="530" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_H2B_di" bpmnElement="Flow_H2B">
+        <di:waypoint x="445" y="153" />
+        <di:waypoint x="445" y="238" />
+        <di:waypoint x="760" y="238" />
+        <di:waypoint x="760" y="156" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_H3_di" bpmnElement="Flow_H3">
+        <di:waypoint x="650" y="138" />
+        <di:waypoint x="760" y="138" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn2:definitions>

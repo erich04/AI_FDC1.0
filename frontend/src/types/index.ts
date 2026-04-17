@@ -132,6 +132,101 @@ export interface BorrowRecord {
   borrowedAt: string
 }
 
+export interface BorrowOrderDetail {
+  id: number
+  borrowOrderId: number
+  businessCode?: string
+  documentName?: string
+  company: string
+  documentType?: string
+  description?: string
+  demandType?: string
+  needReturn: boolean
+  expectedReturnDate?: string
+  lendingApprover?: string
+  lendingRemark?: string
+  handler?: string
+  handlerRemark?: string
+  createdAt?: string
+}
+
+export interface BorrowOrder {
+  id: number
+  orderNo: string
+  userName: string
+  userDepartment?: string
+  applicantName: string
+  applyTime: string
+  purpose?: string
+  reason?: string
+  reasonAttachment?: string
+  approvalComment?: string
+  demandApprover?: string
+  demandReviewer?: string
+  demandAnalyst?: string
+  ccUsers: string[]
+  status: string
+  workflowInstanceId?: string
+  currentHandler?: string
+  details: BorrowOrderDetail[]
+}
+
+export interface RenewableBorrowOrder {
+  orderNo: string
+  applyTime: string
+  borrowTime?: string
+  expireTime?: string
+  currentHandler?: string
+  applicantName?: string
+}
+
+export interface MyBorrowDocument {
+  company: string
+  businessCode: string
+  documentName: string
+  documentType: string
+  businessModule: string
+  archivePeriod: string
+  orderNo: string
+  status: string
+  borrowTime?: string
+  attachment?: string
+}
+
+export interface BorrowRenewDetail {
+  id: number
+  borrowRenewOrderId: number
+  sourceDetailId?: number
+  businessCode?: string
+  documentName?: string
+  company?: string
+  borrowType?: string
+  borrowTime?: string
+  currentExpireTime?: string
+  renewExpireTime?: string
+  renewReason?: string
+}
+
+export interface BorrowRenewOrder {
+  id: number
+  renewOrderNo: string
+  sourceOrderNo: string
+  userName: string
+  userDepartment?: string
+  applicantName: string
+  applyTime: string
+  purpose?: string
+  reason?: string
+  reasonAttachment?: string
+  reviewer?: string
+  handler?: string
+  ccUsers: string[]
+  status: string
+  workflowInstanceId?: string
+  currentHandler?: string
+  details: BorrowRenewDetail[]
+}
+
 export interface InventoryTask {
   id: number
   taskCode: string
@@ -479,6 +574,16 @@ export interface CompanyTag {
   tagId: number
   tagValue: string
   enabledFlag: 'Y' | 'N'
+}
+
+export interface DepartmentSignatory {
+  departmentSignatoryId: number
+  firstLevelDepartment: string
+  secondLevelDepartment?: string
+  thirdLevelDepartment?: string
+  fourthLevelDepartment?: string
+  signatories: string[]
+  lastUpdateDate?: string
 }
 
 export interface BusinessModuleNode {

@@ -12,6 +12,7 @@ import BaseDataDocumentOrganizationView from '../views/base-data/BaseDataDocumen
 import BaseDataWarehouseView from '../views/base-data/BaseDataWarehouseView.vue'
 import BusinessModuleConfigView from '../views/base-data/BusinessModuleConfigView.vue'
 import CompanyInfoView from '../views/base-data/CompanyInfoView.vue'
+import DepartmentSignatoryView from '../views/base-data/DepartmentSignatoryView.vue'
 import DictionaryManagementView from '../views/base-data/DictionaryManagementView.vue'
 import DocumentTypeConfigView from '../views/base-data/DocumentTypeConfigView.vue'
 import BorrowingView from '../views/borrowing/BorrowingView.vue'
@@ -89,6 +90,12 @@ const router = createRouter({
           name: 'base-data-company-infos',
           component: CompanyInfoView,
           meta: { title: '公司管理', breadcrumb: ['配置中心', '公司管理'] }
+        },
+        {
+          path: 'base-data/department-signatories',
+          name: 'base-data-department-signatories',
+          component: DepartmentSignatoryView,
+          meta: { title: '权签人维护', breadcrumb: ['配置中心', '权签人维护'] }
         },
         {
           path: 'base-data/dictionaries',
@@ -239,6 +246,15 @@ const router = createRouter({
           meta: {
             title: '借阅文档',
             breadcrumb: ['档案业务管理', '借阅文档']
+          }
+        },
+        {
+          path: 'archive-management/borrow-renew',
+          name: 'archive-management-borrow-renew',
+          component: BorrowingView,
+          meta: {
+            title: '续借申请',
+            breadcrumb: ['档案业务管理', '借阅申请', '续借申请']
           }
         },
         {
