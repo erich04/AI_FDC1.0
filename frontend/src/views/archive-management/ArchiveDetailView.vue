@@ -51,7 +51,12 @@
         </div>
       </template>
       <div v-show="sectionOpen.ext" class="doc-info-grid">
-        <div v-for="item in extInfoItems" :key="item.label" class="doc-info-item">
+        <div class="doc-info-item doc-info-item--full">
+          <div class="doc-info-item__value doc-muted-hint">
+            扩展字段来自「业务模块配置」中维护的、应用功能含「应收」的档案扩展字段（BASIC），与国家/地区等信息一并展示。
+          </div>
+        </div>
+        <div v-for="(item, idx) in extInfoItems" :key="`${item.label}-${idx}`" class="doc-info-item">
           <div class="doc-info-item__label">{{ item.label }}</div>
           <div class="doc-info-item__value">{{ item.value || '-' }}</div>
         </div>
@@ -180,14 +185,18 @@ import http from '../../api/http'
 import {
   downloadArchiveAttachment,
   downloadArchiveAttachmentsZip,
-  fetchEffectiveDocumentTypeExtFields,
   fetchOperationAuditsByBusinessKey,
   getArchiveDetail,
   previewArchiveAttachmentUrl
 } from '../../api/modules/archiveManagement'
-import type { ArchiveAttachmentItem, ArchiveRecordSummary, AuditRecord } from '../../types'
+import type { ArchiveAttachmentItem, ArchiveRecordSummary, AuditRecord, BusinessModuleExtField } from '../../types'
 import { getCountryLabel } from '../base-data/companyProjectShared'
-import { EXT_DETAIL_FIELD_ORDER, hardCodedExtLabelMap, isHardCodedFieldVisible } from './extFieldDisplayConfig'
+import { hardCodedExtLabelMap } from './extFieldDisplayConfig'
+import {
+  COMPANY_SYNC_EXT_KEYS,
+  extKeyForBusinessField,
+  fetchReceivableBasicExtFields
+} from './pendingArchiveExtShared'
 
 interface OperationLogRow {
   operator: string
@@ -204,7 +213,8 @@ const router = useRouter()
 const loading = ref(true)
 const loadError = ref('')
 const detail = ref<ArchiveRecordSummary | null>(null)
-const extFieldNameMap = ref<Record<string, string>>({})
+/** 与应归档创建页一致：fdc_business_module_ext_field_t BASIC + 应收 */
+const receivableBusinessExtFields = ref<BusinessModuleExtField[]>([])
 /** 国家编码 → 名称（来自后台公司项目国家选项；与筛选/建档下拉一致） */
 const countryNameByCode = ref<Record<string, string>>({})
 
@@ -274,8 +284,6 @@ const securityLevelHeadline = computed(() => {
   if (!d) return '内部'
   return d.securityLevelName || d.securityLevelCode || '内部'
 })
-
-const selectedDocTypeName = computed(() => detail.value?.documentTypeName || '')
 
 const formatDateTime = (value: unknown) => {
   if (value === null || value === undefined || value === '') return '-'
@@ -359,30 +367,31 @@ const basicInfoItems = computed(() => {
 const extInfoItems = computed(() => {
   if (!detail.value) return []
   const ext = { ...(detail.value.extValues || {}) }
-  const docType = selectedDocTypeName.value
   const formatExtCell = (v: unknown) => {
     if (v === null || v === undefined) return '-'
     const s = String(v).trim()
     return s === '' ? '-' : s
   }
-  const used = new Set<string>()
   const items: { label: string; value: string }[] = []
-  for (const key of EXT_DETAIL_FIELD_ORDER) {
-    if (!isHardCodedFieldVisible(key, docType)) continue
-    used.add(key)
+  for (const key of COMPANY_SYNC_EXT_KEYS) {
     const value = key === 'country' ? formatCountryExtValue(ext[key]) : formatExtCell(ext[key])
     items.push({
-      label: extFieldNameMap.value[key] || hardCodedExtLabelMap[key] || key,
+      label: hardCodedExtLabelMap[key] || key,
       value
     })
   }
-  for (const [key, v] of Object.entries(ext)) {
-    if (key === 'visibility') continue
-    if (used.has(key)) continue
-    if (!isHardCodedFieldVisible(key, docType)) continue
-    const value = key === 'country' ? formatCountryExtValue(v) : formatExtCell(v)
+  for (const f of receivableBusinessExtFields.value) {
+    const key = extKeyForBusinessField(f)
+    if (!key) continue
+    const raw = ext[key]
+    let value: string
+    if (f.dataType === 'DATE' || f.dataType === 'DATETIME') {
+      value = raw != null && String(raw).trim() !== '' ? formatDateTime(raw) : '-'
+    } else {
+      value = key === 'country' ? formatCountryExtValue(raw) : formatExtCell(raw)
+    }
     items.push({
-      label: extFieldNameMap.value[key] || hardCodedExtLabelMap[key] || key,
+      label: f.fieldName || key,
       value
     })
   }
@@ -586,9 +595,14 @@ const loadDetail = async () => {
     ])
     detail.value = record
     countryNameByCode.value = Object.fromEntries((countries || []).map((c) => [c.countryCode, c.countryName]))
-    if (detail.value?.documentTypeCode) {
-      const fields = await fetchEffectiveDocumentTypeExtFields(detail.value.documentTypeCode).catch(() => [])
-      extFieldNameMap.value = Object.fromEntries((fields || []).map((item) => [item.fieldCode, item.fieldName || item.fieldCode]))
+    receivableBusinessExtFields.value = []
+    const mc = record.businessModuleTypeCode?.trim()
+    if (mc) {
+      try {
+        receivableBusinessExtFields.value = await fetchReceivableBasicExtFields(mc)
+      } catch {
+        receivableBusinessExtFields.value = []
+      }
     }
     if (detail.value) {
       await loadPendingArchiveOperationLogs(detail.value)
@@ -611,7 +625,7 @@ watch(
   () => {
     if (route.name !== 'archive-management-detail') return
     const isPending = firstQueryValue(route.query.from) === 'pending'
-    document.title = isPending ? `应归档数据详情 - ${APP_TAB_TITLE}` : `文档详情 - ${APP_TAB_TITLE}`
+    document.title = isPending ? `待归档数据详情 - ${APP_TAB_TITLE}` : `文档详情 - ${APP_TAB_TITLE}`
   },
   { immediate: true }
 )

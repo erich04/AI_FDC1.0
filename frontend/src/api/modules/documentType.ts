@@ -108,3 +108,30 @@ export async function fetchLevel3Modules(documentTypeCode: string) {
 export function fetchModuleAudits(moduleCode: string) {
   return apiRequest<AuditRecord[]>(http.get(`/api/common/audits/modules/${moduleCode}`))
 }
+
+/** 业务模块扩展字段（如 applicationFunction=移交），对应 fdc_business_module_ext_field_t */
+export interface BusinessModuleExtFieldForApplication {
+  fieldId: number
+  fieldCode: string
+  moduleCode: string
+  fieldScope?: string
+  applicationFunctions?: string[]
+  extAttribute?: string
+  fieldName: string
+  requiredFlag: string
+  enabledFlag: string
+  dataType?: string
+  sortOrder?: number
+}
+
+export function fetchBusinessModuleExtFieldsByApplicationFunction(
+  moduleCode: string,
+  applicationFunction: string,
+  fieldScope: string = 'BASIC'
+) {
+  return apiRequest<BusinessModuleExtFieldForApplication[]>(
+    http.get(`/api/base-data/business-modules/${encodeURIComponent(moduleCode)}/ext-fields`, {
+      params: { applicationFunction, fieldScope }
+    })
+  )
+}

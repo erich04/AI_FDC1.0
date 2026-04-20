@@ -1,5 +1,6 @@
 package com.smartarchive.archivemanage.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -17,6 +18,7 @@ public class TransferApplicationCreateCommand {
     private LocalDateTime applicationDate;
     private String department;
     @NotBlank
+    @JsonAlias("documentTypeCode")
     private String busiModuleCode;
     @NotBlank
     private String applyMethod;

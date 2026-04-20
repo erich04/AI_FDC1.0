@@ -100,7 +100,7 @@
               <el-input v-model="form.businessCode" placeholder="请输入业务编码" />
             </el-form-item>
             <el-form-item label="业务模块" required>
-              <el-select v-model="form.archiveTypeCode" clearable :disabled="!form.documentTypeCode">
+              <el-select v-model="form.archiveTypeCode" clearable :disabled="!form.documentTypeCode" @change="handleDefaultRefresh">
                 <el-option v-for="item in businessModuleOptions" :key="item.code" :label="item.name" :value="item.code" />
               </el-select>
             </el-form-item>
@@ -456,7 +456,7 @@ const loadSession = async () => {
     form.documentTypeCode = session.value.documentTypeCodeGuess
     await handleDocumentTypeChange(form.documentTypeCode)
   }
-  if (form.companyProjectCode && form.documentTypeCode) {
+  if (form.companyProjectCode && form.archiveTypeCode) {
     await handleDefaultRefresh()
   }
   applyAiExtValues()
@@ -484,11 +484,11 @@ const handleDocumentTypeChange = async (typeCode?: string) => {
 }
 
 const handleDefaultRefresh = async () => {
-  if (!form.companyProjectCode || !form.documentTypeCode) return
+  if (!form.companyProjectCode || !form.archiveTypeCode) return
   const defaults = await resolveArchiveDefaults({
     companyProjectCode: form.companyProjectCode,
-    documentTypeCode: form.documentTypeCode,
-    archiveDestination: form.archiveDestination
+    busiModuleCode: form.archiveTypeCode,
+    archiveDestination: form.archiveDestination || undefined
   })
   form.securityLevelCode = defaults.securityLevelCode || form.securityLevelCode
   form.archiveDestination = defaults.archiveDestination || form.archiveDestination

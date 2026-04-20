@@ -5,6 +5,7 @@ import com.smartarchive.archivemanage.dto.TransferApplicationDetailAttachmentRes
 import com.smartarchive.archivemanage.dto.TransferApplicationRecordPageCommand;
 import com.smartarchive.archivemanage.dto.TransferApplicationRecordPageResponse;
 import com.smartarchive.archivemanage.dto.TransferApplicationResponse;
+import com.smartarchive.archivemanage.service.TransferApplyFieldConfigService;
 import com.smartarchive.archivemanage.service.TransferApplicationService;
 import com.smartarchive.common.api.ApiResponse;
 import jakarta.validation.Valid;
@@ -30,10 +31,17 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class TransferApplicationController {
     private final TransferApplicationService transferApplicationService;
+    private final TransferApplyFieldConfigService transferApplyFieldConfigService;
 
     @PostMapping("/search-page")
     public ApiResponse<TransferApplicationRecordPageResponse> searchPage(@Valid @RequestBody TransferApplicationRecordPageCommand command) {
         return ApiResponse.success(transferApplicationService.searchPage(command));
+    }
+
+    @GetMapping("/field-visibility")
+    public ApiResponse<java.util.Map<String, Boolean>> fieldVisibility(@RequestParam String documentTypeCode,
+                                                                       @RequestParam(required = false) Long tenantid) {
+        return ApiResponse.success(transferApplyFieldConfigService.visibilityMapByDocumentTypeCode(documentTypeCode, tenantid));
     }
 
     @GetMapping

@@ -27,6 +27,7 @@ import org.flowable.task.api.Task;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -431,7 +432,9 @@ public class WorkflowServiceImpl implements WorkflowService {
                     new WorkflowTransferDetailResponse.TransferDocumentItem();
             item.setBusiModuleCode(application.getBusiModuleCode());
             item.setBusinessCode(detail.getDocBusiNo());
-            item.setDocumentOrganizationCode(detail.getCompanyProjectCode());
+            item.setDocumentOrganizationCode(StringUtils.hasText(detail.getDocumentOrganizationCode())
+                ? detail.getDocumentOrganizationCode().trim()
+                : null);
             item.setExtFields(extByDetailId.getOrDefault(detail.getApplicationDetailId(), Map.of()));
             return item;
         }).toList();

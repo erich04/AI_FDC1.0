@@ -16,6 +16,7 @@ public class TransferApplicationDetailResponse {
     private String busiModuleCode;
     private String companyProjectCode;
     private String archPlaceAlpha2Code;
+    private String documentOrganizationCode;
     private String endArchPeriod;
     private String startArchPeriod;
     private String archTypeCode;
@@ -25,6 +26,7 @@ public class TransferApplicationDetailResponse {
     private String remark;
     private String description;
     private String catalogVolumeNo;
+    private String busiVolumeNo;
     private List<TransferApplicationExtValueResponse> extValues;
     private List<TransferApplicationDetailAttachmentResponse> attachments;
 }

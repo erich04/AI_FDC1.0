@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:flowable="http://flowable.org/bpmn"
+  xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd"
+  id="Definitions_BorrowLendingApprovalChild"
+  targetNamespace="http://flowable.org/processdef">
+  <bpmn2:process id="borrowLendingApprovalChild" name="Borrow Lending Approval Child Workflow" isExecutable="true">
+    <bpmn2:startEvent id="StartEvent_BorrowLendingApprovalChild" name="Start" />
+    <bpmn2:userTask
+      id="lendApproveTask"
+      name="Lending Approval"
+      flowable:assignee="${lendingApproverId}" />
+    <bpmn2:exclusiveGateway id="Gateway_AfterLendingApproval" name="Split Handling Decision" default="Flow_C2B" />
+    <bpmn2:userTask
+      id="handleBorrowTask"
+      name="Borrow Handling"
+      flowable:assignee="${handlerId}" />
+    <bpmn2:exclusiveGateway id="Gateway_AfterHandling" name="Receipt Decision" default="Flow_C3B" />
+    <bpmn2:userTask
+      id="receiveBorrowTask"
+      name="Applicant Receipt"
+      flowable:assignee="${applicantId}" />
+    <bpmn2:endEvent id="EndEvent_HandlingSplitFinished" name="Handling Split Finished" />
+    <bpmn2:endEvent id="EndEvent_BorrowLendingApprovalChild" name="End" />
+    <bpmn2:sequenceFlow id="Flow_C1" sourceRef="StartEvent_BorrowLendingApprovalChild" targetRef="lendApproveTask" />
+    <bpmn2:sequenceFlow id="Flow_C2" sourceRef="lendApproveTask" targetRef="Gateway_AfterLendingApproval" />
+    <bpmn2:sequenceFlow id="Flow_C2R" sourceRef="Gateway_AfterLendingApproval" targetRef="EndEvent_BorrowLendingApprovalChild">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression"><![CDATA[${rejected}]]></bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="Flow_C2A" sourceRef="Gateway_AfterLendingApproval" targetRef="EndEvent_HandlingSplitFinished">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression"><![CDATA[${handlingSplitCreated}]]></bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="Flow_C2B" sourceRef="Gateway_AfterLendingApproval" targetRef="handleBorrowTask" />
+    <bpmn2:sequenceFlow id="Flow_C3" sourceRef="handleBorrowTask" targetRef="Gateway_AfterHandling" />
+    <bpmn2:sequenceFlow id="Flow_C3A" sourceRef="Gateway_AfterHandling" targetRef="receiveBorrowTask">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression"><![CDATA[${action == '借出'}]]></bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="Flow_C3B" sourceRef="Gateway_AfterHandling" targetRef="EndEvent_BorrowLendingApprovalChild" />
+    <bpmn2:sequenceFlow id="Flow_C4" sourceRef="receiveBorrowTask" targetRef="EndEvent_BorrowLendingApprovalChild" />
+  </bpmn2:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_BorrowLendingApprovalChild">
+    <bpmndi:BPMNPlane id="BPMNPlane_BorrowLendingApprovalChild" bpmnElement="borrowLendingApprovalChild">
+      <bpmndi:BPMNShape id="StartEvent_BorrowLendingApprovalChild_di" bpmnElement="StartEvent_BorrowLendingApprovalChild">
+        <dc:Bounds x="140" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lendApproveTask_child_di" bpmnElement="lendApproveTask">
+        <dc:Bounds x="250" y="98" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_AfterLendingApproval_di" bpmnElement="Gateway_AfterLendingApproval" isMarkerVisible="true">
+        <dc:Bounds x="415" y="113" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="handleBorrowTask_child_di" bpmnElement="handleBorrowTask">
+        <dc:Bounds x="520" y="98" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_AfterHandling_child_di" bpmnElement="Gateway_AfterHandling" isMarkerVisible="true">
+        <dc:Bounds x="685" y="113" width="40" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="receiveBorrowTask_child_di" bpmnElement="receiveBorrowTask">
+        <dc:Bounds x="790" y="98" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_HandlingSplitFinished_di" bpmnElement="EndEvent_HandlingSplitFinished">
+        <dc:Bounds x="520" y="220" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_BorrowLendingApprovalChild_di" bpmnElement="EndEvent_BorrowLendingApprovalChild">
+        <dc:Bounds x="980" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_C1_di" bpmnElement="Flow_C1">
+        <di:waypoint x="176" y="138" />
+        <di:waypoint x="250" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C2_di" bpmnElement="Flow_C2">
+        <di:waypoint x="360" y="138" />
+        <di:waypoint x="415" y="133" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C2A_di" bpmnElement="Flow_C2A">
+        <di:waypoint x="435" y="153" />
+        <di:waypoint x="435" y="238" />
+        <di:waypoint x="520" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C2B_di" bpmnElement="Flow_C2B">
+        <di:waypoint x="455" y="133" />
+        <di:waypoint x="520" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3_di" bpmnElement="Flow_C3">
+        <di:waypoint x="630" y="138" />
+        <di:waypoint x="685" y="133" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3A_di" bpmnElement="Flow_C3A">
+        <di:waypoint x="725" y="133" />
+        <di:waypoint x="790" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C3B_di" bpmnElement="Flow_C3B">
+        <di:waypoint x="705" y="153" />
+        <di:waypoint x="705" y="238" />
+        <di:waypoint x="980" y="238" />
+        <di:waypoint x="980" y="156" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C4_di" bpmnElement="Flow_C4">
+        <di:waypoint x="910" y="138" />
+        <di:waypoint x="980" y="138" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn2:definitions>

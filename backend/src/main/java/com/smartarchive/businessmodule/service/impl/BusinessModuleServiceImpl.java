@@ -163,6 +163,29 @@ public class BusinessModuleServiceImpl implements BusinessModuleService {
     }
 
     @Override
+    public List<BusinessModuleExtFieldResponse> listFieldsByApplicationFunction(String moduleCode,
+                                                                                 String applicationFunction,
+                                                                                 String fieldScope) {
+        requireModule(moduleCode);
+        if (!StringUtils.hasText(applicationFunction)) {
+            throw new BusinessException("应用功能不能为空");
+        }
+        String fn = applicationFunction.trim();
+        LambdaQueryWrapper<BusinessModuleExtField> wrapper = new LambdaQueryWrapper<BusinessModuleExtField>()
+                .eq(BusinessModuleExtField::getModuleCode, moduleCode)
+                .eq(BusinessModuleExtField::getDeleteFlag, "N")
+                .orderByAsc(BusinessModuleExtField::getSortOrder)
+                .orderByAsc(BusinessModuleExtField::getFieldCode);
+        if (StringUtils.hasText(fieldScope)) {
+            wrapper.eq(BusinessModuleExtField::getFieldScope, fieldScope.trim().toUpperCase());
+        }
+        return extFieldMapper.selectList(wrapper).stream()
+                .filter(entity -> parseApplicationFunctions(entity.getApplicationFunctions()).contains(fn))
+                .map(this::toFieldResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public BusinessModuleExtFieldResponse createField(String moduleCode, BusinessModuleExtFieldCommand command) {
         requireModule(moduleCode);

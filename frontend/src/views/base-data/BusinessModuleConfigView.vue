@@ -318,6 +318,7 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import {
+  buildModuleQueryTree,
   createBusinessModule,
   createBusinessModuleExtField,
   deleteBusinessModule,
@@ -334,7 +335,6 @@ import {
 import { fetchDocumentTypeTree } from '../../api/modules/documentType'
 import type { BusinessModuleExtField, BusinessModuleNode, DocumentTypeTreeNode } from '../../types'
 
-type ModuleQueryTreeNode = BusinessModuleNode & { queryLabel: string; children: ModuleQueryTreeNode[] }
 type FieldQueryState = {
   applicationFunctions: string[]
   extAttributes: string[]
@@ -436,14 +436,6 @@ function createEmptyFieldQuery(): FieldQueryState {
     requiredFlags: [],
     enabledFlags: []
   }
-}
-
-function buildModuleQueryTree(nodes: BusinessModuleNode[]): ModuleQueryTreeNode[] {
-  return nodes.map(node => ({
-    ...node,
-    queryLabel: `${node.moduleCode} ｜ ${node.moduleName}`,
-    children: buildModuleQueryTree(node.children || [])
-  }))
 }
 
 function formatModuleLabel(moduleCode?: string) {

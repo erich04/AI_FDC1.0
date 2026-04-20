@@ -62,9 +62,11 @@ export interface TransferApplicationDetailItem {
   busiModuleCode?: string
   companyProjectCode?: string
   archPlaceAlpha2Code?: string
+  documentOrganizationCode?: string
   carrierType?: string
   endArchPeriod?: string
   startArchPeriod?: string
+  busiVolumeNo?: string
   archTypeCode?: string
   docGenerationDate?: string
   archCopies?: number

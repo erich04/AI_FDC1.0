@@ -52,27 +52,30 @@
               v-model="form.companyProjectCode"
               filterable
               clearable
-              placeholder="请从公司配置中选择公司"
+              placeholder="请选择公司"
               class="doc-edit-control"
             >
               <el-option
-                v-for="c in options.companyProjects"
+                v-for="c in companySelectOptions"
                 :key="c.code"
-                :label="`${c.name}（${c.code}）`"
+                :label="`${c.code} · ${c.name}`"
                 :value="c.code"
               />
             </el-select>
-            <el-select
+            <el-tree-select
               v-else-if="spec.key === 'archiveTypeCode'"
               v-model="form.archiveTypeCode"
+              :data="businessModuleTreeOptions"
               filterable
               clearable
-              :disabled="!effectiveDocumentTypeCode.trim()"
-              placeholder="请先选择文档类型，再选三级业务模块"
+              check-strictly
+              default-expand-all
+              :render-after-expand="false"
+              placeholder="请选择业务模块"
               class="doc-edit-control"
-            >
-              <el-option v-for="a in businessModuleOptions" :key="a.code" :label="a.name" :value="a.code" />
-            </el-select>
+              node-key="moduleCode"
+              :props="{ value: 'moduleCode', label: 'queryLabel', children: 'children' }"
+            />
             <el-date-picker
               v-else-if="spec.key === 'beginPeriod'"
               v-model="form.beginPeriod"
@@ -97,7 +100,7 @@
               placeholder="请选择归档地"
               class="doc-edit-control"
             >
-              <el-option v-for="o in options.archiveDestinations" :key="o.code" :label="o.name" :value="o.code" />
+              <el-option v-for="o in archiveDestinationSelectOptions" :key="o.code" :label="o.name" :value="o.code" />
             </el-select>
             <el-input
               v-else-if="spec.key === 'originPlace'"
@@ -190,16 +193,65 @@
       </template>
       <div v-show="sectionOpen.ext" class="doc-info-grid">
         <div class="doc-info-item doc-info-item--full">
-          <div class="doc-info-item__value doc-muted-hint">国家、地区部、代表处、公司标签由公司信息自动带出，不可编辑。</div>
-        </div>
-        <div v-for="row in extCreateRows" :key="row.key" class="doc-info-item">
-          <div class="doc-info-item__label">{{ row.label }}</div>
-          <div class="doc-info-item__value">
-            <template v-if="row.readonly">{{ row.display }}</template>
-            <el-input v-else v-model="extForm[row.key]" clearable placeholder="请输入" class="doc-edit-control" />
+          <div class="doc-info-item__value doc-muted-hint">
+            国家、地区部、代表处、公司标签由公司信息自动带出，不可编辑。选择业务模块后，将展示该模块在「业务模块配置」中维护的、应用功能含「应收」的档案扩展字段（BASIC）。
           </div>
         </div>
-        <el-empty v-if="!extCreateRows.length" description="请先选择文档类型" />
+        <div v-for="row in extCreateRows" :key="row.key" class="doc-info-item">
+          <div class="doc-info-item__label">
+            <span v-if="row.requiredFlag === 'Y'" class="f02-required">*</span>{{ row.label }}
+          </div>
+          <div class="doc-info-item__value">
+            <template v-if="row.readonly">{{ row.display }}</template>
+            <el-date-picker
+              v-else-if="row.dataType === 'DATE'"
+              v-model="extForm[row.key]"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="请选择日期"
+              class="doc-edit-control"
+              clearable
+            />
+            <el-date-picker
+              v-else-if="row.dataType === 'DATETIME'"
+              v-model="extForm[row.key]"
+              type="datetime"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              placeholder="请选择日期时间"
+              class="doc-edit-control"
+              clearable
+            />
+            <el-input
+              v-else-if="row.dataType === 'NUMBER'"
+              v-model="extForm[row.key]"
+              clearable
+              placeholder="请输入数字"
+              class="doc-edit-control"
+            />
+            <el-select
+              v-else-if="row.dataType === 'BOOLEAN'"
+              v-model="extForm[row.key]"
+              clearable
+              placeholder="请选择"
+              class="doc-edit-control"
+            >
+              <el-option label="是" value="是" />
+              <el-option label="否" value="否" />
+            </el-select>
+            <el-input
+              v-else
+              v-model="extForm[row.key]"
+              clearable
+              :placeholder="row.dataType === 'DICT' ? '字典项（文本）' : '请输入'"
+              class="doc-edit-control"
+            />
+          </div>
+        </div>
+        <el-empty
+          v-if="form.archiveTypeCode.trim() && !receivableBusinessExtFields.length && !loadingReceivableExt"
+          description="当前业务模块未配置「应收」档案扩展字段"
+          class="ext-empty-hint"
+        />
       </div>
     </el-card>
 
@@ -310,20 +362,32 @@ import { ElMessage } from 'element-plus'
 import type { UploadRequestOptions } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchLevel3Modules } from '../../api/modules/documentType'
 import {
   createPendingDocument,
   fetchArchiveCreateOptions,
-  fetchEffectiveDocumentTypeExtFields,
   getArchiveDetail,
-  resolveArchiveDefaults,
   updatePendingDocument,
   uploadPendingAuditAttachment
 } from '../../api/modules/archiveManagement'
+import { fetchArchiveRuleMatch } from '../../api/modules/archiveFlow'
+import { buildModuleQueryTree, fetchBusinessModuleTree, type ModuleQueryTreeNode } from '../../api/modules/businessModule'
+import { fetchCompanyInfos } from '../../api/modules/companyInfo'
 import { fetchCompanyProjectCountries, fetchCompanyProjectDetail } from '../../api/modules/companyProject'
 import { fetchUserDutyProfile } from '../../api/modules/security'
-import type { ArchiveCreateOptions, CompanyProjectDetail, LabelValueOption } from '../../types'
-import { EXT_DETAIL_FIELD_ORDER, hardCodedExtLabelMap, isHardCodedFieldVisible } from './extFieldDisplayConfig'
+import type {
+  ArchiveCreateOptions,
+  BusinessModuleExtField,
+  BusinessModuleNode,
+  CompanyInfo,
+  CompanyProjectDetail,
+  LabelValueOption
+} from '../../types'
+import { hardCodedExtLabelMap } from './extFieldDisplayConfig'
+import {
+  COMPANY_SYNC_EXT_KEYS,
+  extKeyForBusinessField,
+  fetchReceivableBasicExtFields
+} from './pendingArchiveExtShared'
 import { CURRENT_OPERATOR_USER_ID } from '../../constants/currentUser'
 
 type CreateBasicKey =
@@ -363,9 +427,6 @@ const createBasicSpecs: { label: string; key: CreateBasicKey; full?: boolean }[]
   { label: '描述', key: 'remark', full: true }
 ]
 
-/** 扩展区不重复展示（在归档信息中编辑） */
-const ARCHIVE_CARD_EXT_KEYS = new Set(['visibility', 'barcodeModule'])
-
 const route = useRoute()
 const router = useRouter()
 
@@ -377,12 +438,22 @@ const resumeArchiveId = ref<number | null>(null)
 const loadedRetentionYears = ref(10)
 const operationRemark = ref('')
 const auditAttachments = ref<Array<{ fileId: number; fileName?: string; storageKey?: string; fileSize?: number }>>([])
-const extFieldNameMap = ref<Record<string, string>>({})
-const businessModuleOptions = ref<LabelValueOption[]>([])
+const companySelectOptions = ref<Array<{ code: string; name: string }>>([])
+const businessModuleTreeOptions = ref<ModuleQueryTreeNode[]>([])
 const countryNameByCode = ref<Record<string, string>>({})
+/** 当前业务模块下、档案 BASIC 且应用功能含「应收」的扩展字段（fdc_business_module_ext_field_t） */
+const receivableBusinessExtFields = ref<BusinessModuleExtField[]>([])
+const loadingReceivableExt = ref(false)
+/** 写入 extForm 的业务模块扩展字段 key，便于切换模块时清理 */
+const lastReceivableExtKeys = ref(new Set<string>())
 
-const COMPANY_SYNC_EXT_KEYS = ['country', 'repOffice', 'region', 'companyTag'] as const
-const READONLY_EXT_KEYS = new Set(['country', 'repOffice', 'region', 'companyTag'])
+const READONLY_EXT_KEYS = new Set<string>([...COMPANY_SYNC_EXT_KEYS])
+/** 切换文档类型时保留：归档区与只读地理信息 */
+const PROTECTED_EXT_FORM_KEYS = new Set<string>([
+  ...READONLY_EXT_KEYS,
+  'visibility',
+  'barcodeModule'
+])
 
 const options = reactive<ArchiveCreateOptions>({
   companyProjects: [],
@@ -428,18 +499,40 @@ const sectionOpen = reactive({
   archive: true
 })
 
-const effectiveDocumentTypeCode = computed(() => form.documentTypeCode.trim())
-
-const selectedDocTypeName = computed(() => {
-  const t = options.documentTypes.find((x) => x.code === effectiveDocumentTypeCode.value)
-  return t?.name || ''
-})
-
 const headlineTitle = computed(() => {
   if (form.businessCode.trim()) return form.businessCode.trim()
   if (resumeArchiveId.value != null) return '继续完善应归档数据（草稿）'
   return '新建应归档数据'
 })
+
+/** 规则匹配返回的归档地可能在标准下拉里不存在，此处存服务侧描述供选项展示 */
+const archiveDestinationLabelFromService = ref('')
+
+/** 归档地下拉：与 options 合并，当前值仅含编码时补上「描述（编码）」 */
+const archiveDestinationSelectOptions = computed(() => {
+  const base = options.archiveDestinations
+  const code = form.archiveDestination.trim()
+  if (!code) return base
+  if (base.some((o) => o.code === code)) return base
+  const text = archiveDestinationLabelFromService.value.trim()
+  const label = text ? `${text}（${code}）` : code
+  return [...base, { code, name: label }]
+})
+
+watch(
+  [() => form.archiveDestination, () => options.archiveDestinations],
+  () => {
+    const code = form.archiveDestination.trim()
+    if (!code) {
+      archiveDestinationLabelFromService.value = ''
+      return
+    }
+    if (options.archiveDestinations.some((o) => o.code === code)) {
+      archiveDestinationLabelFromService.value = ''
+    }
+  },
+  { deep: true }
+)
 
 /** 文档组织编码由归档流向解析，展示名称+编码 */
 const documentOrganizationDisplay = computed(() => {
@@ -451,22 +544,15 @@ const documentOrganizationDisplay = computed(() => {
 
 const documentOrganizationPlaceholder = computed(() => {
   const company = form.companyProjectCode.trim()
-  const docType = form.documentTypeCode.trim()
   const module = form.archiveTypeCode.trim()
-  if (!company || !docType) {
-    return '请先选择公司与文档类型'
+  if (!company) {
+    return '请先选择公司'
   }
   if (!module) {
     return '请先选择业务模块'
   }
   return '未匹配到归档流向，请调整归档地或联系管理员配置归档流向规则'
 })
-
-const shouldShowExtKey = (key: string) => {
-  if (ARCHIVE_CARD_EXT_KEYS.has(key)) return false
-  const docType = selectedDocTypeName.value
-  return isHardCodedFieldVisible(key, docType) || key in extForm
-}
 
 const formatCountryExtValue = (raw: unknown) => {
   if (raw === null || raw === undefined) return '-'
@@ -481,27 +567,37 @@ const formatExtCell = (raw: unknown) => {
   return s || '-'
 }
 
-const extCreateRows = computed(() => {
-  const rows: { key: string; label: string; readonly: boolean; display: string }[] = []
-  const used = new Set<string>()
-  const pushRow = (key: string) => {
-    if (used.has(key)) return
-    if (!shouldShowExtKey(key)) return
-    used.add(key)
-    const readonly = READONLY_EXT_KEYS.has(key)
+type ExtCreateRow = {
+  key: string
+  label: string
+  readonly: boolean
+  display: string
+  dataType?: BusinessModuleExtField['dataType']
+  requiredFlag?: string
+}
+
+const extCreateRows = computed((): ExtCreateRow[] => {
+  const rows: ExtCreateRow[] = []
+  for (const key of COMPANY_SYNC_EXT_KEYS) {
     const raw = extForm[key]
     rows.push({
       key,
-      label: extFieldNameMap.value[key] || hardCodedExtLabelMap[key] || key,
-      readonly,
-      display: readonly ? (key === 'country' ? formatCountryExtValue(raw) : formatExtCell(raw)) : ''
+      label: hardCodedExtLabelMap[key] || key,
+      readonly: true,
+      display: key === 'country' ? formatCountryExtValue(raw) : formatExtCell(raw)
     })
   }
-  for (const key of EXT_DETAIL_FIELD_ORDER) {
-    pushRow(key)
-  }
-  for (const key of Object.keys(extForm).sort()) {
-    pushRow(key)
+  for (const f of receivableBusinessExtFields.value) {
+    const key = extKeyForBusinessField(f)
+    if (!key) continue
+    rows.push({
+      key,
+      label: f.fieldName || key,
+      readonly: false,
+      display: '',
+      dataType: f.dataType,
+      requiredFlag: f.requiredFlag
+    })
   }
   return rows
 })
@@ -517,6 +613,22 @@ const matchOptionCode = (opts: { code: string; name: string }[], raw: string | u
   if (opts.some((o) => o.code === u)) return u
   const byName = opts.find((o) => o.name === u)
   return byName?.code ?? u
+}
+
+function flattenModuleQueryNodes(nodes: ModuleQueryTreeNode[]): LabelValueOption[] {
+  return nodes.flatMap((n) => [{ code: n.moduleCode, name: n.moduleName }, ...flattenModuleQueryNodes(n.children || [])])
+}
+
+const applyCompanyInfoToExt = (info: CompanyInfo) => {
+  const cc = info.country?.trim() || ''
+  if (cc) {
+    extForm.country = countryNameByCode.value[cc] || cc
+  } else {
+    extForm.country = ''
+  }
+  extForm.repOffice = info.representativeOffice?.trim() || ''
+  extForm.region = info.region?.trim() || ''
+  extForm.companyTag = info.tags?.length ? info.tags.join('、') : ''
 }
 
 const applyCompanyDetailToExt = (detail: CompanyProjectDetail) => {
@@ -537,6 +649,16 @@ const applySelectedCompanyExtFields = async () => {
   const code = form.companyProjectCode.trim()
   if (!code) return
   try {
+    const list = await fetchCompanyInfos({ companyCodes: [code], enabledFlag: 'Y' })
+    const info = list[0]
+    if (info) {
+      applyCompanyInfoToExt(info)
+      return
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
     const detail = await fetchCompanyProjectDetail(code)
     applyCompanyDetailToExt(detail)
   } catch {
@@ -544,25 +666,41 @@ const applySelectedCompanyExtFields = async () => {
   }
 }
 
-/** 密级、文档组织等与归档流向规则一致 */
+/** 归档地、文档组织、是否可见：按「默认且启用」的归档流向规则匹配 */
 const applyArchiveFlowDefaults = async () => {
-  if (!form.companyProjectCode.trim() || !form.documentTypeCode.trim()) return
+  const company = form.companyProjectCode.trim()
+  const module = form.archiveTypeCode.trim()
+  if (!company || !module) return
   try {
-    const d = await resolveArchiveDefaults({
-      companyProjectCode: form.companyProjectCode.trim(),
-      documentTypeCode: form.documentTypeCode.trim(),
-      customRule: form.archiveTypeCode.trim() || undefined,
+    const m = await fetchArchiveRuleMatch({
+      companyProjectCode: company,
+      busiModuleCode: module,
       archiveDestination: form.archiveDestination.trim() || undefined
     })
-    if (d?.securityLevelCode) {
-      const next = matchOptionCode(options.securityLevels, d.securityLevelCode)
-      if (next) form.securityLevelCode = next
+    if (!m?.matched) {
+      form.archiveDestination = ''
+      form.documentOrganizationCode = ''
+      archiveDestinationLabelFromService.value = ''
+      return
     }
-    const org = (d?.documentOrganizationCode || '').trim()
+    const dest = (m.archiveDestination || '').trim()
+    if (dest) {
+      const resolved = matchOptionCode(options.archiveDestinations, dest) || dest
+      form.archiveDestination = resolved
+      const inStdList = options.archiveDestinations.some((o) => o.code === resolved)
+      archiveDestinationLabelFromService.value = inStdList ? '' : (m.archiveDestinationName || '').trim()
+    } else {
+      archiveDestinationLabelFromService.value = ''
+    }
+    const org = (m.documentOrganizationCode || '').trim()
     if (org) {
       form.documentOrganizationCode = matchOptionCode(options.documentOrganizations, org) || org
     } else {
       form.documentOrganizationCode = ''
+    }
+    const vis = (m.visibilityLabel || '').trim()
+    if (vis === '是' || vis === '否') {
+      extForm.visibility = vis
     }
   } catch {
     /* ignore */
@@ -585,42 +723,53 @@ const onDutyPersonBlur = async () => {
   }
 }
 
-const onDocumentTypeChanged = async () => {
-  form.archiveTypeCode = ''
-  businessModuleOptions.value = []
-  await syncExtFieldsForDocType()
-  const code = form.documentTypeCode.trim()
-  if (code) {
-    try {
-      businessModuleOptions.value = await fetchLevel3Modules(code)
-    } catch {
-      businessModuleOptions.value = []
-      ElMessage.error('加载业务模块失败')
-    }
+function clearReceivableExtState() {
+  for (const k of lastReceivableExtKeys.value) {
+    delete extForm[k]
   }
-  await applySelectedCompanyExtFields()
+  lastReceivableExtKeys.value.clear()
+  receivableBusinessExtFields.value = []
+}
+
+const syncReceivableModuleExtFields = async () => {
+  clearReceivableExtState()
+  const moduleCode = form.archiveTypeCode.trim()
+  if (!moduleCode) return
+  loadingReceivableExt.value = true
+  try {
+    const filtered = await fetchReceivableBasicExtFields(moduleCode)
+    receivableBusinessExtFields.value = filtered
+    for (const f of filtered) {
+      const key = extKeyForBusinessField(f)
+      if (!key) continue
+      lastReceivableExtKeys.value.add(key)
+      if (extForm[key] === undefined || extForm[key] === null) extForm[key] = ''
+    }
+  } catch (e: unknown) {
+    receivableBusinessExtFields.value = []
+    ElMessage.error(e instanceof Error ? e.message : '加载业务模块扩展字段失败')
+  } finally {
+    loadingReceivableExt.value = false
+  }
 }
 
 const syncExtFieldsForDocType = async () => {
-  const code = form.documentTypeCode.trim()
-  const vis = extForm.visibility
-  const bc = extForm.barcodeModule
+  const preserved: Record<string, string> = {}
+  for (const k of PROTECTED_EXT_FORM_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(extForm, k)) preserved[k] = extForm[k]
+  }
+  lastReceivableExtKeys.value.clear()
+  receivableBusinessExtFields.value = []
   Object.keys(extForm).forEach((k) => delete extForm[k])
-  extForm.visibility = vis || '是'
-  extForm.barcodeModule = bc || ''
-  extFieldNameMap.value = {}
-  if (!code) return
-  const fields = await fetchEffectiveDocumentTypeExtFields(code).catch(() => [])
-  extFieldNameMap.value = Object.fromEntries((fields || []).map((item) => [item.fieldCode, item.fieldName || item.fieldCode]))
-  const docTypeName = selectedDocTypeName.value
-  for (const key of EXT_DETAIL_FIELD_ORDER) {
-    if (!isHardCodedFieldVisible(key, docTypeName)) continue
-    if (!(key in extForm)) extForm[key] = ''
-  }
-  for (const key of Object.keys(extFieldNameMap.value)) {
-    if (!isHardCodedFieldVisible(key, docTypeName)) continue
-    if (!(key in extForm)) extForm[key] = ''
-  }
+  Object.assign(extForm, preserved)
+  if (!form.documentTypeCode.trim()) return
+  await syncReceivableModuleExtFields()
+}
+
+const onDocumentTypeChanged = async () => {
+  form.archiveTypeCode = ''
+  await syncExtFieldsForDocType()
+  await applySelectedCompanyExtFields()
 }
 
 watch(
@@ -628,6 +777,14 @@ watch(
   () => {
     if (bootstrappingDraft.value) return
     void onDocumentTypeChanged()
+  }
+)
+
+watch(
+  () => form.archiveTypeCode,
+  () => {
+    if (bootstrappingDraft.value) return
+    void syncReceivableModuleExtFields()
   }
 )
 
@@ -646,7 +803,7 @@ watch(
 
 watch(
   () =>
-    [form.companyProjectCode, form.documentTypeCode, form.archiveTypeCode, form.archiveDestination] as const,
+    [form.companyProjectCode, form.archiveTypeCode, form.archiveDestination] as const,
   () => {
     void applyArchiveFlowDefaults()
   }
@@ -684,12 +841,10 @@ const loadDraftIntoForm = async (docId: number) => {
       record.retentionPeriodYears != null && record.retentionPeriodYears > 0 ? record.retentionPeriodYears : 10
     form.documentTypeCode = matchOptionCode(options.documentTypes, record.documentTypeCode)
     form.businessCode = (record.businessCode || '').trim()
-    form.companyProjectCode = matchOptionCode(options.companyProjects, record.companyProjectCode)
-    const dt = form.documentTypeCode.trim()
-    businessModuleOptions.value = dt ? await fetchLevel3Modules(dt).catch(() => []) : []
+    form.companyProjectCode = matchOptionCode(companySelectOptions.value, record.companyProjectCode)
+    const flatMods = flattenModuleQueryNodes(businessModuleTreeOptions.value)
     form.archiveTypeCode =
-      matchOptionCode(businessModuleOptions.value, record.businessModuleTypeCode) ||
-      (record.businessModuleTypeCode || '').trim()
+      matchOptionCode(flatMods, record.businessModuleTypeCode) || (record.businessModuleTypeCode || '').trim()
     form.beginPeriod = record.beginPeriod || ''
     form.endPeriod = record.endPeriod || ''
     form.archiveDestination = matchOptionCode(options.archiveDestinations, record.archiveDestination)
@@ -711,19 +866,7 @@ const loadDraftIntoForm = async (docId: number) => {
       extForm[k] = v != null ? String(v) : ''
     }
     extForm.visibility = String(record.documentVisibility ?? ext.visibility ?? '是').trim() || '是'
-    const fields = await fetchEffectiveDocumentTypeExtFields(form.documentTypeCode.trim()).catch(() => [])
-    extFieldNameMap.value = Object.fromEntries(
-      (fields || []).map((item) => [item.fieldCode, item.fieldName || item.fieldCode])
-    )
-    const docTypeName = selectedDocTypeName.value
-    for (const key of EXT_DETAIL_FIELD_ORDER) {
-      if (!isHardCodedFieldVisible(key, docTypeName)) continue
-      if (!(key in extForm)) extForm[key] = ''
-    }
-    for (const key of Object.keys(extFieldNameMap.value)) {
-      if (!isHardCodedFieldVisible(key, docTypeName)) continue
-      if (!(key in extForm)) extForm[key] = ''
-    }
+    await syncReceivableModuleExtFields()
     await applySelectedCompanyExtFields()
     await applyArchiveFlowDefaults()
   } catch (e: unknown) {
@@ -739,14 +882,18 @@ const loadDraftIntoForm = async (docId: number) => {
 onMounted(async () => {
   loading.value = true
   try {
-    const [data, countries] = await Promise.all([
+    const [data, countries, companyInfos, moduleTree] = await Promise.all([
       fetchArchiveCreateOptions(),
-      fetchCompanyProjectCountries().catch(() => [] as { countryCode: string; countryName: string }[])
+      fetchCompanyProjectCountries().catch(() => [] as { countryCode: string; countryName: string }[]),
+      fetchCompanyInfos({ enabledFlag: 'Y' }).catch(() => [] as CompanyInfo[]),
+      fetchBusinessModuleTree().catch((): BusinessModuleNode[] => [])
     ])
     Object.assign(options, data)
     countryNameByCode.value = Object.fromEntries(
       (countries || []).map((c) => [c.countryCode, c.countryName])
     )
+    companySelectOptions.value = companyInfos.map((c) => ({ code: c.companyCode, name: c.companyName }))
+    businessModuleTreeOptions.value = buildModuleQueryTree(moduleTree)
     const rawResume =
       typeof route.query.resumeDraftId === 'string'
         ? route.query.resumeDraftId.trim()
@@ -798,18 +945,17 @@ const handleAuditUpload = async (opt: UploadRequestOptions) => {
 const resolveRetentionYears = async (): Promise<number> => {
   let retention = 10
   const company = form.companyProjectCode.trim()
-  const docType = form.documentTypeCode.trim()
   const module = form.archiveTypeCode.trim()
   const dest = form.archiveDestination.trim()
+  if (!company || !module) return retention
   try {
-    const d = await resolveArchiveDefaults({
+    const m = await fetchArchiveRuleMatch({
       companyProjectCode: company,
-      documentTypeCode: docType,
-      customRule: module || undefined,
+      busiModuleCode: module,
       archiveDestination: dest || undefined
     })
-    if (d?.retentionPeriodYears != null && d.retentionPeriodYears > 0) {
-      retention = d.retentionPeriodYears
+    if (m?.matched && m.retentionPeriodYears != null && m.retentionPeriodYears > 0) {
+      retention = m.retentionPeriodYears
     }
   } catch {
     /* ignore */
@@ -876,6 +1022,10 @@ const saveDraft = async () => {
 const submit = async () => {
   if (!form.documentTypeCode.trim()) {
     ElMessage.warning('请选择文档类型')
+    return
+  }
+  if (!form.companyProjectCode.trim()) {
+    ElMessage.warning('请选择公司')
     return
   }
   if (!form.businessCode.trim()) {
@@ -1057,6 +1207,13 @@ const cancel = () => {
   font-size: 12px;
   line-height: 1.4;
 }
+.f02-required {
+  color: var(--el-color-danger);
+  margin-right: 2px;
+}
+.ext-empty-hint {
+  margin-top: 12px;
+}
 .doc-flow-hint {
   margin-top: 6px;
   font-size: 12px;
@@ -1065,7 +1222,8 @@ const cancel = () => {
 }
 :deep(.doc-edit-control.el-input),
 :deep(.doc-edit-control.el-select),
-:deep(.doc-edit-control.el-date-editor) {
+:deep(.doc-edit-control.el-date-editor),
+:deep(.doc-edit-control.el-tree-select) {
   width: 100%;
 }
 @media (max-width: 1200px) {

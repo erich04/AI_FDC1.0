@@ -71,6 +71,8 @@ export interface ArchiveCreateCommand {
 
 export interface ArchiveQueryCommand {
   keyword?: string
+  /** 兼容后端别名：按文档类型过滤（后端映射到 busiModuleCode） */
+  documentTypeCode?: string
   busiModuleCode?: string
   companyProjectCode?: string
   archiveTypeCode?: string
@@ -226,24 +228,29 @@ export interface StorageLedgerQueryCommand {
   resultStatus?: string
 }
 
+/** 文档类型扩展字段：与后端 DocumentTypeExtFieldController 的 /api/archive-manage/business-modules/... 一致 */
+function documentTypeExtFieldPath(busiModuleCode: string) {
+  return `/api/archive-manage/business-modules/${busiModuleCode}/ext-fields`
+}
+
 export function fetchDocumentTypeExtFields(busiModuleCode: string) {
-  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/business-modules/${busiModuleCode}/ext-fields`))
+  return apiRequest<DocumentTypeExtField[]>(http.get(documentTypeExtFieldPath(busiModuleCode)))
 }
 
 export function fetchEffectiveDocumentTypeExtFields(busiModuleCode: string) {
-  return apiRequest<DocumentTypeExtField[]>(http.get(`/api/base-data/business-modules/${busiModuleCode}/ext-fields/effective`))
+  return apiRequest<DocumentTypeExtField[]>(http.get(`${documentTypeExtFieldPath(busiModuleCode)}/effective`))
 }
 
 export function createDocumentTypeExtField(busiModuleCode: string, data: DocumentTypeExtFieldCreateCommand) {
-  return apiRequest<DocumentTypeExtField>(http.post(`/api/base-data/business-modules/${busiModuleCode}/ext-fields`, data))
+  return apiRequest<DocumentTypeExtField>(http.post(documentTypeExtFieldPath(busiModuleCode), data))
 }
 
 export function updateDocumentTypeExtField(busiModuleCode: string, fieldCode: string, data: DocumentTypeExtFieldCreateCommand) {
-  return apiRequest<DocumentTypeExtField>(http.put(`/api/base-data/business-modules/${busiModuleCode}/ext-fields/${fieldCode}`, data))
+  return apiRequest<DocumentTypeExtField>(http.put(`${documentTypeExtFieldPath(busiModuleCode)}/${fieldCode}`, data))
 }
 
 export function deleteDocumentTypeExtField(busiModuleCode: string, fieldCode: string) {
-  return apiRequest<void>(http.delete(`/api/base-data/business-modules/${busiModuleCode}/ext-fields/${fieldCode}`))
+  return apiRequest<void>(http.delete(`${documentTypeExtFieldPath(busiModuleCode)}/${fieldCode}`))
 }
 
 export function fetchArchiveCreateOptions() {

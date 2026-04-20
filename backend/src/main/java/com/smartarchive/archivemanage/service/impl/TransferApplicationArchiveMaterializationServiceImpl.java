@@ -7,7 +7,6 @@ import com.smartarchive.archiveflow.domain.SecurityLevelDictionary;
 import com.smartarchive.archiveflow.mapper.ArchiveFlowLookupMapper;
 import com.smartarchive.archiveflow.mapper.ArchiveFlowRuleMapper;
 import com.smartarchive.archiveflow.mapper.SecurityLevelDictionaryMapper;
-import com.smartarchive.archivemanage.domain.ArchiveExtFieldConfig;
 import com.smartarchive.archivemanage.domain.ArchiveExtValue;
 import com.smartarchive.archivemanage.domain.ArchivePaper;
 import com.smartarchive.archivemanage.domain.ArchiveRecord;
@@ -15,15 +14,16 @@ import com.smartarchive.archivemanage.domain.TransferApplication;
 import com.smartarchive.archivemanage.domain.TransferApplicationDetail;
 import com.smartarchive.archivemanage.dto.ArchiveDefaultResolveResponse;
 import com.smartarchive.archivemanage.dto.DocumentTypeExtFieldResponse;
-import com.smartarchive.archivemanage.mapper.ArchiveExtFieldConfigMapper;
 import com.smartarchive.archivemanage.mapper.ArchiveExtValueMapper;
 import com.smartarchive.archivemanage.mapper.ArchivePaperMapper;
 import com.smartarchive.archivemanage.mapper.ArchiveRecordMapper;
 import com.smartarchive.archivemanage.mapper.TransferApplicationDetailMapper;
 import com.smartarchive.archivemanage.mapper.TransferApplicationExtMapper;
 import com.smartarchive.archivemanage.mapper.TransferApplicationMapper;
-import com.smartarchive.archivemanage.service.DocumentTypeExtFieldService;
 import com.smartarchive.archivemanage.service.TransferApplicationArchiveMaterializationService;
+import com.smartarchive.archivemanage.service.TransferBusinessModuleExtFieldService;
+import com.smartarchive.businessmodule.domain.BusinessModuleExtField;
+import com.smartarchive.businessmodule.mapper.BusinessModuleExtFieldMapper;
 import com.smartarchive.common.exception.BusinessException;
 import com.smartarchive.companyproject.domain.CompanyProject;
 import com.smartarchive.companyproject.mapper.CompanyProjectMapper;
@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +41,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -59,11 +62,12 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
     private final ArchiveExtValueMapper archiveExtValueMapper;
     private final ArchivePaperMapper archivePaperMapper;
     private final ArchiveFlowRuleMapper archiveFlowRuleMapper;
-    private final DocumentTypeExtFieldService documentTypeExtFieldService;
-    private final ArchiveExtFieldConfigMapper archiveExtFieldConfigMapper;
+    private final TransferBusinessModuleExtFieldService transferBusinessModuleExtFieldService;
+    private final BusinessModuleExtFieldMapper businessModuleExtFieldMapper;
     private final CompanyProjectMapper companyProjectMapper;
     private final SecurityLevelDictionaryMapper securityLevelDictionaryMapper;
     private final ArchiveFlowLookupMapper archiveFlowLookupMapper;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional
@@ -80,14 +84,16 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         if (details.isEmpty()) {
             throw new BusinessException("移交申请无有效明细，无法写入档案");
         }
-        String busiModuleCode = application.getBusiModuleCode();
-        List<DocumentTypeExtFieldResponse> effectiveFields = documentTypeExtFieldService.listEffective(busiModuleCode);
         List<Map<String, Object>> extRows =
             transferApplicationExtMapper.selectByMasterId(applicationId, application.getTenantid());
-        Map<Long, Map<String, String>> extByDetailId = decodeExtRows(extRows, busiModuleCode);
+        Map<Long, Map<String, String>> extByDetailId = decodeExtRows(extRows, details);
 
         for (TransferApplicationDetail detail : details) {
-            insertArchiveForDetail(application, detail, extByDetailId.getOrDefault(detail.getApplicationDetailId(), Map.of()), effectiveFields);
+            String lineModule = trimToNull(detail.getBusiModuleCode());
+            List<DocumentTypeExtFieldResponse> effectiveFields = lineModule == null
+                ? List.of()
+                : transferBusinessModuleExtFieldService.listEffectiveForTransfer(lineModule);
+            syncDocumentForDetail(application, detail, extByDetailId.getOrDefault(detail.getApplicationDetailId(), Map.of()), effectiveFields);
         }
 
         application.setArchivesMaterialized("Y");
@@ -126,22 +132,13 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         return application;
     }
 
-    private void insertArchiveForDetail(TransferApplication application,
-                                        TransferApplicationDetail detail,
-                                        Map<String, String> extValues,
-                                        List<DocumentTypeExtFieldResponse> effectiveFields) {
+    private void syncDocumentForDetail(TransferApplication application,
+                                       TransferApplicationDetail detail,
+                                       Map<String, String> extValues,
+                                       List<DocumentTypeExtFieldResponse> effectiveFields) {
         String businessCode = trimToNull(detail.getDocBusiNo());
-        if (StringUtils.hasText(businessCode)) {
-            LambdaUpdateWrapper<ArchiveRecord> updateWrapper = new LambdaUpdateWrapper<ArchiveRecord>()
-                .eq(ArchiveRecord::getBusinessCode, businessCode)
-                .eq(ArchiveRecord::getDeleteFlag, "N")
-                .set(ArchiveRecord::getArchiveStatus, "TRANSFERRED")
-                .set(ArchiveRecord::getLastUpdatedBy, SYSTEM_OPERATOR_ID)
-                .set(ArchiveRecord::getLastUpdateDate, LocalDateTime.now());
-            int affected = archiveRecordMapper.update(null, updateWrapper);
-            if (affected > 0) {
-                return;
-            }
+        if (!StringUtils.hasText(businessCode)) {
+            businessCode = "TRN-" + application.getApplicationId() + "-" + detail.getApplicationDetailId();
         }
 
         CompanyProject project = requireCompanyProject(detail.getCompanyProjectCode());
@@ -152,7 +149,9 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
             trimToNull(detail.getArchPlaceAlpha2Code()));
 
         String securityLevelCode = firstNonBlank(defaults.getSecurityLevelCode(), firstSecurityLevelCode());
-        String documentOrganizationCode = firstNonBlank(defaults.getDocumentOrganizationCode(), firstDocumentOrganizationCode());
+        String documentOrganizationCode = firstNonBlank(
+            trimToNull(detail.getDocumentOrganizationCode()),
+            firstNonBlank(defaults.getDocumentOrganizationCode(), firstDocumentOrganizationCode()));
         Integer retentionYears = defaults.getRetentionPeriodYears() != null ? defaults.getRetentionPeriodYears() : 10;
         String countryCode = firstNonBlank(defaults.getCountryCode(), project.getCountryCode());
 
@@ -165,74 +164,276 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
         String dutyPerson = application.getApplicant() != null ? "用户-" + application.getApplicant() : "—";
         String dutyDepartment = firstNonBlank(application.getDepartment(), "—");
         String remark = buildRemark(application, detail);
+        LocalDateTime now = LocalDateTime.now();
+        // fdc_document_t.source_system is VARCHAR(30); keep a short code and put trace in source_id (VARCHAR(500)).
+        String sourceSystem = "TRANSFER_APP";
+        String sourceIdTrace = fdcDocumentSourceId(application);
+        String archiveDestination = firstNonBlank(defaults.getArchiveDestination(), trimToNull(detail.getArchPlaceAlpha2Code()));
+        String originPlace = trimToNull(detail.getArchPlaceAlpha2Code());
+        String documentName = firstNonBlank(detail.getDocName(), "未命名文档");
+        String docOrg = documentOrganizationCode;
+        String extAttr1Visibility = "是";
+        Map<String, Object> attrColumns = buildDocumentAttrColumns(trimToNull(detail.getBusiModuleCode()), extValues);
+        Object attr2 = attrColumns.get("attr2");
+        Object attr3 = attrColumns.get("attr3");
+        Object attr4 = attrColumns.get("attr4");
+        Object attr5 = attrColumns.get("attr5");
+        Object attr6 = attrColumns.get("attr6");
+        Object attr7 = attrColumns.get("attr7");
+        Object attr8 = attrColumns.get("attr8");
+        Object attr9 = attrColumns.get("attr9");
+        Object attr10 = attrColumns.get("attr10");
+        Object attr11 = attrColumns.get("attr11");
+        Object attr12 = attrColumns.get("attr12");
+        Object attr13 = attrColumns.get("attr13");
+        Object attr14 = attrColumns.get("attr14");
+        Object attr15 = attrColumns.get("attr15");
+        Object attr16 = attrColumns.get("attr16");
+        Object attr17 = attrColumns.get("attr17");
+        Object attr18 = attrColumns.get("attr18");
+        Object attr19 = attrColumns.get("attr19");
+        Object attr20 = attrColumns.get("attr20");
+        Object attr21 = attrColumns.get("attr21");
+        Object attr22 = attrColumns.get("attr22");
+        Object attr23 = attrColumns.get("attr23");
+        Object attr24 = attrColumns.get("attr24");
+        Object attr25 = attrColumns.get("attr25");
+        Object attr26 = attrColumns.get("attr26");
+        Object attr27 = attrColumns.get("attr27");
+        Object attr28 = attrColumns.get("attr28");
+        Object attr29 = attrColumns.get("attr29");
+        Object attr30 = attrColumns.get("attr30");
+        Object attr31 = attrColumns.get("attr31");
+        Object attr32 = attrColumns.get("attr32");
+        Object attr33 = attrColumns.get("attr33");
+        Object attr34 = attrColumns.get("attr34");
+        Object attr35 = attrColumns.get("attr35");
+        Object attr36 = attrColumns.get("attr36");
+        Object attr37 = attrColumns.get("attr37");
+        Object attr38 = attrColumns.get("attr38");
+        Object attr39 = attrColumns.get("attr39");
+        Object attr40 = attrColumns.get("attr40");
+        Object attr41 = attrColumns.get("attr41");
+        Object attr42 = attrColumns.get("attr42");
+        Object attr43 = attrColumns.get("attr43");
+        Object attr44 = attrColumns.get("attr44");
+        Object attr45 = attrColumns.get("attr45");
+        Object attr46 = attrColumns.get("attr46");
+        Object attr47 = attrColumns.get("attr47");
+        Object attr48 = attrColumns.get("attr48");
+        Object attr49 = attrColumns.get("attr49");
+        Object attr50 = attrColumns.get("attr50");
+        Object attr51 = attrColumns.get("attr51");
+        Object attr52 = attrColumns.get("attr52");
+        Object attr53 = attrColumns.get("attr53");
+        Object attr54 = attrColumns.get("attr54");
+        Object attr55 = attrColumns.get("attr55");
+        Object attr56 = attrColumns.get("attr56");
+        Object attr57 = attrColumns.get("attr57");
+        Object attr58 = attrColumns.get("attr58");
+        Object attr59 = attrColumns.get("attr59");
+        Object attr60 = attrColumns.get("attr60");
+        Object attr61 = attrColumns.get("attr61");
+        Object attr62 = attrColumns.get("attr62");
+        Object attr63 = attrColumns.get("attr63");
+        Object attr64 = attrColumns.get("attr64");
+        Object attr65 = attrColumns.get("attr65");
+        Object attr66 = attrColumns.get("attr66");
+        Object attr67 = attrColumns.get("attr67");
+        Object attr68 = attrColumns.get("attr68");
+        Object attr69 = attrColumns.get("attr69");
+        Object attr70 = attrColumns.get("attr70");
+        Object attr71 = attrColumns.get("attr71");
+        Object attr72 = attrColumns.get("attr72");
+        Object attr73 = attrColumns.get("attr73");
+        Object attr74 = attrColumns.get("attr74");
+        Object attr75 = attrColumns.get("attr75");
+        Object attr76 = attrColumns.get("attr76");
+        Object attr77 = attrColumns.get("attr77");
+        Object attr78 = attrColumns.get("attr78");
+        Object attr79 = attrColumns.get("attr79");
+        Object attr80 = attrColumns.get("attr80");
+        Object attr81 = attrColumns.get("attr81");
+        Object attr82 = attrColumns.get("attr82");
+        Object attr83 = attrColumns.get("attr83");
+        Object attr84 = attrColumns.get("attr84");
+        Object attr85 = attrColumns.get("attr85");
+        Object attr86 = attrColumns.get("attr86");
+        Object attr87 = attrColumns.get("attr87");
+        Object attr88 = attrColumns.get("attr88");
+        Object attr89 = attrColumns.get("attr89");
+        Object attr90 = attrColumns.get("attr90");
+        Object attr91 = attrColumns.get("attr91");
+        Object attr92 = attrColumns.get("attr92");
+        Object attr93 = attrColumns.get("attr93");
+        Object attr94 = attrColumns.get("attr94");
+        Object attr95 = attrColumns.get("attr95");
+        Object attr96 = attrColumns.get("attr96");
+        Object attr97 = attrColumns.get("attr97");
+        Object attr98 = attrColumns.get("attr98");
+        Object attr99 = attrColumns.get("attr99");
+        Object attr100 = attrColumns.get("attr100");
 
-        ArchiveRecord archive = new ArchiveRecord();
-        archive.setArchiveCode(generateCode("ARC"));
-        archive.setCreateMode("MANUAL");
-        archive.setArchiveStatus("TRANSFERRED");
-        archive.setBusiModuleCode(application.getBusiModuleCode());
-        archive.setCompanyProjectCode(detail.getCompanyProjectCode().trim());
-        archive.setBusiModuleCode(trimToNull(detail.getBusiModuleCode()));
-        archive.setBeginPeriod(beginPeriod);
-        archive.setEndPeriod(endPeriod);
-        archive.setBusinessCode(businessCode);
-        archive.setDocumentName(firstNonBlank(detail.getDocName(), "未命名文档"));
-        archive.setDutyPerson(dutyPerson);
-        archive.setDutyDepartment(dutyDepartment);
-        archive.setDocumentDate(docDate.atStartOfDay());
-        archive.setSecurityLevelCode(securityLevelCode);
-        archive.setSourceSystem("TRANSFER_APPLICATION:" + application.getApplicationNumber());
-        archive.setArchiveDestination(firstNonBlank(defaults.getArchiveDestination(), trimToNull(detail.getArchPlaceAlpha2Code())));
-        archive.setOriginPlace(trimToNull(detail.getArchPlaceAlpha2Code()));
-        archive.setCarrierTypeCode(carrierType);
-        archive.setRemark(remark);
-        archive.setAiArchiveSummary(trimToNull(detail.getDescription()));
-        archive.setDocumentOrganizationCode(documentOrganizationCode);
-        archive.setRetentionPeriodYears(retentionYears);
-        archive.setArchiveTypeCode(archiveTypeCode);
-        archive.setCountryCode(countryCode);
-        archive.setParseStatus("FAILED");
-        archive.setVectorStatus("FAILED");
-        archive.setQaIndexStatus("FAILED");
-        archive.setSessionId(null);
-        archive.setDeleteFlag("N");
-        archive.setCreatedBy(SYSTEM_OPERATOR_ID);
-        archive.setCreationDate(LocalDateTime.now());
-        archive.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
-        archive.setLastUpdateDate(LocalDateTime.now());
-        archiveRecordMapper.insert(archive);
-        persistArchiveExtValues(archive.getArchiveId(), effectiveFields, extValues);
-
-        if ("PAPER".equals(carrierType) || "HYBRID".equals(carrierType)) {
-            int copies = detail.getArchCopies() == null ? 1 : Math.max(1, detail.getArchCopies().intValue());
-            ArchivePaper paper = new ArchivePaper();
-            paper.setArchiveId(archive.getArchiveId());
-            paper.setPlannedCopyCount(copies);
-            paper.setActualCopyCount(copies);
-            paper.setRemark(trimToNull(detail.getRemark()));
-            paper.setCreatedBy(SYSTEM_OPERATOR_ID);
-            paper.setCreationDate(LocalDateTime.now());
-            paper.setLastUpdatedBy(SYSTEM_OPERATOR_ID);
-            paper.setLastUpdateDate(LocalDateTime.now());
-            archivePaperMapper.insert(paper);
+        Map<String, Object> existing = jdbcTemplate.query(
+            """
+            select doc_id, arch_place_alpha2_code
+              from fdc_document_t
+             where coalesce(delete_flag, 0) = 0
+               and lower(trim(doc_biz_no)) = lower(trim(?))
+             order by doc_id desc
+             limit 1
+            """,
+            rs -> rs.next() ? Map.of(
+                "docId", rs.getLong("doc_id"),
+                "archiveDestination", rs.getString("arch_place_alpha2_code")
+            ) : null,
+            businessCode
+        );
+        if (existing != null) {
+            String existingDestination = trimToNull(String.valueOf(existing.get("archiveDestination")));
+            if (Objects.equals(existingDestination, trimToNull(archiveDestination))) {
+                return;
+            }
+            Long docId = ((Number) existing.get("docId")).longValue();
+            jdbcTemplate.update(
+                """
+                update fdc_document_t set
+                  company_code = ?, company_name = ?, start_period = ?, end_period = ?, biz_module_code = ?, doc_biz_no = ?,
+                  doc_gen_date = ?, arch_place_alpha2_code = ?, origin_place_alpha2_code = ?, carrier_type = ?, doc_name = ?,
+                  doc_organization_code = ?, doc_resp_dept_id = ?, doc_resp_person_id = ?, rentention_term = ?, security_level = ?,
+                  doc_version = ?, source_id = ?, source_system = ?,
+                  description = ?, attr1 = ?, attr2 = ?, attr3 = ?, attr4 = ?, attr5 = ?, attr6 = ?, attr7 = ?, attr8 = ?, attr9 = ?,
+                  attr10 = ?, attr11 = ?, attr12 = ?, attr13 = ?, attr14 = ?, attr15 = ?, attr16 = ?, attr17 = ?, attr18 = ?, attr19 = ?,
+                  attr20 = ?, attr21 = ?, attr22 = ?, attr23 = ?, attr24 = ?, attr25 = ?, attr26 = ?, attr27 = ?, attr28 = ?, attr29 = ?,
+                  attr30 = ?, attr31 = ?, attr32 = ?, attr33 = ?, attr34 = ?, attr35 = ?, attr36 = ?, attr37 = ?, attr38 = ?, attr39 = ?,
+                  attr40 = ?, attr41 = ?, attr42 = ?, attr43 = ?, attr44 = ?, attr45 = ?, attr46 = ?, attr47 = ?, attr48 = ?, attr49 = ?,
+                  attr50 = ?, attr51 = ?, attr52 = ?, attr53 = ?, attr54 = ?, attr55 = ?, attr56 = ?, attr57 = ?, attr58 = ?, attr59 = ?,
+                  attr60 = ?, attr61 = ?, attr62 = ?, attr63 = ?, attr64 = ?, attr65 = ?, attr66 = ?, attr67 = ?, attr68 = ?, attr69 = ?,
+                  attr70 = ?, attr71 = ?, attr72 = ?, attr73 = ?, attr74 = ?, attr75 = ?, attr76 = ?, attr77 = ?, attr78 = ?, attr79 = ?,
+                  attr80 = ?, attr81 = ?, attr82 = ?, attr83 = ?, attr84 = ?, attr85 = ?, attr86 = ?, attr87 = ?, attr88 = ?, attr89 = ?,
+                  attr90 = ?, attr91 = ?, attr92 = ?, attr93 = ?, attr94 = ?, attr95 = ?, attr96 = ?, attr97 = ?, attr98 = ?, attr99 = ?,
+                  attr100 = ?, last_updated_by = ?, last_update_date = ?
+                where doc_id = ?
+                """,
+                detail.getCompanyProjectCode().trim(), project.getCompanyProjectName(), parseYearMonthStart(detail.getStartArchPeriod(), docDate),
+                parseYearMonthEnd(detail.getEndArchPeriod(), docDate), varchar(trimToNull(detail.getBusiModuleCode()), 30), businessCode,
+                docDate.atStartOfDay(), archiveDestination, originPlace, carrierType, documentName,
+                docOrg, 1L, application.getApplicant(), retentionYears, varchar(securityLevelCode, 30), "1.0", sourceIdTrace, sourceSystem,
+                remark, extAttr1Visibility, attr2, attr3, attr4, attr5, attr6, attr7, attr8, attr9,
+                attr10, attr11, attr12, attr13, attr14, attr15, attr16, attr17, attr18, attr19,
+                attr20, attr21, attr22, attr23, attr24, attr25, attr26, attr27, attr28, attr29,
+                attr30, attr31, attr32, attr33, attr34, attr35, attr36, attr37, attr38, attr39,
+                attr40, attr41, attr42, attr43, attr44, attr45, attr46, attr47, attr48, attr49,
+                attr50, attr51, attr52, attr53, attr54, attr55, attr56, attr57, attr58, attr59,
+                attr60, attr61, attr62, attr63, attr64, attr65, attr66, attr67, attr68, attr69,
+                attr70, attr71, attr72, attr73, attr74, attr75, attr76, attr77, attr78, attr79,
+                attr80, attr81, attr82, attr83, attr84, attr85, attr86, attr87, attr88, attr89,
+                attr90, attr91, attr92, attr93, attr94, attr95, attr96, attr97, attr98, attr99,
+                attr100, SYSTEM_OPERATOR_ID, now, docId
+            );
+            return;
         }
+
+        Long newDocId = nextFdcDocumentId();
+        jdbcTemplate.update(
+            """
+            insert into fdc_document_t (
+              doc_id, company_code, company_name, start_period, end_period, biz_module_code, doc_biz_no, doc_gen_date,
+              arch_place_alpha2_code, origin_place_alpha2_code, carrier_type, doc_name, doc_organization_code,
+              doc_resp_dept_id, doc_resp_person_id, rentention_term, security_level, doc_version, source_id, source_system, lifecycle_status, custody_status,
+              description, attr1, attr2, attr3, attr4, attr5, attr6, attr7, attr8, attr9, attr10, attr11, attr12, attr13, attr14,
+              attr15, attr16, attr17, attr18, attr19, attr20, attr21, attr22, attr23, attr24, attr25, attr26, attr27, attr28, attr29,
+              attr30, attr31, attr32, attr33, attr34, attr35, attr36, attr37, attr38, attr39, attr40, attr41, attr42, attr43, attr44,
+              attr45, attr46, attr47, attr48, attr49, attr50, attr51, attr52, attr53, attr54, attr55, attr56, attr57, attr58, attr59,
+              attr60, attr61, attr62, attr63, attr64, attr65, attr66, attr67, attr68, attr69, attr70, attr71, attr72, attr73, attr74,
+              attr75, attr76, attr77, attr78, attr79, attr80, attr81, attr82, attr83, attr84, attr85, attr86, attr87, attr88, attr89,
+              attr90, attr91, attr92, attr93, attr94, attr95, attr96, attr97, attr98, attr99, attr100, created_by, creation_date,
+              last_updated_by, last_update_date, delete_flag
+            ) values (
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+            """,
+            newDocId, detail.getCompanyProjectCode().trim(), project.getCompanyProjectName(),
+            parseYearMonthStart(detail.getStartArchPeriod(), docDate), parseYearMonthEnd(detail.getEndArchPeriod(), docDate),
+            varchar(trimToNull(detail.getBusiModuleCode()), 30), businessCode, docDate.atStartOfDay(),
+            archiveDestination, originPlace, carrierType, documentName, docOrg,
+            1L, application.getApplicant(), retentionYears, varchar(securityLevelCode, 30), "1.0", sourceIdTrace, sourceSystem, "UNARCHIVED", "UNARCHIVED",
+            remark, extAttr1Visibility,
+            attr2, attr3, attr4, attr5, attr6, attr7, attr8, attr9, attr10, attr11, attr12, attr13, attr14, attr15, attr16, attr17, attr18, attr19, attr20,
+            attr21, attr22, attr23, attr24, attr25, attr26, attr27, attr28, attr29, attr30, attr31, attr32, attr33, attr34, attr35, attr36, attr37, attr38, attr39, attr40,
+            attr41, attr42, attr43, attr44, attr45, attr46, attr47, attr48, attr49, attr50, attr51, attr52, attr53, attr54, attr55, attr56, attr57, attr58, attr59, attr60,
+            attr61, attr62, attr63, attr64, attr65, attr66, attr67, attr68, attr69, attr70, attr71, attr72, attr73, attr74, attr75, attr76, attr77, attr78, attr79, attr80,
+            attr81, attr82, attr83, attr84, attr85, attr86, attr87, attr88, attr89, attr90, attr91, attr92, attr93, attr94, attr95, attr96, attr97, attr98, attr99, attr100,
+            SYSTEM_OPERATOR_ID, now, SYSTEM_OPERATOR_ID, now, 0
+        );
     }
 
-    private Map<Long, Map<String, String>> decodeExtRows(List<Map<String, Object>> extRows, String busiModuleCode) {
+    private Long nextFdcDocumentId() {
+        Long max = jdbcTemplate.queryForObject("select coalesce(max(doc_id), 0) from fdc_document_t", Long.class);
+        return (max == null ? 0L : max) + 1L;
+    }
+
+    private static LocalDate parseYearMonthStart(String value, LocalDate fallback) {
+        if (StringUtils.hasText(value) && value.trim().length() >= 7) {
+            return YearMonth.parse(value.trim().substring(0, 7)).atDay(1);
+        }
+        return YearMonth.from(fallback).atDay(1);
+    }
+
+    private static LocalDate parseYearMonthEnd(String value, LocalDate fallback) {
+        if (StringUtils.hasText(value) && value.trim().length() >= 7) {
+            return YearMonth.parse(value.trim().substring(0, 7)).atEndOfMonth();
+        }
+        return YearMonth.from(fallback).atEndOfMonth();
+    }
+
+    private Map<String, Object> buildDocumentAttrColumns(String moduleCode, Map<String, String> extValues) {
+        Map<String, Object> out = new HashMap<>();
+        for (int i = 2; i <= 100; i++) {
+            out.put("attr" + i, null);
+        }
+        if (!StringUtils.hasText(moduleCode) || extValues == null || extValues.isEmpty()) {
+            return out;
+        }
+        List<BusinessModuleExtField> fields = businessModuleExtFieldMapper.selectList(new LambdaQueryWrapper<BusinessModuleExtField>()
+            .eq(BusinessModuleExtField::getModuleCode, moduleCode.trim())
+            .eq(BusinessModuleExtField::getDeleteFlag, "N")
+            .eq(BusinessModuleExtField::getEnabledFlag, "Y")
+            .eq(BusinessModuleExtField::getFieldScope, "BASIC"));
+        for (BusinessModuleExtField field : fields) {
+            if (field == null || !StringUtils.hasText(field.getExtAttribute())) {
+                continue;
+            }
+            String attr = field.getExtAttribute().trim().toLowerCase(Locale.ROOT);
+            if (!ATTR_COLUMN_PATTERN.matcher(attr).matches()) {
+                continue;
+            }
+            String raw = extValues.get(field.getFieldCode());
+            if (!StringUtils.hasText(raw) && StringUtils.hasText(field.getEnglishFieldName())) {
+                raw = extValues.get(field.getEnglishFieldName().trim());
+            }
+            if (!StringUtils.hasText(raw)) {
+                continue;
+            }
+            out.put(attr, raw.trim());
+        }
+        return out;
+    }
+
+    private Map<Long, Map<String, String>> decodeExtRows(List<Map<String, Object>> extRows,
+                                                        List<TransferApplicationDetail> details) {
         if (extRows == null || extRows.isEmpty()) {
             return Map.of();
         }
-        List<ArchiveExtFieldConfig> configs = archiveExtFieldConfigMapper.selectList(new LambdaQueryWrapper<ArchiveExtFieldConfig>()
-            .eq(ArchiveExtFieldConfig::getBusiModuleCode, busiModuleCode)
-            .eq(ArchiveExtFieldConfig::getDeleteFlag, "N")
-            .eq(ArchiveExtFieldConfig::getEnabledFlag, "Y"));
-        Map<String, String> columnToFieldCode = new HashMap<>();
-        for (ArchiveExtFieldConfig cfg : configs) {
-            String columnName = trimToNull(cfg.getDictCategoryCode());
-            if (columnName != null && ATTR_COLUMN_PATTERN.matcher(columnName).matches()) {
-                columnToFieldCode.put(columnName.toLowerCase(), cfg.getFieldCode());
-            }
-        }
+        Map<Long, String> detailIdToModule = details.stream()
+            .filter(d -> d.getApplicationDetailId() != null && StringUtils.hasText(d.getBusiModuleCode()))
+            .collect(Collectors.toMap(
+                TransferApplicationDetail::getApplicationDetailId,
+                d -> d.getBusiModuleCode().trim(),
+                (left, right) -> left));
         Map<Long, Map<String, String>> result = new HashMap<>();
         for (Map<String, Object> row : extRows) {
             Object objectId = row.get("object_id");
@@ -240,6 +441,14 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
                 continue;
             }
             Long detailId = number.longValue();
+            String moduleCode = detailIdToModule.get(detailId);
+            if (!StringUtils.hasText(moduleCode)) {
+                continue;
+            }
+            Map<String, String> columnToFieldCode = transferBusinessModuleExtFieldService.columnToFieldCodeMap(moduleCode);
+            if (columnToFieldCode.isEmpty()) {
+                continue;
+            }
             Map<String, String> values = new HashMap<>();
             for (Map.Entry<String, String> e : columnToFieldCode.entrySet()) {
                 Object raw = row.get(e.getKey());
@@ -252,7 +461,7 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
                 }
             }
             if (!values.isEmpty()) {
-                result.put(detailId, values);
+                result.computeIfAbsent(detailId, k -> new HashMap<>()).putAll(values);
             }
         }
         return result;
@@ -420,5 +629,22 @@ public class TransferApplicationArchiveMaterializationServiceImpl implements Tra
 
     private static String trimToEmpty(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private static String varchar(String value, int maxLen) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String t = value.trim();
+        return t.length() <= maxLen ? t : t.substring(0, maxLen);
+    }
+
+    private static String fdcDocumentSourceId(TransferApplication application) {
+        if (application == null) {
+            return null;
+        }
+        String num = trimToNull(application.getApplicationNumber());
+        String body = num != null ? num : ("APP_ID=" + application.getApplicationId());
+        return body.length() > 500 ? body.substring(0, 500) : body;
     }
 }

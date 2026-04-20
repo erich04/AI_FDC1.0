@@ -54,7 +54,13 @@ public class BusinessModuleController {
     }
 
     @GetMapping("/{moduleCode}/ext-fields")
-    public ApiResponse<List<BusinessModuleExtFieldResponse>> fields(@PathVariable String moduleCode, @RequestParam(required = false) String fieldScope) {
+    public ApiResponse<List<BusinessModuleExtFieldResponse>> fields(@PathVariable String moduleCode,
+                                                                    @RequestParam(required = false) String fieldScope,
+                                                                    @RequestParam(required = false) String applicationFunction) {
+        if (applicationFunction != null && !applicationFunction.isBlank()) {
+            return ApiResponse.success(
+                businessModuleService.listFieldsByApplicationFunction(moduleCode, applicationFunction, fieldScope));
+        }
         return ApiResponse.success(businessModuleService.listFields(moduleCode, fieldScope));
     }
 

@@ -1,6 +1,7 @@
 package com.smartarchive.archivemanage.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
@@ -20,6 +21,8 @@ public class TransferApplicationDetail {
     /** 公司编码（company_code，库字段 company_project_code） */
     private String companyProjectCode;
     private String archPlaceAlpha2Code;
+    @TableField("doc_organization_code")
+    private String documentOrganizationCode;
     private String endArchPeriod;
     private String startArchPeriod;
     private String archTypeCode;
@@ -30,6 +33,8 @@ public class TransferApplicationDetail {
     private String description;
     /** 册号 */
     private String catalogVolumeNo;
+    /** 业务册号（按册移交时填写） */
+    private String busiVolumeNo;
     private String enableFlag;
     private String deleteFlag;
     private Long createdBy;

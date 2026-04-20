@@ -17,14 +17,24 @@
           <div class="f02-field">
             <label>公司</label>
             <el-select v-model="filters.companyCode" clearable filterable placeholder="请选择公司" class="f02-control">
-              <el-option v-for="c in options.companyProjects" :key="c.code" :label="`${c.code} · ${c.name}`" :value="c.code" />
+              <el-option v-for="c in companySelectOptions" :key="c.code" :label="`${c.code} · ${c.name}`" :value="c.code" />
             </el-select>
           </div>
           <div class="f02-field">
             <label>业务模块</label>
-            <el-select v-model="filters.archiveTypeCode" clearable placeholder="请选择" class="f02-control" :disabled="!filters.documentTypeCode">
-              <el-option v-for="a in businessModuleOptions" :key="a.code" :label="a.name" :value="a.code" />
-            </el-select>
+            <el-tree-select
+              v-model="filters.archiveTypeCode"
+              :data="businessModuleTreeOptions"
+              filterable
+              clearable
+              check-strictly
+              default-expand-all
+              :render-after-expand="false"
+              placeholder="请选择业务模块"
+              class="f02-control"
+              node-key="moduleCode"
+              :props="{ value: 'moduleCode', label: 'queryLabel', children: 'children' }"
+            />
           </div>
           <div class="f02-field">
             <label>开始档期</label>
@@ -262,9 +272,10 @@ import {
   type PendingDocumentQueryCommand,
   type PendingDocumentRowResponse
 } from '../../api/modules/archiveManagement'
+import { buildModuleQueryTree, fetchBusinessModuleTree, type ModuleQueryTreeNode } from '../../api/modules/businessModule'
+import { fetchCompanyInfos } from '../../api/modules/companyInfo'
 import { parseMultiValueLines, validateMultiValueInput } from '../../utils/multiValueQuery'
-import { fetchLevel3Modules } from '../../api/modules/documentType'
-import type { ArchiveCreateOptions, ArchiveRecordSummary } from '../../types'
+import type { ArchiveCreateOptions, ArchiveRecordSummary, BusinessModuleNode } from '../../types'
 import { useLayoutStore } from '../../stores/useLayoutStore'
 import F03BatchImportModal from '../../components/f03/F03BatchImportModal.vue'
 import F03MultiLineFilterInput from '../../components/f03/F03MultiLineFilterInput.vue'
@@ -337,7 +348,8 @@ const resolvePendingSecurityFields = (raw: string) => {
   return { securityLevelCode: t, securityLevelName: t, securityLevel: t }
 }
 
-const businessModuleOptions = ref<{ code: string; name: string }[]>([])
+const companySelectOptions = ref<Array<{ code: string; name: string }>>([])
+const businessModuleTreeOptions = ref<ModuleQueryTreeNode[]>([])
 
 const filters = reactive({
   documentTypeCode: '',
@@ -418,19 +430,9 @@ const moreFieldOptionsMap = computed<Record<string, Array<{ label: string; value
 
 watch(
   () => filters.documentTypeCode,
-  async (next) => {
+  (next) => {
     layout.setDocumentTypeCode(next || '')
     filters.archiveTypeCode = ''
-    if (!next?.trim()) {
-      businessModuleOptions.value = []
-      return
-    }
-    try {
-      businessModuleOptions.value = await fetchLevel3Modules(next)
-    } catch (e: any) {
-      businessModuleOptions.value = []
-      ElMessage.error(e?.message || '加载业务模块失败')
-    }
   }
 )
 
@@ -439,8 +441,14 @@ const selectedRows = ref<DemoRow[]>([])
 const exportSuccessVisible = ref(false)
 
 const loadOptions = async () => {
-  const data = await fetchArchiveCreateOptions()
+  const [data, companies, moduleTree] = await Promise.all([
+    fetchArchiveCreateOptions(),
+    fetchCompanyInfos({ enabledFlag: 'Y' }),
+    fetchBusinessModuleTree().catch((): BusinessModuleNode[] => [])
+  ])
   Object.assign(options, data)
+  companySelectOptions.value = companies.map((c) => ({ code: c.companyCode, name: c.companyName }))
+  businessModuleTreeOptions.value = buildModuleQueryTree(moduleTree)
 }
 
 const runQuery = async () => {

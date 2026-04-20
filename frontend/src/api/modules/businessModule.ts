@@ -1,6 +1,20 @@
 import http, { apiRequest } from '../http'
 import type { BusinessModuleExtField, BusinessModuleNode } from '../../types'
 
+/** 与「业务模块配置」查询区树形下拉相同的节点结构（编码 ｜ 名称） */
+export type ModuleQueryTreeNode = BusinessModuleNode & {
+  queryLabel: string
+  children?: ModuleQueryTreeNode[]
+}
+
+export function buildModuleQueryTree(nodes: BusinessModuleNode[]): ModuleQueryTreeNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    queryLabel: `${node.moduleCode} ｜ ${node.moduleName}`,
+    children: buildModuleQueryTree(node.children || [])
+  }))
+}
+
 export interface BusinessModuleCommand {
   moduleCode: string
   moduleName: string

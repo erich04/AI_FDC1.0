@@ -18,14 +18,24 @@
           <div class="f02-field">
             <label>公司</label>
             <el-select v-model="query.companyProjectCode" clearable filterable placeholder="请选择公司" class="f02-control">
-              <el-option v-for="item in options.companyProjects" :key="item.code" :label="item.name" :value="item.code" />
+              <el-option v-for="item in companySelectOptions" :key="item.code" :label="`${item.code} · ${item.name}`" :value="item.code" />
             </el-select>
           </div>
           <div class="f02-field">
             <label>业务模块</label>
-            <el-select v-model="query.archiveTypeCode" clearable placeholder="请选择" :disabled="!query.documentTypeCode" class="f02-control">
-              <el-option v-for="item in businessModuleOptions" :key="item.code" :label="item.name" :value="item.code" />
-            </el-select>
+            <el-tree-select
+              v-model="query.archiveTypeCode"
+              :data="businessModuleTreeOptions"
+              filterable
+              clearable
+              check-strictly
+              default-expand-all
+              :render-after-expand="false"
+              placeholder="请选择业务模块"
+              class="f02-control"
+              node-key="moduleCode"
+              :props="{ value: 'moduleCode', label: 'queryLabel', children: 'children' }"
+            />
           </div>
           <div class="f02-field">
             <label>开始档期</label>
@@ -232,9 +242,10 @@ import { ElMessage } from 'element-plus'
 import { onActivated, onMounted, reactive, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createPendingDocumentsExportJob, fetchArchiveCreateOptions, fetchEffectiveDocumentTypeExtFields, queryArchives, submitArchiveImportQueryJob, type ArchiveQueryCommand } from '../../api/modules/archiveManagement'
-import type { ArchiveCreateOptions, ArchiveQueryResult, DocumentTypeExtField } from '../../types'
+import { buildModuleQueryTree, fetchBusinessModuleTree, type ModuleQueryTreeNode } from '../../api/modules/businessModule'
+import { fetchCompanyInfos } from '../../api/modules/companyInfo'
+import type { ArchiveCreateOptions, ArchiveQueryResult, BusinessModuleNode, DocumentTypeExtField } from '../../types'
 import { validateMultiValueInput } from '../../utils/multiValueQuery'
-import { fetchLevel3Modules } from '../../api/modules/documentType'
 import { useLayoutStore } from '../../stores/useLayoutStore'
 import F03BatchImportModal from '../../components/f03/F03BatchImportModal.vue'
 import F03MultiLineFilterInput from '../../components/f03/F03MultiLineFilterInput.vue'
@@ -280,7 +291,8 @@ const query = reactive<ArchiveQueryCommandWithPage>({
   pageSize: 20
 })
 
-const businessModuleOptions = ref<{ code: string; name: string }[]>([])
+const companySelectOptions = ref<Array<{ code: string; name: string }>>([])
+const businessModuleTreeOptions = ref<ModuleQueryTreeNode[]>([])
 const docTypeReady = computed(() => Boolean(query.documentTypeCode && query.documentTypeCode.trim()))
 const selectedDocTypeName = computed(() => {
   const item = options.documentTypes.find((d) => d.code === query.documentTypeCode)
@@ -389,25 +401,30 @@ const formatDateTime = (value: unknown) => {
 const isDateTimeColumn = (prop: string) => ['documentDate', 'creationDate', 'lastUpdateDate'].includes(prop)
 
 const loadOptions = async () => {
-  const result = await fetchArchiveCreateOptions()
+  const [result, companies, moduleTree] = await Promise.all([
+    fetchArchiveCreateOptions(),
+    fetchCompanyInfos({ enabledFlag: 'Y' }),
+    fetchBusinessModuleTree().catch((): BusinessModuleNode[] => [])
+  ])
   Object.assign(options, result)
+  companySelectOptions.value = companies.map((c) => ({ code: c.companyCode, name: c.companyName }))
+  businessModuleTreeOptions.value = buildModuleQueryTree(moduleTree)
   console.log('Document organizations:', options.documentOrganizations)
 }
 
 const handleQueryTypeChange = async (typeCode?: string) => {
   layout.setDocumentTypeCode(typeCode || '')
   query.archiveTypeCode = ''
-  businessModuleOptions.value = []
   if (typeCode?.trim()) {
     try {
-      businessModuleOptions.value = await fetchLevel3Modules(typeCode)
+      queryFields.value = (await fetchEffectiveDocumentTypeExtFields(typeCode)).filter((item) => item.queryEnabledFlag === 'Y')
     } catch (e: any) {
-      businessModuleOptions.value = []
-      ElMessage.error(e?.message || '加载业务模块失败')
+      queryFields.value = []
+      ElMessage.error(e?.message || '加载扩展查询字段失败')
     }
+  } else {
+    queryFields.value = []
   }
-  queryFields.value = typeCode ? await fetchEffectiveDocumentTypeExtFields(typeCode) : []
-  queryFields.value = queryFields.value.filter(item => item.queryEnabledFlag === 'Y')
   Object.keys(queryExtFilters).forEach(key => delete queryExtFilters[key])
 }
 

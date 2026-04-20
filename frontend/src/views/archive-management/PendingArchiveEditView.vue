@@ -136,16 +136,70 @@
       </template>
       <div v-show="sectionOpen.ext" class="doc-info-grid">
         <div class="doc-info-item doc-info-item--full">
-          <div class="doc-info-item__value doc-muted-hint">国家、地区部、代表处、公司标签由公司信息自动带出，不可编辑。</div>
-        </div>
-        <div v-for="row in extEditRows" :key="row.key" class="doc-info-item">
-          <div class="doc-info-item__label">{{ row.label }}</div>
-          <div class="doc-info-item__value">
-            <template v-if="row.readonly">{{ row.display }}</template>
-            <el-input v-else v-model="extForm[row.key]" clearable placeholder="请输入" class="doc-edit-control" />
+          <div class="doc-info-item__value doc-muted-hint">
+            国家、地区部、代表处、公司标签由公司信息自动带出，不可编辑。业务模块对应的扩展字段来自「业务模块配置」中维护的、应用功能含「应收」的档案扩展字段（BASIC）。
           </div>
         </div>
-        <el-empty v-if="!extEditRows.length" description="暂无扩展信息" />
+        <div v-for="row in extEditRows" :key="row.key" class="doc-info-item">
+          <div class="doc-info-item__label">
+            <span v-if="row.requiredFlag === 'Y'" class="f02-required">*</span>{{ row.label }}
+          </div>
+          <div class="doc-info-item__value">
+            <template v-if="row.readonly">{{ row.display }}</template>
+            <el-date-picker
+              v-else-if="row.dataType === 'DATE'"
+              v-model="extForm[row.key]"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="请选择日期"
+              class="doc-edit-control"
+              clearable
+            />
+            <el-date-picker
+              v-else-if="row.dataType === 'DATETIME'"
+              v-model="extForm[row.key]"
+              type="datetime"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              placeholder="请选择日期时间"
+              class="doc-edit-control"
+              clearable
+            />
+            <el-input
+              v-else-if="row.dataType === 'NUMBER'"
+              v-model="extForm[row.key]"
+              clearable
+              placeholder="请输入数字"
+              class="doc-edit-control"
+            />
+            <el-select
+              v-else-if="row.dataType === 'BOOLEAN'"
+              v-model="extForm[row.key]"
+              clearable
+              placeholder="请选择"
+              class="doc-edit-control"
+            >
+              <el-option label="是" value="是" />
+              <el-option label="否" value="否" />
+            </el-select>
+            <el-input
+              v-else
+              v-model="extForm[row.key]"
+              clearable
+              :placeholder="row.dataType === 'DICT' ? '字典项（文本）' : '请输入'"
+              class="doc-edit-control"
+            />
+          </div>
+        </div>
+        <el-empty
+          v-if="
+            detail &&
+              (detail.businessModuleTypeCode || '').trim() &&
+              !receivableBusinessExtFields.length &&
+              !loadingReceivableExt
+          "
+          description="当前业务模块未配置「应收」档案扩展字段"
+          class="ext-empty-hint"
+        />
       </div>
     </el-card>
 
@@ -225,17 +279,16 @@ import type { UploadRequestOptions } from 'element-plus'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCompanyProjectCountries, fetchCompanyProjectDetail } from '../../api/modules/companyProject'
-import {
-  fetchArchiveCreateOptions,
-  fetchEffectiveDocumentTypeExtFields,
-  getArchiveDetail,
-  resolveArchiveDefaults,
-  updatePendingDocument,
-  uploadPendingAuditAttachment
-} from '../../api/modules/archiveManagement'
-import type { ArchiveCreateOptions, ArchiveRecordSummary, CompanyProjectDetail } from '../../types'
+import { fetchArchiveCreateOptions, getArchiveDetail, updatePendingDocument, uploadPendingAuditAttachment } from '../../api/modules/archiveManagement'
+import { fetchArchiveRuleMatch } from '../../api/modules/archiveFlow'
+import type { ArchiveCreateOptions, ArchiveRecordSummary, BusinessModuleExtField, CompanyProjectDetail } from '../../types'
 import { getCountryLabel } from '../base-data/companyProjectShared'
-import { EXT_DETAIL_FIELD_ORDER, hardCodedExtLabelMap, isHardCodedFieldVisible } from './extFieldDisplayConfig'
+import { hardCodedExtLabelMap } from './extFieldDisplayConfig'
+import {
+  COMPANY_SYNC_EXT_KEYS,
+  extKeyForBusinessField,
+  fetchReceivableBasicExtFields
+} from './pendingArchiveExtShared'
 import { CURRENT_OPERATOR_USER_ID } from '../../constants/currentUser'
 
 type BasicEditKey =
@@ -277,8 +330,11 @@ const loadError = ref('')
 const detail = ref<ArchiveRecordSummary | null>(null)
 /** 保存用：随归档地与归档流向规则解析，不由库内旧值手工决定 */
 const flowDocumentOrganizationCode = ref('')
-const extFieldNameMap = ref<Record<string, string>>({})
 const countryNameByCode = ref<Record<string, string>>({})
+/** 与创建页一致：fdc_business_module_ext_field_t BASIC + 应收 */
+const receivableBusinessExtFields = ref<BusinessModuleExtField[]>([])
+const loadingReceivableExt = ref(false)
+const lastReceivableExtKeys = ref(new Set<string>())
 
 const options = reactive<ArchiveCreateOptions>({
   companyProjects: [],
@@ -312,7 +368,7 @@ const form = reactive({
 /** 扩展字段表单副本（国家/代表处/地区部/公司标签只读，其余可改） */
 const extForm = reactive<Record<string, string>>({})
 
-const READONLY_EXT_KEYS = new Set(['country', 'repOffice', 'region', 'companyTag'])
+const READONLY_EXT_KEYS = new Set<string>([...COMPANY_SYNC_EXT_KEYS])
 
 const sectionOpen = reactive({
   ext: true,
@@ -355,8 +411,6 @@ const securityDisplayTag = computed(() => {
   return d?.securityLevelCode || '内部'
 })
 
-const selectedDocTypeName = computed(() => detail.value?.documentTypeName || '')
-
 const formatDateTime = (value: unknown) => {
   if (value === null || value === undefined || value === '') return '-'
   const text = String(value).trim()
@@ -395,19 +449,18 @@ const syncDocumentOrgFromFlow = async () => {
   }
   const d = detail.value
   const company = (d.companyProjectCode || '').trim()
-  const docType = (d.documentTypeCode || '').trim()
-  if (!company || !docType) {
+  const module = (d.businessModuleTypeCode || '').trim()
+  if (!company || !module) {
     flowDocumentOrganizationCode.value = (d.documentOrganizationCode || '').trim()
     return
   }
   try {
-    const res = await resolveArchiveDefaults({
+    const res = await fetchArchiveRuleMatch({
       companyProjectCode: company,
-      documentTypeCode: docType,
-      customRule: (d.businessModuleTypeCode || '').trim() || undefined,
+      busiModuleCode: module,
       archiveDestination: form.archiveDestination.trim() || undefined
     })
-    const code = (res?.documentOrganizationCode || '').trim()
+    const code = res?.matched ? (res.documentOrganizationCode || '').trim() : ''
     if (code) {
       flowDocumentOrganizationCode.value = matchOptionCode(options.documentOrganizations, code) || code
     } else {
@@ -431,19 +484,47 @@ const applyDetailToForm = (d: ArchiveRecordSummary) => {
   form.remark = d.remark || ''
 }
 
-const initExtForm = (d: ArchiveRecordSummary) => {
+const clearReceivableExtState = () => {
+  for (const k of lastReceivableExtKeys.value) {
+    delete extForm[k]
+  }
+  lastReceivableExtKeys.value.clear()
+  receivableBusinessExtFields.value = []
+}
+
+const syncReceivableModuleExtFields = async () => {
+  clearReceivableExtState()
+  const moduleCode = (detail.value?.businessModuleTypeCode || '').trim()
+  if (!moduleCode) return
+  loadingReceivableExt.value = true
+  try {
+    const filtered = await fetchReceivableBasicExtFields(moduleCode)
+    receivableBusinessExtFields.value = filtered
+    for (const f of filtered) {
+      const key = extKeyForBusinessField(f)
+      if (!key) continue
+      lastReceivableExtKeys.value.add(key)
+      if (extForm[key] === undefined || extForm[key] === null) extForm[key] = ''
+    }
+  } catch {
+    receivableBusinessExtFields.value = []
+    ElMessage.error('加载业务模块扩展字段失败')
+  } finally {
+    loadingReceivableExt.value = false
+  }
+}
+
+const initExtForm = async (d: ArchiveRecordSummary) => {
+  lastReceivableExtKeys.value.clear()
+  receivableBusinessExtFields.value = []
   Object.keys(extForm).forEach((k) => delete extForm[k])
   const ext = d.extValues || {}
-  const docType = d.documentTypeName || ''
   for (const [k, v] of Object.entries(ext)) {
     if (k === 'visibility') continue
     extForm[k] = v != null ? String(v) : ''
   }
   extForm.visibility = String(d.documentVisibility ?? ext.visibility ?? '是').trim() || '是'
-  for (const key of EXT_DETAIL_FIELD_ORDER) {
-    if (!isHardCodedFieldVisible(key, docType)) continue
-    if (!(key in extForm)) extForm[key] = ''
-  }
+  await syncReceivableModuleExtFields()
 }
 
 const applyCompanyDetailToExt = (company: CompanyProjectDetail) => {
@@ -470,21 +551,6 @@ const syncCompanyReadonlyExtFields = async (companyProjectCode: string) => {
   } catch {
     /* ignore */
   }
-}
-
-const ensureExtFormKeysFromConfig = () => {
-  const docType = selectedDocTypeName.value
-  for (const key of Object.keys(extFieldNameMap.value)) {
-    if (!isHardCodedFieldVisible(key, docType)) continue
-    if (!(key in extForm)) extForm[key] = ''
-  }
-}
-
-const shouldShowExtKey = (key: string) => {
-  if (key === 'visibility') return false
-  const docType = selectedDocTypeName.value
-  const fromApi = Boolean(detail.value?.extValues && key in (detail.value.extValues as object))
-  return isHardCodedFieldVisible(key, docType) || fromApi
 }
 
 const basicRows = computed((): BasicRow[] => {
@@ -551,27 +617,37 @@ const formatExtCell = (v: unknown) => {
   return s === '' ? '-' : s
 }
 
-const extEditRows = computed(() => {
-  if (!detail.value) return []
-  const rows: { key: string; label: string; readonly: boolean; display: string }[] = []
-  const used = new Set<string>()
+type ExtEditRow = {
+  key: string
+  label: string
+  readonly: boolean
+  display: string
+  dataType?: BusinessModuleExtField['dataType']
+  requiredFlag?: string
+}
 
-  const pushRow = (key: string) => {
-    if (used.has(key)) return
-    if (!shouldShowExtKey(key)) return
-    used.add(key)
-    const label = extFieldNameMap.value[key] || hardCodedExtLabelMap[key] || key
-    const readonly = READONLY_EXT_KEYS.has(key)
+const extEditRows = computed((): ExtEditRow[] => {
+  const rows: ExtEditRow[] = []
+  for (const key of COMPANY_SYNC_EXT_KEYS) {
     const raw = extForm[key]
-    const display = readonly ? (key === 'country' ? formatCountryExtValue(raw) : formatExtCell(raw)) : ''
-    rows.push({ key, label, readonly, display })
+    rows.push({
+      key,
+      label: hardCodedExtLabelMap[key] || key,
+      readonly: true,
+      display: key === 'country' ? formatCountryExtValue(raw) : formatExtCell(raw)
+    })
   }
-
-  for (const key of EXT_DETAIL_FIELD_ORDER) {
-    pushRow(key)
-  }
-  for (const key of Object.keys(extForm).sort()) {
-    pushRow(key)
+  for (const f of receivableBusinessExtFields.value) {
+    const key = extKeyForBusinessField(f)
+    if (!key) continue
+    rows.push({
+      key,
+      label: f.fieldName || key,
+      readonly: false,
+      display: '',
+      dataType: f.dataType,
+      requiredFlag: f.requiredFlag
+    })
   }
   return rows
 })
@@ -628,13 +704,8 @@ const load = async () => {
     detail.value = record
     countryNameByCode.value = Object.fromEntries((countries || []).map((c) => [c.countryCode, c.countryName]))
     applyDetailToForm(record)
-    initExtForm(record)
+    await initExtForm(record)
     await syncCompanyReadonlyExtFields(record.companyProjectCode || '')
-    if (record.documentTypeCode) {
-      const fields = await fetchEffectiveDocumentTypeExtFields(record.documentTypeCode).catch(() => [])
-      extFieldNameMap.value = Object.fromEntries((fields || []).map((item) => [item.fieldCode, item.fieldName || item.fieldCode]))
-      ensureExtFormKeysFromConfig()
-    }
     await syncDocumentOrgFromFlow()
   } catch (e: any) {
     const msg = e?.message || '加载失败'

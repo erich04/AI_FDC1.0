@@ -8,6 +8,7 @@ import com.smartarchive.archiveflow.dto.ArchiveFlowRuleOptionResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRulePermissionPreviewResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleSummaryResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleUpdateCommand;
+import com.smartarchive.archiveflow.dto.ArchiveRuleMatchResponse;
 import com.smartarchive.archiveflow.mapper.ArchiveFlowLookupMapper;
 import com.smartarchive.archiveflow.mapper.ArchiveFlowRuleMapper;
 import com.smartarchive.archiveflow.service.ArchiveFlowRuleService;
@@ -20,9 +21,11 @@ import com.smartarchive.companyinfo.mapper.CompanyInfoMapper;
 import com.smartarchive.countryregion.domain.CountryRegion;
 import com.smartarchive.countryregion.mapper.CountryRegionMapper;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -218,6 +221,104 @@ public class ArchiveFlowRuleServiceImpl implements ArchiveFlowRuleService {
                 ArchiveFlowRulePermissionPreviewResponse.DataDimension.builder().code("DOCUMENT_ORGANIZATION").name("Document Organization").description("Authorize by document organization dimension").build()
             ))
             .build();
+    }
+
+    @Override
+    public ArchiveRuleMatchResponse matchArchiveRule(String companyProjectCode,
+                                                     String busiModuleCode,
+                                                     String customRule,
+                                                     String archiveDestination) {
+        String company = requireText(companyProjectCode, "companyProjectCode");
+        String module = requireText(busiModuleCode, "busiModuleCode");
+        ensureCompanyProjectAvailable(company);
+        validateType(module);
+
+        CompanyInfo companyInfo = companyInfoMapper.selectOne(new LambdaQueryWrapper<CompanyInfo>()
+            .eq(CompanyInfo::getCompanyCode, company)
+            .eq(CompanyInfo::getDeleteFlag, "N")
+            .eq(CompanyInfo::getEnabledFlag, "Y")
+            .last("limit 1"));
+        String companyName = companyInfo != null ? companyInfo.getCompanyName() : company;
+
+        BusinessModule businessModule = businessModuleMapper.selectOne(new LambdaQueryWrapper<BusinessModule>()
+            .eq(BusinessModule::getModuleCode, module)
+            .eq(BusinessModule::getDeleteFlag, "N")
+            .eq(BusinessModule::getEnabledFlag, "Y")
+            .last("limit 1"));
+        String busiModuleName = businessModule != null ? businessModule.getModuleName() : module;
+
+        List<ArchiveFlowRule> rules = archiveFlowRuleMapper.selectList(new LambdaQueryWrapper<ArchiveFlowRule>()
+            .eq(ArchiveFlowRule::getCompanyProjectCode, company)
+            .eq(ArchiveFlowRule::getBusiModuleCode, module)
+            .eq(ArchiveFlowRule::getDeleteFlag, "N")
+            .eq(ArchiveFlowRule::getEnabledFlag, "Y")
+            .eq(ArchiveFlowRule::getDefaultFlag, "Y"));
+
+        Map<String, String> documentOrganizationNameMap = listActiveDocumentOrganizationCodes().stream()
+            .collect(Collectors.toMap(Function.identity(), Function.identity(), (left, right) -> left));
+        Map<String, String> cityNameMap = buildRegionDisplayMap();
+
+        if (rules.isEmpty()) {
+            return ArchiveRuleMatchResponse.builder()
+                .matched(false)
+                .companyProjectCode(company)
+                .companyName(companyName)
+                .busiModuleCode(module)
+                .busiModuleName(busiModuleName)
+                .build();
+        }
+
+        ArchiveFlowRule best = rules.stream()
+            .max(Comparator.comparingInt(rule -> scoreRuleForMatch(rule, customRule, archiveDestination)))
+            .orElse(null);
+
+        if (best == null) {
+            return ArchiveRuleMatchResponse.builder()
+                .matched(false)
+                .companyProjectCode(company)
+                .companyName(companyName)
+                .busiModuleCode(module)
+                .busiModuleName(busiModuleName)
+                .build();
+        }
+
+        String dest = StringUtils.hasText(archiveDestination) ? archiveDestination.trim() : best.getArchiveDestination();
+        String destDisplayName = StringUtils.hasText(dest) ? cityNameMap.getOrDefault(dest, dest) : null;
+        String vis = best.getExternalDisplayFlag();
+        String visibilityLabel = "Y".equals(vis) ? "是" : "N".equals(vis) ? "否" : vis;
+
+        return ArchiveRuleMatchResponse.builder()
+            .matched(true)
+            .companyProjectCode(company)
+            .companyName(companyName)
+            .busiModuleCode(module)
+            .busiModuleName(busiModuleName)
+            .customRule(best.getCustomRule())
+            .archiveDestination(dest)
+            .archiveDestinationName(destDisplayName)
+            .documentOrganizationCode(best.getDocumentOrganizationCode())
+            .documentOrganizationName(documentOrganizationNameMap.getOrDefault(best.getDocumentOrganizationCode(), best.getDocumentOrganizationCode()))
+            .retentionPeriodYears(best.getRetentionPeriodYears())
+            .visibleFlag(vis)
+            .visibilityLabel(visibilityLabel)
+            .build();
+    }
+
+    private int scoreRuleForMatch(ArchiveFlowRule rule, String customRule, String archiveDestination) {
+        int score = 0;
+        if (Objects.equals(trimToNull(rule.getCustomRule()), trimToNull(customRule))) {
+            score += 2;
+        }
+        if (Objects.equals(trimToNull(rule.getArchiveDestination()), trimToNull(archiveDestination))) {
+            score += 2;
+        }
+        if (!StringUtils.hasText(rule.getCustomRule())) {
+            score += 1;
+        }
+        if (!StringUtils.hasText(rule.getArchiveDestination())) {
+            score += 1;
+        }
+        return score;
     }
 
     private List<CompanyInfo> listActiveCompanies() {

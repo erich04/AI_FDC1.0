@@ -6,6 +6,7 @@ import com.smartarchive.archiveflow.dto.ArchiveFlowRuleOptionResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRulePermissionPreviewResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleSummaryResponse;
 import com.smartarchive.archiveflow.dto.ArchiveFlowRuleUpdateCommand;
+import com.smartarchive.archiveflow.dto.ArchiveRuleMatchResponse;
 import com.smartarchive.archiveflow.service.ArchiveFlowRuleService;
 import com.smartarchive.common.api.ApiResponse;
 import jakarta.validation.Valid;
@@ -59,6 +60,17 @@ public class ArchiveFlowRuleController {
     @GetMapping("/permissions/preview")
     public ApiResponse<ArchiveFlowRulePermissionPreviewResponse> permissionPreview() {
         return ApiResponse.success(archiveFlowRuleService.getPermissionPreview());
+    }
+
+    /**
+     * 归档规则匹配：公司 + 业务模块必填；可选自定义匹配条件、归档地（参与评分）。
+     */
+    @GetMapping("/match")
+    public ApiResponse<ArchiveRuleMatchResponse> matchArchiveRule(@RequestParam String companyProjectCode,
+                                                                  @RequestParam String busiModuleCode,
+                                                                  @RequestParam(required = false) String customRule,
+                                                                  @RequestParam(required = false) String archiveDestination) {
+        return ApiResponse.success(archiveFlowRuleService.matchArchiveRule(companyProjectCode, busiModuleCode, customRule, archiveDestination));
     }
 
     @GetMapping("/{id}")

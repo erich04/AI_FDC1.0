@@ -83,6 +83,8 @@ import com.smartarchive.archiveflow.domain.SecurityLevelDictionary;
 import com.smartarchive.archiveflow.mapper.ArchiveFlowRuleMapper;
 import com.smartarchive.archiveflow.mapper.SecurityLevelDictionaryMapper;
 import com.smartarchive.businessmodule.domain.BusinessModule;
+import com.smartarchive.businessmodule.domain.BusinessModuleExtField;
+import com.smartarchive.businessmodule.mapper.BusinessModuleExtFieldMapper;
 import com.smartarchive.businessmodule.mapper.BusinessModuleMapper;
 import com.smartarchive.common.audit.dto.OperationAuditAttachment;
 import com.smartarchive.common.audit.service.OperationAuditService;
@@ -124,7 +126,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -145,6 +149,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -200,6 +205,130 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     );
     private static final List<String> REF_NO_ATTR_COLUMNS = List.of("attr42", "attr43", "attr44", "attr45", "attr46");
 
+    /**
+     * {@code fdc_document_t.attr2–attr100}（attr1 单独表示是否可见）；
+     * {@link #mergeExtValuesIntoAttrColumnsFromBusinessModule} 与 {@link #mergeBusinessModuleDocumentAttrsIntoExtValues} 使用同一白名单。
+     */
+    private static final List<String> FDC_DOC_ATTR_EXTENDED_COLUMNS;
+
+    /** 可由 {@code fdc_business_module_ext_field_t.ext_attribute} 映射写入/读出的文档列（attr2–attr100） */
+    private static final Set<String> FDC_DOC_EXT_ATTRIBUTE_WHITELIST;
+
+    /** select attr2, attr3, … attr100（无前缀） */
+    private static final String SQL_SELECT_FDC_DOC_ATTR2_TO_100;
+
+    /** select d.attr2, d.attr3, … d.attr100 */
+    private static final String SQL_SELECT_D_FDC_DOC_ATTR2_TO_100;
+
+    /** attr2 = ?, attr3 = ?, … attr100 = ? */
+    private static final String SQL_SET_FDC_DOC_ATTR2_TO_100;
+
+    private static final String SQL_INSERT_FORMAL_FDC_DOCUMENT;
+
+    private static final String SQL_UPDATE_FDC_DOCUMENT_PENDING_WITH_BIZ_MODULE;
+
+    private static final String SQL_UPDATE_FDC_DOCUMENT_PENDING_WITHOUT_BIZ_MODULE;
+
+    static {
+        List<String> ext = new ArrayList<>();
+        for (int i = 2; i <= 100; i++) {
+            ext.add("attr" + i);
+        }
+        FDC_DOC_ATTR_EXTENDED_COLUMNS = List.copyOf(ext);
+        FDC_DOC_EXT_ATTRIBUTE_WHITELIST = Set.copyOf(ext);
+        SQL_SELECT_FDC_DOC_ATTR2_TO_100 = String.join(", ", ext);
+        StringBuilder dSel = new StringBuilder();
+        StringBuilder setSb = new StringBuilder();
+        for (int i = 0; i < ext.size(); i++) {
+            if (i > 0) {
+                dSel.append(", ");
+                setSb.append(", ");
+            }
+            dSel.append("d.").append(ext.get(i));
+            setSb.append(ext.get(i)).append(" = ?");
+        }
+        SQL_SELECT_D_FDC_DOC_ATTR2_TO_100 = dSel.toString();
+        SQL_SET_FDC_DOC_ATTR2_TO_100 = setSb.toString();
+        String attrsJoined = String.join(", ", ext);
+        String ph99 = String.join(", ", Collections.nCopies(99, "?"));
+        String ph25 = String.join(", ", Collections.nCopies(25, "?"));
+        String ph4 = String.join(", ", Collections.nCopies(4, "?"));
+        SQL_INSERT_FORMAL_FDC_DOCUMENT = """
+            insert into fdc_document_t (
+              doc_id, company_code, company_name, start_period, end_period, biz_module_code, doc_biz_no, doc_gen_date,
+              arch_place_alpha2_code, origin_place_alpha2_code, carrier_type, doc_name, doc_organization_code,
+              doc_resp_dept_id, doc_resp_person_id, rentention_term, security_level, doc_version, source_id, source_system,
+              lifecycle_status, custody_status, description, attr1, arch_barcode,
+              """
+            + attrsJoined
+            + """
+              ,
+              delete_flag, created_by, creation_date, last_updated_by, last_update_date
+            ) values (
+              """
+            + ph25 + ", " + ph99 + ", 0, " + ph4
+            + """
+            )
+            """;
+        SQL_UPDATE_FDC_DOCUMENT_PENDING_WITH_BIZ_MODULE = """
+            update fdc_document_t set
+              biz_module_code = ?,
+              start_period = ?,
+              end_period = ?,
+              arch_place_alpha2_code = ?,
+              origin_place_alpha2_code = ?,
+              doc_name = ?,
+              doc_gen_date = ?,
+              doc_resp_dept_id = ?,
+              doc_resp_person_id = ?,
+              carrier_type = ?,
+              source_system = ?,
+              security_level = ?,
+              description = ?,
+              doc_organization_code = ?,
+              attr1 = ?,
+              arch_barcode = ?,
+              """
+            + SQL_SET_FDC_DOC_ATTR2_TO_100
+            + """
+              ,
+              doc_biz_no = ?,
+              company_code = ?,
+              company_name = ?,
+              lifecycle_status = ?,
+              last_updated_by = ?, last_update_date = ?
+            where doc_id = ? and coalesce(delete_flag, 0) = 0 and lifecycle_status in ('UNARCHIVED', 'DRAFT')
+            """;
+        SQL_UPDATE_FDC_DOCUMENT_PENDING_WITHOUT_BIZ_MODULE = """
+            update fdc_document_t set
+              start_period = ?,
+              end_period = ?,
+              arch_place_alpha2_code = ?,
+              origin_place_alpha2_code = ?,
+              doc_name = ?,
+              doc_gen_date = ?,
+              doc_resp_dept_id = ?,
+              doc_resp_person_id = ?,
+              carrier_type = ?,
+              source_system = ?,
+              security_level = ?,
+              description = ?,
+              doc_organization_code = ?,
+              attr1 = ?,
+              arch_barcode = ?,
+              """
+            + SQL_SET_FDC_DOC_ATTR2_TO_100
+            + """
+              ,
+              doc_biz_no = ?,
+              company_code = ?,
+              company_name = ?,
+              lifecycle_status = ?,
+              last_updated_by = ?, last_update_date = ?
+            where doc_id = ? and coalesce(delete_flag, 0) = 0 and lifecycle_status in ('UNARCHIVED', 'DRAFT')
+            """;
+    }
+
     private final ArchiveRecordMapper archiveRecordMapper;
     private final ArchiveExtValueMapper archiveExtValueMapper;
     private final ArchiveCreateSessionMapper archiveCreateSessionMapper;
@@ -215,6 +344,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private final StorageLedgerMapper storageLedgerMapper;
     private final AiModelConfigMapper aiModelConfigMapper;
     private final BusinessModuleMapper businessModuleMapper;
+    private final BusinessModuleExtFieldMapper businessModuleExtFieldMapper;
     private final CompanyProjectMapper companyProjectMapper;
     private final DocumentOrganizationMapper documentOrganizationMapper;
     private final DocumentOrganizationCityMapper documentOrganizationCityMapper;
@@ -238,6 +368,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private final ObjectMapper objectMapper;
     @Qualifier("pendingArchiveBatchExecutor")
     private final Executor taskExecutor;
+    private volatile Map<String, String> fdcDocumentColumnTypeCache;
 
     /** 应归档写入单独提交，避免与后续 getArchiveDetail 共用同一 JDBC 事务导致25P02 */
     private TransactionTemplate pendingDocumentWriteTemplate;
@@ -272,7 +403,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         requireBusinessModule(documentTypeCode);
         List<ArchiveFlowRule> rules = archiveFlowRuleMapper.selectList(new LambdaQueryWrapper<ArchiveFlowRule>()
             .eq(ArchiveFlowRule::getCompanyProjectCode, companyProjectCode)
-            .eq(ArchiveFlowRule::getDocumentTypeCode, documentTypeCode)
+            .eq(ArchiveFlowRule::getBusiModuleCode, documentTypeCode)
             .eq(ArchiveFlowRule::getDeleteFlag, "N")
             .eq(ArchiveFlowRule::getEnabledFlag, "Y"));
         ArchiveFlowRule bestMatch = rules.stream().max(Comparator.comparingInt(rule -> scoreRule(rule, customRule, archiveDestination))).orElse(null);
@@ -485,7 +616,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                    attr1,
                    source_system, security_level, description, fdc_document_t.creation_date as creation_date,
                    coalesce(created_u.user_name, cast(fdc_document_t.created_by as varchar)) as created_by_name,
-                   attr41, attr42, attr43, attr44, attr45, attr46, attr47, attr48, attr49, attr50, attr51, attr52, attr53, attr54, attr55, attr56, attr57, attr58, attr59, attr60,
+              """).append(SQL_SELECT_FDC_DOC_ATTR2_TO_100).append("""
+                   ,
                    cp.company_tag, cp.country_code, geo.rep_office_name, geo.region_name
               from fdc_document_t
               left join tpl_user_t u on u.user_id = fdc_document_t.doc_resp_person_id
@@ -507,8 +639,23 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         List<Object> params = new ArrayList<>();
 
         if (StringUtils.hasText(command.getDocumentTypeCode())) {
-            sql.append(" and biz_module_code like ?");
-            params.add(command.getDocumentTypeCode().trim() + "%");
+            String docTypeCode = command.getDocumentTypeCode().trim();
+            sql.append("""
+                 and biz_module_code in (
+                    with recursive module_tree as (
+                        select module_code, parent_code
+                          from fdc_business_module_t
+                         where delete_flag = 'N' and module_code = ?
+                        union all
+                        select m.module_code, m.parent_code
+                          from fdc_business_module_t m
+                          join module_tree t on m.parent_code = t.module_code
+                         where m.delete_flag = 'N'
+                    )
+                    select module_code from module_tree
+                 )
+                """);
+            params.add(docTypeCode);
         }
         if (StringUtils.hasText(command.getCompanyProjectCode())) {
             sql.append(" and company_code = ?");
@@ -581,6 +728,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         appendHardCodedExtFilterSql(sql, params, command.getExtFilters());
         sql.append(" order by doc_id desc");
 
+        Map<String, List<BusinessModuleExtField>> basicExtFieldsByModule = new HashMap<>();
         List<ArchiveSummaryResponse> rows = jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
             LocalDate startPeriod = rs.getObject("start_period", LocalDate.class);
             LocalDate endPeriod = rs.getObject("end_period", LocalDate.class);
@@ -593,7 +741,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 .archiveId(rs.getLong("doc_id"))
                 .documentTypeCode(resolveRootBusinessModuleCode(businessModuleCode, businessModuleMap))
                 .documentTypeName(resolveRootBusinessModuleName(businessModuleCode, businessModuleMap))
-                .companyProjectCode(null)
+                .companyProjectCode(rs.getString("company_code"))
                 .companyProjectName(rs.getString("company_name"))
                 .beginPeriod(formatYearMonth(startPeriod))
                 .endPeriod(formatYearMonth(endPeriod))
@@ -612,13 +760,14 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 .remark(rs.getString("description"))
                 .documentOrganizationCode(rs.getString("doc_organization_code"))
                 .archiveTypeCode(resolveBusinessModuleDisplayName(businessModuleCode, businessModuleMap))
+                .businessModuleTypeCode(businessModuleCode)
                 .documentVisibility(StringUtils.hasText(rs.getString("attr1")) ? rs.getString("attr1").trim() : "是")
                 .lifecycleStatus(lifecycleStatus)
                 .archiveStatus("ARCHIVED".equalsIgnoreCase(lifecycleStatus) ? "已归档" : ("DRAFT".equalsIgnoreCase(lifecycleStatus) ? "草稿" : "未归档"))
                 .custodyStatus("ARCHIVED".equalsIgnoreCase(lifecycleStatus) ? "已归档" : ("DRAFT".equalsIgnoreCase(lifecycleStatus) ? "草稿" : "未归档"))
                 .lastUpdateDate(creationDate)
                 .attachmentCount(0)
-                .extValues(extractHardCodedExtValues(rs))
+                .extValues(extractHardCodedExtValues(rs, businessModuleCode, basicExtFieldsByModule))
                 .attachments(List.of())
                 .build();
         }, params.toArray());
@@ -729,6 +878,9 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
 
     @Override
     public ArchiveSummaryResponse getArchiveDetail(Long archiveId) {
+        if (archiveId != null && archiveId > 0 && isFormalDocumentRow(archiveId)) {
+            return loadArchiveDetailFromDocumentTable(archiveId);
+        }
         if (archiveId != null && archiveId > 0 && isPendingDraftRow(archiveId)) {
             return loadArchiveDetailFromDraftTable(archiveId);
         }
@@ -746,22 +898,26 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             long draftId = nextPendingDraftId();
             String payload = serializeDraftPayload(command);
             LocalDateTime now = LocalDateTime.now();
-            jdbcTemplate.update(
-                """
-                insert into fdc_pending_document_draft_t (
-                  draft_id, payload_json, delete_flag, created_by, creation_date, last_updated_by, last_update_date
-                ) values (?, ?::jsonb, 0, ?, ?, ?, ?)
-                """,
-                draftId,
-                payload,
-                opId,
-                now,
-                opId,
-                now
-            );
-            Map<String, Object> afterCreate = new LinkedHashMap<>();
-            afterCreate.put("draft_id", draftId);
-            afterCreate.put("payload_json", payload);
+            try {
+                jdbcTemplate.update(
+                    """
+                    insert into fdc_pending_document_draft_t (
+                      draft_id, payload_json, delete_flag, created_by, creation_date, last_updated_by, last_update_date
+                    ) values (?, ?::jsonb, 0, ?, ?, ?, ?)
+                    """,
+                    draftId,
+                    payload,
+                    opId,
+                    now,
+                    opId,
+                    now
+                );
+            } catch (DataAccessException e) {
+                Throwable root = e.getMostSpecificCause() != null ? e.getMostSpecificCause() : e;
+                log.error("fdc_pending_document_draft_t insert failed draftId={}", draftId, e);
+                throw new BusinessException("保存草稿失败: " + root.getMessage());
+            }
+            Map<String, Object> afterCreate = compactDraftAuditSnapshot(draftId, payload);
             operationAuditService.record(
                 "PENDING_ARCHIVE",
                 "应归档",
@@ -883,7 +1039,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 moduleForFlow = docTypeForFlow;
             }
             String archDestParam = StringUtils.hasText(command.getArchiveDestination()) ? command.getArchiveDestination().trim() : null;
-            ArchiveDefaultResolveResponse flow = resolveDefaults(companyForFlow, docTypeForFlow, moduleForFlow, archDestParam);
+            // resolveDefaults 第2参为归档规则表 module_code（三级业务模块），第3参为自定义匹配条件
+            ArchiveDefaultResolveResponse flow = resolveDefaults(companyForFlow, moduleForFlow, null, archDestParam);
             String archPlace = StringUtils.hasText(archDestParam)
                 ? archDestParam
                 : (StringUtils.hasText(flow.getArchiveDestination()) ? flow.getArchiveDestination().trim() : "CN");
@@ -938,14 +1095,15 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             Map<String, String> ext = command.getExtValues() == null ? Map.of() : command.getExtValues();
             String visibility = StringUtils.hasText(ext.get("visibility")) ? ext.get("visibility").trim() : "是";
             String barcode = trimToNull(ext.get("barcodeModule"));
-            Map<String, String> attrCols = buildAttrColumnsFromExt(ext);
+            String bizModule = StringUtils.hasText(command.getArchiveTypeCode()) ? command.getArchiveTypeCode().trim() : null;
+            String moduleForAttrCols = StringUtils.hasText(bizModule) ? bizModule : trimToNull(currentBizModule);
+            Map<String, String> attrCols = buildAttrColumnsFromExt(ext, moduleForAttrCols);
             LocalDate endPeriod = StringUtils.hasText(command.getEndPeriod())
                 ? parseYearMonthToLastDay(command.getEndPeriod().trim())
                 : startPeriodForUpdate;
             String origin = StringUtils.hasText(command.getOriginPlace()) ? command.getOriginPlace().trim() : archPlace;
             String sourceSystem = StringUtils.hasText(command.getSourceSystem()) ? command.getSourceSystem().trim() : "PORTAL";
             String remark = trimToNull(command.getRemark());
-            String bizModule = StringUtils.hasText(command.getArchiveTypeCode()) ? command.getArchiveTypeCode().trim() : null;
             LocalDateTime now = LocalDateTime.now();
             String lifecycleTarget = draft ? "DRAFT" : "UNARCHIVED";
             String nextDocBizNo;
@@ -975,151 +1133,58 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                     docIdFinal);
             }
             if (StringUtils.hasText(bizModule)) {
-                jdbcTemplate.update(
-                    """
-                    update fdc_document_t set
-                      biz_module_code = ?,
-                      start_period = ?,
-                      end_period = ?,
-                      arch_place_alpha2_code = ?,
-                      origin_place_alpha2_code = ?,
-                      doc_name = ?,
-                      doc_gen_date = ?,
-                      doc_resp_dept_id = ?,
-                      doc_resp_person_id = ?,
-                      carrier_type = ?,
-                      source_system = ?,
-                      security_level = ?,
-                      description = ?,
-                      doc_organization_code = ?,
-                      attr1 = ?,
-                      arch_barcode = ?,
-                      attr41 = ?, attr42 = ?, attr43 = ?, attr44 = ?, attr45 = ?, attr46 = ?,
-                      attr47 = ?, attr48 = ?, attr49 = ?, attr50 = ?, attr51 = ?, attr52 = ?,
-                      attr53 = ?, attr54 = ?, attr55 = ?, attr56 = ?, attr57 = ?, attr58 = ?, attr59 = ?, attr60 = ?,
-                      doc_biz_no = ?,
-                      company_code = ?,
-                      company_name = ?,
-                      lifecycle_status = ?,
-                      last_updated_by = ?, last_update_date = ?
-                    where doc_id = ? and coalesce(delete_flag, 0) = 0 and lifecycle_status in ('UNARCHIVED', 'DRAFT')
-                    """,
-                    bizModule,
-                    startPeriodForUpdate,
-                    endPeriod,
-                    truncateVarchar(archPlace, 60),
-                    truncateVarchar(origin, 60),
-                    truncateVarchar(docName, 100),
-                    docGenDate,
-                    deptId,
-                    userId,
-                    carrier,
-                    truncateVarchar(sourceSystem, 30),
-                    truncateVarchar(security, 30),
-                    truncateVarchar(remark, 500),
-                    truncateVarchar(docOrg, 60),
-                    truncateVarchar(visibility, 100),
-                    truncateVarchar(barcode, 100),
-                    attrCols.get("attr41"),
-                    attrCols.get("attr42"),
-                    attrCols.get("attr43"),
-                    attrCols.get("attr44"),
-                    attrCols.get("attr45"),
-                    attrCols.get("attr46"),
-                    attrCols.get("attr47"),
-                    attrCols.get("attr48"),
-                    attrCols.get("attr49"),
-                    attrCols.get("attr50"),
-                    attrCols.get("attr51"),
-                    attrCols.get("attr52"),
-                    attrCols.get("attr53"),
-                    attrCols.get("attr54"),
-                    attrCols.get("attr55"),
-                    attrCols.get("attr56"),
-                    attrCols.get("attr57"),
-                    attrCols.get("attr58"),
-                    attrCols.get("attr59"),
-                    attrCols.get("attr60"),
-                    truncateVarchar(nextDocBizNo, 100),
-                    truncateVarchar(companyCodeSql, 60),
-                    truncateVarchar(companyNameSql, 200),
-                    lifecycleTarget,
-                    opId,
-                    now,
-                    docIdFinal
-                );
+                List<Object> updParams = new ArrayList<>();
+                updParams.add(bizModule);
+                updParams.add(startPeriodForUpdate);
+                updParams.add(endPeriod);
+                updParams.add(truncateVarchar(archPlace, 60));
+                updParams.add(truncateVarchar(origin, 60));
+                updParams.add(truncateVarchar(docName, 100));
+                updParams.add(docGenDate);
+                updParams.add(deptId);
+                updParams.add(userId);
+                updParams.add(carrier);
+                updParams.add(truncateVarchar(sourceSystem, 30));
+                updParams.add(truncateVarchar(security, 30));
+                updParams.add(truncateVarchar(remark, 500));
+                updParams.add(truncateVarchar(docOrg, 60));
+                updParams.add(truncateVarchar(visibility, 100));
+                updParams.add(truncateVarchar(barcode, 100));
+                updParams.addAll(Arrays.asList(bindAttrExtendedColumnPlaceholders(attrCols)));
+                updParams.add(truncateVarchar(nextDocBizNo, 100));
+                updParams.add(truncateVarchar(companyCodeSql, 60));
+                updParams.add(truncateVarchar(companyNameSql, 200));
+                updParams.add(lifecycleTarget);
+                updParams.add(opId);
+                updParams.add(now);
+                updParams.add(docIdFinal);
+                jdbcTemplate.update(SQL_UPDATE_FDC_DOCUMENT_PENDING_WITH_BIZ_MODULE, updParams.toArray());
             } else {
-                jdbcTemplate.update(
-                    """
-                    update fdc_document_t set
-                      start_period = ?,
-                      end_period = ?,
-                      arch_place_alpha2_code = ?,
-                      origin_place_alpha2_code = ?,
-                      doc_name = ?,
-                      doc_gen_date = ?,
-                      doc_resp_dept_id = ?,
-                      doc_resp_person_id = ?,
-                      carrier_type = ?,
-                      source_system = ?,
-                      security_level = ?,
-                      description = ?,
-                      doc_organization_code = ?,
-                      attr1 = ?,
-                      arch_barcode = ?,
-                      attr41 = ?, attr42 = ?, attr43 = ?, attr44 = ?, attr45 = ?, attr46 = ?,
-                      attr47 = ?, attr48 = ?, attr49 = ?, attr50 = ?, attr51 = ?, attr52 = ?,
-                      attr53 = ?, attr54 = ?, attr55 = ?, attr56 = ?, attr57 = ?, attr58 = ?, attr59 = ?, attr60 = ?,
-                      doc_biz_no = ?,
-                      company_code = ?,
-                      company_name = ?,
-                      lifecycle_status = ?,
-                      last_updated_by = ?, last_update_date = ?
-                    where doc_id = ? and coalesce(delete_flag, 0) = 0 and lifecycle_status in ('UNARCHIVED', 'DRAFT')
-                    """,
-                    startPeriodForUpdate,
-                    endPeriod,
-                    truncateVarchar(archPlace, 60),
-                    truncateVarchar(origin, 60),
-                    truncateVarchar(docName, 100),
-                    docGenDate,
-                    deptId,
-                    userId,
-                    carrier,
-                    truncateVarchar(sourceSystem, 30),
-                    truncateVarchar(security, 30),
-                    truncateVarchar(remark, 500),
-                    truncateVarchar(docOrg, 60),
-                    truncateVarchar(visibility, 100),
-                    truncateVarchar(barcode, 100),
-                    attrCols.get("attr41"),
-                    attrCols.get("attr42"),
-                    attrCols.get("attr43"),
-                    attrCols.get("attr44"),
-                    attrCols.get("attr45"),
-                    attrCols.get("attr46"),
-                    attrCols.get("attr47"),
-                    attrCols.get("attr48"),
-                    attrCols.get("attr49"),
-                    attrCols.get("attr50"),
-                    attrCols.get("attr51"),
-                    attrCols.get("attr52"),
-                    attrCols.get("attr53"),
-                    attrCols.get("attr54"),
-                    attrCols.get("attr55"),
-                    attrCols.get("attr56"),
-                    attrCols.get("attr57"),
-                    attrCols.get("attr58"),
-                    attrCols.get("attr59"),
-                    attrCols.get("attr60"),
-                    truncateVarchar(nextDocBizNo, 100),
-                    truncateVarchar(companyCodeSql, 60),
-                    truncateVarchar(companyNameSql, 200),
-                    lifecycleTarget,
-                    opId,
-                    now,
-                    docIdFinal
-                );
+                List<Object> updParams = new ArrayList<>();
+                updParams.add(startPeriodForUpdate);
+                updParams.add(endPeriod);
+                updParams.add(truncateVarchar(archPlace, 60));
+                updParams.add(truncateVarchar(origin, 60));
+                updParams.add(truncateVarchar(docName, 100));
+                updParams.add(docGenDate);
+                updParams.add(deptId);
+                updParams.add(userId);
+                updParams.add(carrier);
+                updParams.add(truncateVarchar(sourceSystem, 30));
+                updParams.add(truncateVarchar(security, 30));
+                updParams.add(truncateVarchar(remark, 500));
+                updParams.add(truncateVarchar(docOrg, 60));
+                updParams.add(truncateVarchar(visibility, 100));
+                updParams.add(truncateVarchar(barcode, 100));
+                updParams.addAll(Arrays.asList(bindAttrExtendedColumnPlaceholders(attrCols)));
+                updParams.add(truncateVarchar(nextDocBizNo, 100));
+                updParams.add(truncateVarchar(companyCodeSql, 60));
+                updParams.add(truncateVarchar(companyNameSql, 200));
+                updParams.add(lifecycleTarget);
+                updParams.add(opId);
+                updParams.add(now);
+                updParams.add(docIdFinal);
+                jdbcTemplate.update(SQL_UPDATE_FDC_DOCUMENT_PENDING_WITHOUT_BIZ_MODULE, updParams.toArray());
             }
         });
         Map<String, Object> afterUpdate = snapshotFdcDocumentForAudit(docIdFinal);
@@ -1914,7 +1979,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         String documentTypeCode = resolveRootBusinessModuleCode(bizModule, documentTypeMap);
         String documentTypeName = resolveRootBusinessModuleName(bizModule, documentTypeMap);
         SecurityLevelResolver.Resolved secLv = securityLevelResolver.resolve(Objects.toString(cmd.getSecurityLevelCode(), ""));
-        Map<String, String> attrCols = buildAttrColumnsFromExt(cmd.getExtValues());
+        Map<String, String> attrCols = buildAttrColumnsFromExt(cmd.getExtValues(), StringUtils.hasText(bizModule) ? bizModule : null);
         Map<String, Object> geoRow = loadCompanyGeoRowForExport(trimToNull(cmd.getCompanyProjectCode()));
         String companyName = resolveCompanyProjectNameForExport(trimToNull(cmd.getCompanyProjectCode()));
         String visibility = "";
@@ -2197,9 +2262,10 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                        lifecycle_status, custody_status, carrier_type, source_system,
                        arch_place_alpha2_code, origin_place_alpha2_code,
                        attr1, arch_barcode,
-                       attr41, attr42, attr43, attr44, attr45, attr46,
-                       attr47, attr48, attr49, attr50, attr51, attr52,
-                       attr53, attr54, attr55, attr56, attr57, attr58, attr59, attr60,
+                       """
+                + SQL_SELECT_FDC_DOC_ATTR2_TO_100
+                + """
+                       ,
                        description, last_update_date
                 from fdc_document_t
                 where doc_id = ? and coalesce(delete_flag, 0) = 0
@@ -2422,6 +2488,18 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         return n != null && n > 0;
     }
 
+    private boolean isFormalDocumentRow(long id) {
+        Integer n = jdbcTemplate.queryForObject(
+            """
+            select count(*) from fdc_document_t
+             where doc_id = ? and coalesce(delete_flag, 0) = 0
+            """,
+            Integer.class,
+            id
+        );
+        return n != null && n > 0;
+    }
+
     private long nextPendingDraftId() {
         Long v = jdbcTemplate.queryForObject(
             "select nextval('fdc_pending_document_draft_t_draft_id_seq')",
@@ -2450,6 +2528,18 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         }
     }
 
+    /**
+     * 审计快照不得嵌入完整草稿 JSON：{@code op_content} 在部分库上仍为 VARCHAR，且全文会膨胀 JSON。
+     */
+    private static Map<String, Object> compactDraftAuditSnapshot(long draftId, String payloadJson) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("draft_id", draftId);
+        if (payloadJson != null) {
+            m.put("payload_char_count", payloadJson.length());
+        }
+        return m;
+    }
+
     private PendingDocumentWriteCommand deserializeDraftPayload(String json) {
         try {
             return objectMapper.readValue(json, PendingDocumentWriteCommand.class);
@@ -2471,11 +2561,15 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                         throw new EmptyResultDataAccessException(1);
                     }
                     PendingDocumentWriteCommand c = deserializeDraftPayload(rs.getString(1));
+                    java.sql.Timestamp tsCreated = rs.getTimestamp(2);
+                    java.sql.Timestamp tsUpdated = rs.getTimestamp(3);
+                    LocalDateTime creationDate = tsCreated != null ? tsCreated.toLocalDateTime() : LocalDateTime.now();
+                    LocalDateTime lastUpdate = tsUpdated != null ? tsUpdated.toLocalDateTime() : creationDate;
                     return buildArchiveSummaryFromDraftCommand(
                         draftId,
                         c,
-                        rs.getTimestamp(2).toLocalDateTime(),
-                        rs.getTimestamp(3).toLocalDateTime(),
+                        creationDate,
+                        lastUpdate,
                         rs.getLong(4)
                     );
                 },
@@ -2653,12 +2747,9 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 now,
                 draftId
             );
-            Map<String, Object> before = new LinkedHashMap<>();
-            before.put("draft_id", draftId);
-            before.put("payload_json", beforeJson);
-            Map<String, Object> after = new LinkedHashMap<>();
-            after.put("draft_id", draftId);
-            after.put("payload_json", payload);
+            Map<String, Object> before = compactDraftAuditSnapshot(draftId, beforeJson);
+            Map<String, Object> after = compactDraftAuditSnapshot(draftId, payload);
+            after.put("payload_changed", !Objects.equals(beforeJson, payload));
             operationAuditService.record(
                 "PENDING_ARCHIVE",
                 "应归档",
@@ -2752,7 +2843,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             validateBusinessModuleUnderRoot(archiveTypeL3, docTypeL1);
             CompanyProject cp = requireCompanyProject(companyCode);
             String archDestParam = StringUtils.hasText(command.getArchiveDestination()) ? command.getArchiveDestination().trim() : null;
-            ArchiveDefaultResolveResponse flow = resolveDefaults(companyCode, docTypeL1, archiveTypeL3, archDestParam);
+            // resolveDefaults 第2参为归档规则表 module_code（三级业务模块），第3参为自定义匹配条件
+            ArchiveDefaultResolveResponse flow = resolveDefaults(companyCode, archiveTypeL3, null, archDestParam);
             String archPlace = StringUtils.hasText(archDestParam)
                 ? archDestParam
                 : (StringUtils.hasText(flow.getArchiveDestination()) ? flow.getArchiveDestination().trim() : "CN");
@@ -2760,7 +2852,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 ? command.getDocumentOrganizationCode().trim()
                 : flow.getDocumentOrganizationCode();
             if (!StringUtils.hasText(docOrg)) {
-                throw new BusinessException("documentOrganizationCode cannot be blank");
+                // 与草稿落库一致；无归档流向规则时仍允许创建，避免仅因未配置规则而提交失败
+                docOrg = "DEFAULT";
             }
             String securityFlowOrInput = StringUtils.hasText(command.getSecurityLevelCode())
                 ? command.getSecurityLevelCode().trim()
@@ -2789,7 +2882,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             String custody = StringUtils.hasText(command.getCustodyStatus()) ? command.getCustodyStatus().trim() : "UNARCHIVED";
             String sourceSystem = StringUtils.hasText(command.getSourceSystem()) ? command.getSourceSystem().trim() : "PORTAL";
             String remark = trimToNull(command.getRemark());
-            Map<String, String> attrCols = buildAttrColumnsFromExt(ext);
+            Map<String, String> attrCols = buildAttrColumnsFromExt(ext, archiveTypeL3);
             LocalDateTime now = LocalDateTime.now();
             assertUniqueFormalDocumentNaturalKey(
                 null,
@@ -2798,70 +2891,38 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 startPeriod,
                 truncateVarchar(bizNo, 100),
                 null);
-            jdbcTemplate.update(
-                """
-                insert into fdc_document_t (
-                  doc_id, company_code, company_name, start_period, end_period, biz_module_code, doc_biz_no, doc_gen_date,
-                  arch_place_alpha2_code, origin_place_alpha2_code, carrier_type, doc_name, doc_organization_code,
-                  doc_resp_dept_id, doc_resp_person_id, rentention_term, security_level, doc_version, source_system,
-                  lifecycle_status, custody_status, description, attr1, arch_barcode,
-                  attr41, attr42, attr43, attr44, attr45, attr46, attr47, attr48, attr49, attr50, attr51, attr52,
-                  attr53, attr54, attr55, attr56, attr57, attr58, attr59, attr60,
-                  delete_flag, created_by, creation_date, last_updated_by, last_update_date
-                ) values (
-                  ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
-                )
-                """,
-                newDocId,
-                companyCode,
-                cp.getCompanyProjectName(),
-                startPeriod,
-                endPeriod,
-                archiveTypeL3,
-                truncateVarchar(bizNo, 100),
-                docGenDate,
-                truncateVarchar(archPlace, 60),
-                truncateVarchar(origin, 60),
-                carrier,
-                truncateVarchar(docName, 100),
-                truncateVarchar(docOrg, 60),
-                deptId,
-                userId,
-                retention,
-                truncateVarchar(security, 30),
-                "1.0",
-                truncateVarchar(sourceSystem, 30),
-                "UNARCHIVED",
-                truncateVarchar(custody, 30),
-                truncateVarchar(remark, 500),
-                truncateVarchar(visibility, 100),
-                truncateVarchar(barcode, 100),
-                attrCols.get("attr41"),
-                attrCols.get("attr42"),
-                attrCols.get("attr43"),
-                attrCols.get("attr44"),
-                attrCols.get("attr45"),
-                attrCols.get("attr46"),
-                attrCols.get("attr47"),
-                attrCols.get("attr48"),
-                attrCols.get("attr49"),
-                attrCols.get("attr50"),
-                attrCols.get("attr51"),
-                attrCols.get("attr52"),
-                attrCols.get("attr53"),
-                attrCols.get("attr54"),
-                attrCols.get("attr55"),
-                attrCols.get("attr56"),
-                attrCols.get("attr57"),
-                attrCols.get("attr58"),
-                attrCols.get("attr59"),
-                attrCols.get("attr60"),
-                0,
-                opId,
-                now,
-                opId,
-                now
-            );
+            List<Object> insParams = new ArrayList<>();
+            insParams.add(newDocId);
+            insParams.add(companyCode);
+            insParams.add(cp.getCompanyProjectName());
+            insParams.add(startPeriod);
+            insParams.add(endPeriod);
+            insParams.add(archiveTypeL3);
+            insParams.add(truncateVarchar(bizNo, 100));
+            insParams.add(docGenDate);
+            insParams.add(truncateVarchar(archPlace, 60));
+            insParams.add(truncateVarchar(origin, 60));
+            insParams.add(carrier);
+            insParams.add(truncateVarchar(docName, 100));
+            insParams.add(truncateVarchar(docOrg, 60));
+            insParams.add(deptId);
+            insParams.add(userId);
+            insParams.add(retention);
+            insParams.add(truncateVarchar(security, 30));
+            insParams.add("1.0");
+            insParams.add(null);
+            insParams.add(truncateVarchar(sourceSystem, 30));
+            insParams.add("UNARCHIVED");
+            insParams.add(truncateVarchar(custody, 30));
+            insParams.add(truncateVarchar(remark, 500));
+            insParams.add(truncateVarchar(visibility, 100));
+            insParams.add(truncateVarchar(barcode, 100));
+            insParams.addAll(Arrays.asList(bindAttrExtendedColumnPlaceholders(attrCols)));
+            insParams.add(opId);
+            insParams.add(now);
+            insParams.add(opId);
+            insParams.add(now);
+            jdbcTemplate.update(SQL_INSERT_FORMAL_FDC_DOCUMENT, insParams.toArray());
             return newDocId;
         });
     }
@@ -2989,6 +3050,12 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         appendFieldChange(parts, "attr58", "业务册号", before, after);
         appendFieldChange(parts, "attr59", "保函电子流编号", before, after);
         appendFieldChange(parts, "attr60", "保函编号", before, after);
+        for (int ai = 2; ai <= 100; ai++) {
+            if (ai >= 41 && ai <= 60) {
+                continue;
+            }
+            appendFieldChange(parts, "attr" + ai, "扩展字段attr" + ai, before, after);
+        }
         appendFieldChange(parts, "description", "描述", before, after);
         if (parts.isEmpty()) {
             return "编辑应归档数据";
@@ -3078,9 +3145,9 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         }
     }
 
-    private Map<String, String> buildAttrColumnsFromExt(Map<String, String> ext) {
+    private Map<String, String> buildAttrColumnsFromExt(Map<String, String> ext, String busiModuleCode) {
         Map<String, String> row = new LinkedHashMap<>();
-        for (String col : REF_NO_ATTR_COLUMNS) {
+        for (String col : FDC_DOC_ATTR_EXTENDED_COLUMNS) {
             row.put(col, null);
         }
         for (Map.Entry<String, String> entry : HARD_CODED_EXT_FIELD_ATTR_MAP.entrySet()) {
@@ -3095,7 +3162,152 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 row.put(col, i < parts.length && StringUtils.hasText(parts[i].trim()) ? truncateVarchar(parts[i].trim(), 100) : null);
             }
         }
+        mergeExtValuesIntoAttrColumnsFromBusinessModule(row, ext, busiModuleCode);
         return row;
+    }
+
+    private Object[] bindAttrExtendedColumnPlaceholders(Map<String, String> attrCols) {
+        Object[] args = new Object[FDC_DOC_ATTR_EXTENDED_COLUMNS.size()];
+        int i = 0;
+        for (String col : FDC_DOC_ATTR_EXTENDED_COLUMNS) {
+            String v = attrCols == null ? null : attrCols.get(col);
+            args[i++] = coerceFdcAttrValueByColumnType(col, v);
+        }
+        return args;
+    }
+
+    private Object coerceFdcAttrValueByColumnType(String columnName, String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        String normalizedType = loadFdcDocumentColumnTypeMap().getOrDefault(columnName, "");
+        String trimmed = raw.trim();
+        if (!"numeric".equalsIgnoreCase(normalizedType)) {
+            return truncateVarchar(trimmed, 500);
+        }
+        // 兼容历史库 attr41-attr60 为 numeric 的情况，无法转数值时置空避免写入失败。
+        String normalized = trimmed.replace(",", "");
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+        try {
+            return new BigDecimal(normalized);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private Map<String, String> loadFdcDocumentColumnTypeMap() {
+        Map<String, String> snapshot = fdcDocumentColumnTypeCache;
+        if (snapshot != null) {
+            return snapshot;
+        }
+        synchronized (this) {
+            if (fdcDocumentColumnTypeCache != null) {
+                return fdcDocumentColumnTypeCache;
+            }
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                """
+                select lower(column_name) as column_name, lower(data_type) as data_type
+                  from information_schema.columns
+                 where table_schema = 'public'
+                   and table_name = 'fdc_document_t'
+                """
+            );
+            LinkedHashMap<String, String> map = new LinkedHashMap<>();
+            for (Map<String, Object> row : rows) {
+                String name = row.get("column_name") == null ? null : String.valueOf(row.get("column_name")).trim();
+                String type = row.get("data_type") == null ? null : String.valueOf(row.get("data_type")).trim();
+                if (StringUtils.hasText(name) && StringUtils.hasText(type)) {
+                    map.put(name, type);
+                }
+            }
+            fdcDocumentColumnTypeCache = Collections.unmodifiableMap(map);
+            return fdcDocumentColumnTypeCache;
+        }
+    }
+
+    /**
+     * 按 {@code fdc_business_module_ext_field_t.ext_attribute} 把扩展表单值写入 {@code fdc_document_t.attr2–attr100}（attr1 为是否可见，不由本方法写入）。
+     */
+    private void mergeExtValuesIntoAttrColumnsFromBusinessModule(Map<String, String> row, Map<String, String> ext, String busiModuleCode) {
+        if (!StringUtils.hasText(busiModuleCode) || ext == null || ext.isEmpty()) {
+            return;
+        }
+        List<BusinessModuleExtField> fields = businessModuleExtFieldMapper.selectList(new LambdaQueryWrapper<BusinessModuleExtField>()
+            .eq(BusinessModuleExtField::getModuleCode, busiModuleCode.trim())
+            .eq(BusinessModuleExtField::getDeleteFlag, "N")
+            .eq(BusinessModuleExtField::getEnabledFlag, "Y")
+            .eq(BusinessModuleExtField::getFieldScope, "BASIC"));
+        for (BusinessModuleExtField f : fields) {
+            if (f == null || !StringUtils.hasText(f.getExtAttribute())) {
+                continue;
+            }
+            String col = f.getExtAttribute().trim().toLowerCase(Locale.ROOT);
+            if (!FDC_DOC_EXT_ATTRIBUTE_WHITELIST.contains(col)) {
+                continue;
+            }
+            String raw = resolveExtRawForBusinessModuleField(ext, f);
+            row.put(col, StringUtils.hasText(raw) ? truncateVarchar(raw.trim(), 500) : null);
+        }
+    }
+
+    private List<BusinessModuleExtField> loadBasicExtFieldsForModule(String moduleCode) {
+        if (!StringUtils.hasText(moduleCode)) {
+            return List.of();
+        }
+        return businessModuleExtFieldMapper.selectList(new LambdaQueryWrapper<BusinessModuleExtField>()
+            .eq(BusinessModuleExtField::getModuleCode, moduleCode.trim())
+            .eq(BusinessModuleExtField::getDeleteFlag, "N")
+            .eq(BusinessModuleExtField::getEnabledFlag, "Y")
+            .eq(BusinessModuleExtField::getFieldScope, "BASIC"));
+    }
+
+    /**
+     * 从 {@code fdc_document_t} 读出 {@code attr2–attr100}，按扩展元数据填入 {@code englishFieldName} / {@code fieldCode}。
+     */
+    private void mergeBusinessModuleDocumentAttrsIntoExtValues(
+        Map<String, String> extValues,
+        java.sql.ResultSet rs,
+        String bizModuleCode,
+        Map<String, List<BusinessModuleExtField>> moduleFieldCache
+    ) throws java.sql.SQLException {
+        if (!StringUtils.hasText(bizModuleCode)) {
+            return;
+        }
+        List<BusinessModuleExtField> fields = moduleFieldCache != null
+            ? moduleFieldCache.computeIfAbsent(bizModuleCode.trim(), this::loadBasicExtFieldsForModule)
+            : loadBasicExtFieldsForModule(bizModuleCode);
+        for (BusinessModuleExtField f : fields) {
+            if (f == null || !StringUtils.hasText(f.getExtAttribute())) {
+                continue;
+            }
+            String col = f.getExtAttribute().trim().toLowerCase(Locale.ROOT);
+            if (!FDC_DOC_EXT_ATTRIBUTE_WHITELIST.contains(col)) {
+                continue;
+            }
+            String cell = trimToNull(rs.getString(col));
+            if (!StringUtils.hasText(cell)) {
+                continue;
+            }
+            if (StringUtils.hasText(f.getEnglishFieldName())) {
+                extValues.put(f.getEnglishFieldName().trim(), cell);
+            }
+            if (StringUtils.hasText(f.getFieldCode())) {
+                extValues.put(f.getFieldCode().trim(), cell);
+            }
+        }
+    }
+
+    private static String resolveExtRawForBusinessModuleField(Map<String, String> ext, BusinessModuleExtField f) {
+        String raw = null;
+        if (StringUtils.hasText(f.getEnglishFieldName())) {
+            raw = ext.get(f.getEnglishFieldName().trim());
+        }
+        if (!StringUtils.hasText(raw) && StringUtils.hasText(f.getFieldCode())) {
+            raw = ext.get(f.getFieldCode().trim());
+        }
+        return raw;
     }
 
     private String truncateVarchar(String value, int maxLen) {
@@ -3111,7 +3323,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private ArchiveSummaryResponse loadArchiveDetailFromDocumentTable(Long archiveId) {
         Map<String, BusinessModule> businessModuleMap = listBusinessModuleMap();
         Map<String, String> carrierTypeNameMap = listCarrierTypeNameMap();
-        String detailSql = """
+        String detailSql = new StringBuilder("""
             select doc_id, doc_biz_no, fdc_document_t.company_code, company_name, biz_module_code, start_period, end_period,
                    arch_place_alpha2_code, origin_place_alpha2_code, doc_organization_code, lifecycle_status,
                    doc_name, doc_gen_date, doc_resp_person_id, coalesce(u.user_name, cast(fdc_document_t.doc_resp_person_id as varchar)) as duty_person_name,
@@ -3119,7 +3331,8 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                    doc_resp_dept_id, carrier_type,
                    source_system, security_level, description, fdc_document_t.creation_date as creation_date,
                    attr1, arch_barcode,
-                   attr41, attr42, attr43, attr44, attr45, attr46, attr47, attr48, attr49, attr50, attr51, attr52, attr53, attr54, attr55, attr56, attr57, attr58, attr59, attr60,
+              """).append(SQL_SELECT_FDC_DOC_ATTR2_TO_100).append("""
+                   ,
                    cp.company_tag, cp.country_code, geo.rep_office_name, geo.region_name
               from fdc_document_t
               left join tpl_user_t u on u.user_id = fdc_document_t.doc_resp_person_id
@@ -3136,7 +3349,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
             where coalesce(fdc_document_t.delete_flag, 0) = 0
               and doc_id = ?
             limit 1
-            """;
+            """).toString();
         List<ArchiveSummaryResponse> rows = jdbcTemplate.query(
             detailSql,
             (rs, rowNum) -> {
@@ -3146,9 +3359,10 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
                 LocalDateTime creationDate = rs.getObject("creation_date", LocalDateTime.class);
                 String lifecycleStatus = rs.getString("lifecycle_status");
                 String businessModuleCode = rs.getString("biz_module_code");
-                Map<String, String> extVals = extractHardCodedExtValues(rs);
+                Map<String, String> extVals = extractHardCodedExtValues(rs, businessModuleCode, null);
                 String visCol = trimToNull(rs.getString("attr1"));
                 String barcodeCol = trimToNull(rs.getString("arch_barcode"));
+                extVals.put("visibility", StringUtils.hasText(visCol) ? visCol : "是");
                 if (barcodeCol != null) {
                     extVals.put("barcodeModule", barcodeCol);
                 }
@@ -4437,6 +4651,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
     private Map<String, BusinessModule> listBusinessModuleMap() {
         return businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>())
             .stream()
+            .filter(b -> b != null && StringUtils.hasText(b.getModuleCode()))
             .collect(Collectors.toMap(BusinessModule::getModuleCode, item -> item, (left, right) -> left));
     }
 
@@ -4779,7 +4994,11 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         }
     }
 
-    private Map<String, String> extractHardCodedExtValues(java.sql.ResultSet rs) throws java.sql.SQLException {
+    private Map<String, String> extractHardCodedExtValues(
+        java.sql.ResultSet rs,
+        String bizModuleCode,
+        Map<String, List<BusinessModuleExtField>> moduleFieldCache
+    ) throws java.sql.SQLException {
         Map<String, String> extValues = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : HARD_CODED_EXT_FIELD_ATTR_MAP.entrySet()) {
             String value = trimToNull(rs.getString(entry.getValue()));
@@ -4797,6 +5016,7 @@ public class ArchiveManagementServiceImpl implements ArchiveManagementService {
         if (!refValues.isEmpty()) {
             extValues.put("refNo", String.join(";", refValues));
         }
+        mergeBusinessModuleDocumentAttrsIntoExtValues(extValues, rs, bizModuleCode, moduleFieldCache);
         String country = trimToNull(rs.getString("country_code"));
         String repOffice = trimToNull(rs.getString("rep_office_name"));
         String region = trimToNull(rs.getString("region_name"));

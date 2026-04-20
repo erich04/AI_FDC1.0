@@ -199,6 +199,11 @@ import {
 import { fetchBusinessModuleTree } from '../../api/modules/businessModule'
 import { fetchCompanyInfos } from '../../api/modules/companyInfo'
 import { fetchCountryRegions } from '../../api/modules/countryRegion'
+import {
+  buildArchiveDestinationCascaderOptions,
+  buildArchiveDestinationPath,
+  mapBusinessModuleToTreeOption
+} from '../../utils/archiveFlowAlignedFieldUtils'
 import type {
   ArchiveFlowRuleDetail,
   ArchiveFlowRuleOption,
@@ -223,32 +228,13 @@ const businessModuleTreeOptions = computed(() =>
   (businessModuleTree.value || []).map(mapBusinessModuleToTreeOption)
 )
 
-const archiveDestinationOptions = computed(() => {
-  const provinceByCountry = new Map<string, CountryRegionItem[]>()
-  const cityByProvince = new Map<string, CountryRegionItem[]>()
-  for (const province of provinceOptions.value) {
-    const parent = province.parentRegionCode || ''
-    if (!provinceByCountry.has(parent)) provinceByCountry.set(parent, [])
-    provinceByCountry.get(parent)!.push(province)
-  }
-  for (const city of cityOptions.value) {
-    const parent = city.parentRegionCode || ''
-    if (!cityByProvince.has(parent)) cityByProvince.set(parent, [])
-    cityByProvince.get(parent)!.push(city)
-  }
-  return countryOptions.value.map((country) => ({
-    value: country.regionCode,
-    label: country.regionName,
-    children: (provinceByCountry.get(country.regionCode) || []).map((province) => ({
-      value: province.regionCode,
-      label: province.regionName,
-      children: (cityByProvince.get(province.regionCode) || []).map((city) => ({
-        value: city.regionCode,
-        label: city.regionName
-      }))
-    }))
-  }))
-})
+const archiveDestinationOptions = computed(() =>
+  buildArchiveDestinationCascaderOptions(
+    countryOptions.value,
+    provinceOptions.value,
+    cityOptions.value
+  )
+)
 
 const enabledOptions = [
   { label: '启用', value: 'Y' },
@@ -361,7 +347,7 @@ const fillForm = (detail: ArchiveFlowRuleDetail) => {
   form.externalDisplayFlag = detail.externalDisplayFlag
   form.defaultFlag = detail.defaultFlag
   form.enabledFlag = detail.enabledFlag
-  archiveDestinationPath.value = buildArchiveDestinationPath(detail.archiveDestination)
+  archiveDestinationPath.value = buildArchiveDestinationPathForForm(detail.archiveDestination)
   retentionPeriodInput.value = String(detail.retentionPeriodYears)
   editor.ruleId = detail.id
   editor.lastUpdateDate = detail.lastUpdateDate
@@ -497,21 +483,8 @@ const removeItem = async (id: number) => {
   }
 }
 
-const mapBusinessModuleToTreeOption = (node: BusinessModuleNode): { value: string; label: string; children: Array<{ value: string; label: string; children: any[] }> } => ({
-  value: node.moduleCode,
-  label: `${node.moduleCode} - ${node.moduleName}`,
-  children: (node.children || []).map(mapBusinessModuleToTreeOption)
-})
-
-const buildArchiveDestinationPath = (cityCode?: string) => {
-  if (!cityCode) return []
-  const city = cityOptions.value.find((item) => item.regionCode === cityCode)
-  if (!city) return [cityCode]
-  const provinceCode = city.parentRegionCode || ''
-  const province = provinceOptions.value.find((item) => item.regionCode === provinceCode)
-  const countryCode = province?.parentRegionCode || ''
-  return [countryCode, provinceCode, cityCode].filter(Boolean)
-}
+const buildArchiveDestinationPathForForm = (cityCode?: string) =>
+  buildArchiveDestinationPath(cityCode, provinceOptions.value, cityOptions.value)
 
 const formatTime = (value?: string) => value ? value.replace('T', ' ').slice(0, 19) : '-'
 

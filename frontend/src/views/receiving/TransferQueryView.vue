@@ -7,21 +7,36 @@
             <el-input v-model="searchForm.docBusiNo" class="input-w180" placeholder="模糊查询" clearable />
           </el-form-item>
           <el-form-item label="公司">
-            <el-select v-model="searchForm.companyProjectCode" class="input-w180" clearable filterable placeholder="请选择">
-              <el-option v-for="o in companyOptions" :key="o.code" :label="o.name" :value="o.code" />
+            <el-select v-model="searchForm.companyProjectCode" class="input-w180" clearable filterable placeholder="请选择公司">
+              <el-option
+                v-for="o in companyOptions"
+                :key="o.code"
+                :label="`${o.code} · ${o.name}`"
+                :value="o.code"
+              />
             </el-select>
           </el-form-item>
           <el-form-item label="业务模块">
-            <el-select v-model="searchForm.busiModuleCode" class="input-w180" clearable filterable placeholder="请选择">
-              <el-option v-for="o in busiModuleOptions" :key="o.code" :label="o.name" :value="o.code" />
-            </el-select>
+            <el-tree-select
+              v-model="searchForm.busiModuleCode"
+              :data="businessModuleTreeOptions"
+              filterable
+              clearable
+              check-strictly
+              default-expand-all
+              :render-after-expand="false"
+              placeholder="请选择业务模块"
+              class="input-w180"
+              node-key="moduleCode"
+              :props="{ value: 'moduleCode', label: 'queryLabel', children: 'children' }"
+            />
           </el-form-item>
-          <el-form-item label="档期" class="span-range">
+          <el-form-item label="开始档期" class="span-range">
             <el-date-picker
-              v-model="searchForm.archPeriodRange"
-              type="daterange"
-              value-format="YYYY-MM-DD"
-              range-separator="至"
+              v-model="periodRange"
+              type="monthrange"
+              value-format="YYYY-MM"
+              range-separator="~"
               start-placeholder="开始"
               end-placeholder="结束"
               unlink-panels
@@ -174,50 +189,6 @@
         </div>
       </div>
 
-      <el-dialog v-model="detailVisible" title="移交申请详情" width="920px" destroy-on-close>
-        <div v-if="detailLoading" class="loading-container"><el-skeleton :rows="6" animated /></div>
-        <div v-else-if="detailData" class="transfer-detail">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="申请单号">{{ detailData.applicationNumber }}</el-descriptions-item>
-            <el-descriptions-item label="申请状态">{{ labelOf(statusOptions, detailData.applicationStatus) }}</el-descriptions-item>
-            <el-descriptions-item label="申请人">{{ formatUser(detailData.applicant) }}</el-descriptions-item>
-            <el-descriptions-item label="申请日期">{{ formatDateTime(detailData.applicationDate) }}</el-descriptions-item>
-            <el-descriptions-item label="业务模块">{{ detailData.busiModuleCode || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="移交方式">{{ labelOf(applyMethodOptions, detailData.applyMethod) }}</el-descriptions-item>
-            <el-descriptions-item label="载体类型">{{ labelOf(carrierTypeOptions, detailData.carrierType) }}</el-descriptions-item>
-            <el-descriptions-item label="邮寄方式">{{ labelOf(expressTypeOptions, detailData.expressType) }}</el-descriptions-item>
-            <el-descriptions-item label="邮寄单号">{{ detailData.expressNumber || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="接收人">{{ formatUser(detailData.documentRecipient) }}</el-descriptions-item>
-            <el-descriptions-item label="差异原因">{{ labelOf(diffReasonOptions, detailData.diffReasonCode) }}</el-descriptions-item>
-            <el-descriptions-item label="说明" :span="2">{{ detailData.applicationDescription || '-' }}</el-descriptions-item>
-          </el-descriptions>
-
-          <div class="documents-section">
-            <h3>申请明细</h3>
-            <el-table :data="detailData.details || []" border size="small">
-              <el-table-column type="index" label="#" width="50" />
-              <el-table-column prop="docBusiNo" label="文档业务编码" min-width="120" show-overflow-tooltip />
-              <el-table-column prop="docName" label="文档名称" min-width="160" show-overflow-tooltip />
-              <el-table-column label="公司" min-width="120" show-overflow-tooltip>
-                <template #default="{ row }">{{ labelOf(companyOptions, row.companyProjectCode) }}</template>
-              </el-table-column>
-              <el-table-column label="业务模块" width="120">
-                <template #default="{ row }">{{ labelOf(busiModuleOptions, row.busiModuleCode) }}</template>
-              </el-table-column>
-              <el-table-column label="档期起" width="120">
-                <template #default="{ row }">{{ row.startArchPeriod || '-' }}</template>
-              </el-table-column>
-              <el-table-column label="档期止" width="120">
-                <template #default="{ row }">{{ row.endArchPeriod || '-' }}</template>
-              </el-table-column>
-              <el-table-column prop="catalogVolumeNo" label="册号" width="100" show-overflow-tooltip />
-            </el-table>
-          </div>
-        </div>
-        <template #footer>
-          <el-button @click="detailVisible = false">关闭</el-button>
-        </template>
-      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -229,15 +200,15 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { FullScreen, RefreshRight, Setting } from '@element-plus/icons-vue'
 import { fetchArchiveCreateOptions } from '../../api/modules/archiveManagement'
+import { buildModuleQueryTree, fetchBusinessModuleTree, type ModuleQueryTreeNode } from '../../api/modules/businessModule'
+import { fetchCompanyInfos } from '../../api/modules/companyInfo'
 import { fetchDictionaryItems } from '../../api/modules/dictionary'
 import {
-  getTransferApplication,
   searchTransferApplicationRecords,
-  type TransferApplicationDetailPayload,
   type TransferApplicationRecordQuery,
   type TransferApplicationRecordRow
 } from '../../api/modules/transferApplications'
-import type { ArchiveCreateOptions, DictionaryItem } from '../../types'
+import type { BusinessModuleNode, DictionaryItem } from '../../types'
 
 interface LabelOption {
   code: string
@@ -249,7 +220,6 @@ const DEFAULT_TENANT_ID = 1
 const router = useRouter()
 const loading = ref(false)
 const filterExpanded = ref(false)
-const archiveOptions = ref<ArchiveCreateOptions | null>(null)
 
 const tableRecords = ref<TransferApplicationRecordRow[]>([])
 const tableFullPage = ref(false)
@@ -259,11 +229,12 @@ const pagination = reactive({
   total: 0
 })
 
+const periodRange = ref<[string, string] | null>(null)
+
 const searchForm = reactive<TransferApplicationRecordQuery>({
   docBusiNo: '',
   companyProjectCode: '',
   busiModuleCode: '',
-  archPeriodRange: undefined,
   applicant: undefined,
   applicationNumber: '',
   applicationDateRange: undefined,
@@ -284,16 +255,14 @@ const userOptions = ref([
 ])
 
 const companyOptions = ref<LabelOption[]>([])
+const documentOrganizationOptions = ref<LabelOption[]>([])
 const carrierTypeOptions = ref<LabelOption[]>([])
-const busiModuleOptions = ref<LabelOption[]>([])
+const businessModuleTreeOptions = ref<ModuleQueryTreeNode[]>([])
+const busiModuleFlatOptions = ref<LabelOption[]>([])
 const statusOptions = ref<LabelOption[]>([])
 const diffReasonOptions = ref<LabelOption[]>([])
 const applyMethodOptions = ref<LabelOption[]>([])
 const expressTypeOptions = ref<LabelOption[]>([])
-
-const detailVisible = ref(false)
-const detailLoading = ref(false)
-const detailData = ref<TransferApplicationDetailPayload | null>(null)
 
 function toLabelOptions(items: DictionaryItem[]): LabelOption[] {
   return items
@@ -313,6 +282,21 @@ async function tryDict(categoryCode: string): Promise<LabelOption[]> {
 function mergeOptions(primary: LabelOption[], fallback: LabelOption[]): LabelOption[] {
   if (primary.length) return primary
   return fallback
+}
+
+/** 与业务模块树选项一致，用于明细表展示模块名称 */
+function flattenBusinessModulesToLabels(nodes: BusinessModuleNode[]): LabelOption[] {
+  const out: LabelOption[] = []
+  const walk = (ns: BusinessModuleNode[]) => {
+    for (const n of ns) {
+      const code = n.moduleCode?.trim()
+      const name = (n.moduleName ?? '').trim()
+      if (code) out.push({ code, name: name || code })
+      if (n.children?.length) walk(n.children)
+    }
+  }
+  walk(nodes)
+  return out
 }
 
 const FALLBACK_STATUS: LabelOption[] = [
@@ -378,7 +362,7 @@ function buildFilterPayload(): TransferApplicationRecordQuery {
   if (searchForm.docBusiNo) f.docBusiNo = searchForm.docBusiNo.trim()
   if (searchForm.companyProjectCode) f.companyProjectCode = searchForm.companyProjectCode
   if (searchForm.busiModuleCode) f.busiModuleCode = searchForm.busiModuleCode
-  if (searchForm.archPeriodRange?.length === 2) f.archPeriodRange = [...searchForm.archPeriodRange]
+  if (periodRange.value?.length === 2) f.archPeriodRange = [...periodRange.value]
   if (searchForm.applicant != null) f.applicant = searchForm.applicant
   if (searchForm.applicationNumber) f.applicationNumber = searchForm.applicationNumber.trim()
   if (searchForm.applicationDateRange?.length === 2) f.applicationDateRange = [...searchForm.applicationDateRange]
@@ -422,7 +406,7 @@ function reset() {
   searchForm.docBusiNo = ''
   searchForm.companyProjectCode = ''
   searchForm.busiModuleCode = ''
-  searchForm.archPeriodRange = undefined
+  periodRange.value = null
   searchForm.applicant = undefined
   searchForm.applicationNumber = ''
   searchForm.applicationDateRange = undefined
@@ -456,18 +440,7 @@ function goEdit(applicationId: number) {
 }
 
 async function openView(applicationId: number) {
-  detailVisible.value = true
-  detailLoading.value = true
-  detailData.value = null
-  try {
-    detailData.value = await getTransferApplication(applicationId)
-  } catch (e) {
-    console.error(e)
-    ElMessage.error('加载详情失败')
-    detailVisible.value = false
-  } finally {
-    detailLoading.value = false
-  }
+  router.push(`/archive-management/transfer-detail/${applicationId}`)
 }
 
 function hintTodo(action: string) {
@@ -480,22 +453,26 @@ function notifyColumnSetting() {
 
 onMounted(async () => {
   try {
-    const options = await fetchArchiveCreateOptions()
-    archiveOptions.value = options
-    companyOptions.value = (options.companyProjects ?? []).map((c) => ({ code: c.code, name: c.name }))
+    const [options, companies, moduleTree] = await Promise.all([
+      fetchArchiveCreateOptions(),
+      fetchCompanyInfos({ enabledFlag: 'Y' }),
+      fetchBusinessModuleTree().catch((): BusinessModuleNode[] => [])
+    ])
     carrierTypeOptions.value = (options.carrierTypes ?? []).map((c) => ({ code: c.code, name: c.name }))
+    companyOptions.value = companies.map((c) => ({ code: c.companyCode, name: c.companyName }))
+    documentOrganizationOptions.value = (options.documentOrganizations ?? []).map((o) => ({ code: o.code, name: o.name }))
+    businessModuleTreeOptions.value = buildModuleQueryTree(moduleTree)
+    busiModuleFlatOptions.value = flattenBusinessModulesToLabels(moduleTree)
   } catch {
     ElMessage.warning('加载基础选项失败，部分下拉为空')
   }
 
-  const [bm, st, diff, am, ex] = await Promise.all([
-    tryDict('FUNCTION_MODULE'),
+  const [st, diff, am, ex] = await Promise.all([
     tryDict('TRANSFER_APPLICATION_STATUS'),
     tryDict('TRANSFER_DIFF_REASON'),
     tryDict('TRANSFER_APPLY_METHOD'),
     tryDict('TRANSFER_EXPRESS_TYPE')
   ])
-  busiModuleOptions.value = bm
   statusOptions.value = mergeOptions(st, FALLBACK_STATUS)
   diffReasonOptions.value = mergeOptions(diff, FALLBACK_DIFF)
   applyMethodOptions.value = mergeOptions(am, FALLBACK_APPLY)
@@ -587,17 +564,6 @@ onMounted(async () => {
 .pagination {
   display: flex;
   justify-content: flex-end;
-}
-
-.transfer-detail {
-  display: grid;
-  gap: 16px;
-}
-
-.documents-section h3 {
-  margin: 0;
-  font-size: 15px;
-  color: #24324a;
 }
 
 @media (max-width: 1400px) {

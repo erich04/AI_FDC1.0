@@ -163,8 +163,8 @@ const router = createRouter({
           name: 'archive-management-pending-archive-query',
           component: () => import('../views/archive-management/PendingArchiveQueryView.vue'),
           meta: {
-            title: '应归档数据管理',
-            breadcrumb: ['应归档数据管理'],
+            title: '待归档数据管理',
+            breadcrumb: ['待归档数据管理'],
             description: '对未归档数据进行手工调整。',
             requiresDocumentType: true
           }
@@ -174,8 +174,8 @@ const router = createRouter({
           name: 'archive-management-pending-archive-create',
           component: () => import('../views/archive-management/PendingArchiveCreateView.vue'),
           meta: {
-            title: '创建应归档数据',
-            breadcrumb: ['应归档数据管理', '创建应归档数据'],
+            title: '创建待归档数据',
+            breadcrumb: ['待归档数据管理', '创建待归档数据'],
             description: '参考 .docs/features/F03/reference_html/pages/document_create.html',
             requiresDocumentType: true,
             hidePageHead: true
@@ -187,7 +187,7 @@ const router = createRouter({
           component: () => import('../views/archive-management/PendingArchiveEditView.vue'),
           meta: {
             title: '编辑文档',
-            breadcrumb: ['应归档数据管理', '编辑应归档数据'],
+            breadcrumb: ['待归档数据管理', '编辑待归档数据'],
             description: '参考 .docs/features/F03/reference_html/pages/document_edit.html',
             requiresDocumentType: true,
             hidePageHead: true
@@ -237,6 +237,24 @@ const router = createRouter({
           meta: {
             title: '移交申请查询',
             breadcrumb: ['档案业务管理', '文档移交', '移交申请查询']
+          }
+        },
+        {
+          path: 'archive-management/transfer-field-config',
+          name: 'archive-management-transfer-field-config',
+          component: () => import('../views/receiving/TransferApplyFieldConfigView.vue'),
+          meta: {
+            title: '移交申请通用字段配置',
+            breadcrumb: ['档案业务管理', '文档移交', '移交申请通用字段配置']
+          }
+        },
+        {
+          path: 'archive-management/transfer-detail/:id',
+          name: 'archive-management-transfer-detail',
+          component: () => import('../views/receiving/TransferDetailView.vue'),
+          meta: {
+            title: '移交申请详情',
+            breadcrumb: ['档案业务管理', '文档移交', '移交申请查询', '移交申请详情']
           }
         },
         {

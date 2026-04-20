@@ -3,7 +3,6 @@ package com.smartarchive.archivemanage.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.smartarchive.archivemanage.domain.ArchiveAttachment;
-import com.smartarchive.archivemanage.domain.ArchiveExtFieldConfig;
 import com.smartarchive.archivemanage.domain.TransferApplicationExt;
 import com.smartarchive.archivemanage.domain.TransferApplication;
 import com.smartarchive.archivemanage.domain.TransferApplicationDetail;
@@ -19,13 +18,12 @@ import com.smartarchive.archivemanage.dto.TransferApplicationRecordPageResponse;
 import com.smartarchive.archivemanage.dto.TransferApplicationRecordQuery;
 import com.smartarchive.archivemanage.dto.TransferApplicationRecordRowResponse;
 import com.smartarchive.archivemanage.dto.TransferApplicationResponse;
-import com.smartarchive.archivemanage.mapper.ArchiveExtFieldConfigMapper;
 import com.smartarchive.archivemanage.mapper.ArchiveAttachmentMapper;
 import com.smartarchive.archivemanage.mapper.TransferApplicationDetailMapper;
 import com.smartarchive.archivemanage.mapper.TransferApplicationExtMapper;
 import com.smartarchive.archivemanage.mapper.TransferApplicationMapper;
-import com.smartarchive.archivemanage.service.DocumentTypeExtFieldService;
 import com.smartarchive.archivemanage.service.TransferApplicationService;
+import com.smartarchive.archivemanage.service.TransferBusinessModuleExtFieldService;
 import com.smartarchive.businessmodule.domain.BusinessModule;
 import com.smartarchive.businessmodule.mapper.BusinessModuleMapper;
 import com.smartarchive.common.exception.BusinessException;
@@ -73,8 +71,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
     private final TransferApplicationDetailMapper transferApplicationDetailMapper;
     private final ArchiveAttachmentMapper archiveAttachmentMapper;
     private final TransferApplicationExtMapper transferApplicationExtMapper;
-    private final ArchiveExtFieldConfigMapper archiveExtFieldConfigMapper;
-    private final DocumentTypeExtFieldService documentTypeExtFieldService;
+    private final TransferBusinessModuleExtFieldService transferBusinessModuleExtFieldService;
     private final BusinessModuleMapper businessModuleMapper;
     private final WorkflowService workflowService;
     private final WorkflowInstanceMapper workflowInstanceMapper;
@@ -86,14 +83,14 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
                 .eq(TransferApplication::getDeleteFlag, "N")
                 .orderByDesc(TransferApplication::getLastUpdateDate))
             .stream()
-            .map(item -> toResponse(item, loadDetails(item.getApplicationId(), item.getBusiModuleCode(), item.getTenantid())))
+            .map(item -> toResponse(item, loadDetails(item.getApplicationId(), item.getTenantid())))
             .toList();
     }
 
     @Override
     public TransferApplicationResponse detail(Long applicationId) {
         TransferApplication application = requireApplication(applicationId);
-        return toResponse(application, loadDetails(applicationId, application.getBusiModuleCode(), application.getTenantid()));
+        return toResponse(application, loadDetails(applicationId, application.getTenantid()));
     }
 
     @Override
@@ -122,7 +119,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
 
         afterPersistStartWorkflowIfSubmitted(application, command);
 
-        return toResponse(application, loadDetails(application.getApplicationId(), application.getBusiModuleCode(), application.getTenantid()));
+        return toResponse(application, loadDetails(application.getApplicationId(), application.getTenantid()));
     }
 
     @Override
@@ -170,7 +167,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
 
         afterPersistStartWorkflowIfSubmitted(application, command);
 
-        return toResponse(application, loadDetails(application.getApplicationId(), application.getBusiModuleCode(), application.getTenantid()));
+        return toResponse(application, loadDetails(application.getApplicationId(), application.getTenantid()));
     }
 
     @Override
@@ -417,13 +414,13 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
         }
     }
 
-    private List<TransferApplicationDetailResponse> loadDetails(Long applicationId, String busiModuleCode, Long tenantid) {
+    private List<TransferApplicationDetailResponse> loadDetails(Long applicationId, Long tenantid) {
         List<TransferApplicationDetail> details = transferApplicationDetailMapper.selectList(new LambdaQueryWrapper<TransferApplicationDetail>()
                 .eq(TransferApplicationDetail::getApplicationId, applicationId)
                 .eq(TransferApplicationDetail::getDeleteFlag, "N")
                 .orderByAsc(TransferApplicationDetail::getApplicationDetailId));
         Map<Long, List<TransferApplicationExtValueResponse>> detailExtValues =
-            loadExtValuesByDetail(applicationId, busiModuleCode, tenantid);
+            loadExtValuesByDetail(applicationId, tenantid, details);
         Map<Long, List<TransferApplicationDetailAttachmentResponse>> detailAttachments = loadAttachmentsByDetail(applicationId);
         return details.stream()
             .map(item -> TransferApplicationDetailResponse.builder()
@@ -434,6 +431,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
                 .busiModuleCode(item.getBusiModuleCode())
                 .companyProjectCode(item.getCompanyProjectCode())
                 .archPlaceAlpha2Code(item.getArchPlaceAlpha2Code())
+                .documentOrganizationCode(item.getDocumentOrganizationCode())
                 .endArchPeriod(item.getEndArchPeriod())
                 .startArchPeriod(item.getStartArchPeriod())
                 .archTypeCode(item.getArchTypeCode())
@@ -443,6 +441,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
                 .remark(item.getRemark())
                 .description(item.getDescription())
                 .catalogVolumeNo(item.getCatalogVolumeNo())
+                .busiVolumeNo(item.getBusiVolumeNo())
                 .extValues(detailExtValues.getOrDefault(item.getApplicationDetailId(), List.of()))
                 .attachments(detailAttachments.getOrDefault(item.getApplicationDetailId(), List.of()))
                 .build())
@@ -508,6 +507,16 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
         }
     }
 
+    private boolean requiresBusiVolumeNo(String handoverForm) {
+        String normalized = trimToNull(handoverForm);
+        if (!StringUtils.hasText(normalized)) {
+            return false;
+        }
+        String upper = normalized.toUpperCase(Locale.ROOT);
+        // 兼容字典编码与名称两种传值
+        return upper.contains("VOLUME") || normalized.contains("按册");
+    }
+
     private void saveExtValues(TransferApplication application,
                                TransferApplicationDetail detail,
                                List<TransferApplicationExtValueCommand> extValues,
@@ -546,23 +555,18 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
     }
 
     private Map<Long, List<TransferApplicationExtValueResponse>> loadExtValuesByDetail(Long applicationId,
-                                                                                        String busiModuleCode,
-                                                                                        Long tenantid) {
+                                                                                        Long tenantid,
+                                                                                        List<TransferApplicationDetail> details) {
         List<Map<String, Object>> extRows = transferApplicationExtMapper.selectByMasterId(applicationId, tenantid);
         if (extRows.isEmpty()) {
             return Map.of();
         }
-        List<ArchiveExtFieldConfig> configs = archiveExtFieldConfigMapper.selectList(new LambdaQueryWrapper<ArchiveExtFieldConfig>()
-            .eq(ArchiveExtFieldConfig::getBusiModuleCode, busiModuleCode)
-            .eq(ArchiveExtFieldConfig::getDeleteFlag, "N")
-            .eq(ArchiveExtFieldConfig::getEnabledFlag, "Y"));
-        Map<String, String> columnToFieldCode = new HashMap<>();
-        configs.forEach(cfg -> {
-            String columnName = trimToNull(cfg.getDictCategoryCode());
-            if (columnName != null && ATTR_COLUMN_PATTERN.matcher(columnName).matches()) {
-                columnToFieldCode.put(columnName.toLowerCase(), cfg.getFieldCode());
-            }
-        });
+        Map<Long, String> detailIdToModule = details.stream()
+            .filter(d -> d.getApplicationDetailId() != null && StringUtils.hasText(d.getBusiModuleCode()))
+            .collect(Collectors.toMap(
+                TransferApplicationDetail::getApplicationDetailId,
+                d -> d.getBusiModuleCode().trim(),
+                (left, right) -> left));
         Map<Long, List<TransferApplicationExtValueResponse>> result = new HashMap<>();
         for (Map<String, Object> row : extRows) {
             Object objectId = row.get("object_id");
@@ -570,6 +574,14 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
                 continue;
             }
             Long detailId = number.longValue();
+            String moduleCode = detailIdToModule.get(detailId);
+            if (!StringUtils.hasText(moduleCode)) {
+                continue;
+            }
+            Map<String, String> columnToFieldCode = transferBusinessModuleExtFieldService.columnToFieldCodeMap(moduleCode);
+            if (columnToFieldCode.isEmpty()) {
+                continue;
+            }
             List<TransferApplicationExtValueResponse> values = result.computeIfAbsent(detailId, k -> new ArrayList<>());
             for (Map.Entry<String, String> mapEntry : columnToFieldCode.entrySet()) {
                 Object raw = row.get(mapEntry.getKey());
@@ -677,12 +689,16 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
         if (details == null) {
             return;
         }
-        List<DocumentTypeExtFieldResponse> extFieldConfigs =
-            documentTypeExtFieldService.listEffective(application.getBusiModuleCode());
-        Map<String, DocumentTypeExtFieldResponse> extFieldConfigMap = extFieldConfigs.stream()
-            .collect(HashMap::new, (m, v) -> m.put(v.getFieldCode(), v), HashMap::putAll);
+        boolean requireBusiVolumeNo = requiresBusiVolumeNo(application.getHandoverForm());
         for (TransferApplicationDetailCommand item : details) {
             validateDetail(item);
+            if (requireBusiVolumeNo && !StringUtils.hasText(item.getBusiVolumeNo())) {
+                throw new BusinessException("按册移交时业务册号必填");
+            }
+            String rowBusi = trimToNull(item.getBusiModuleCode());
+            Map<String, DocumentTypeExtFieldResponse> extFieldConfigMap = rowBusi == null
+                ? Map.of()
+                : transferBusinessModuleExtFieldService.asConfigMap(rowBusi);
             TransferApplicationDetail detail = new TransferApplicationDetail();
             detail.setApplicationId(application.getApplicationId());
             detail.setDocBusiNo(trimToNull(item.getDocBusiNo()));
@@ -690,6 +706,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
             detail.setBusiModuleCode(trimToNull(item.getBusiModuleCode()));
             detail.setCompanyProjectCode(trimToNull(item.getCompanyProjectCode()));
             detail.setArchPlaceAlpha2Code(trimToNull(item.getArchPlaceAlpha2Code()));
+            detail.setDocumentOrganizationCode(trimToNull(item.getDocumentOrganizationCode()));
             detail.setEndArchPeriod(item.getEndArchPeriod());
             detail.setStartArchPeriod(item.getStartArchPeriod());
             detail.setArchTypeCode(trimToNull(item.getArchTypeCode()));
@@ -699,6 +716,7 @@ public class TransferApplicationServiceImpl implements TransferApplicationServic
             detail.setRemark(trimToNull(item.getRemark()));
             detail.setDescription(trimToNull(item.getDescription()));
             detail.setCatalogVolumeNo(trimToNull(item.getCatalogVolumeNo()));
+            detail.setBusiVolumeNo(trimToNull(item.getBusiVolumeNo()));
             detail.setEnableFlag("Y");
             detail.setDeleteFlag("N");
             detail.setCreatedBy(SYSTEM_OPERATOR_ID);

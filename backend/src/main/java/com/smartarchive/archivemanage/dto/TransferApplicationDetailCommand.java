@@ -21,6 +21,8 @@ public class TransferApplicationDetailCommand {
     private String companyProjectCode;
     @NotBlank
     private String archPlaceAlpha2Code;
+    /** 文档组织编码（归档规则匹配或手工维护） */
+    private String documentOrganizationCode;
     @NotNull
     private String endArchPeriod;
     @NotNull
@@ -36,6 +38,7 @@ public class TransferApplicationDetailCommand {
     private String remark;
     private String description;
     private String catalogVolumeNo;
+    private String busiVolumeNo;
     @Valid
     private List<TransferApplicationExtValueCommand> extValues;
 }

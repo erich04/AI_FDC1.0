@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:flowable="http://flowable.org/bpmn"
+  xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd"
+  id="Definitions_BorrowRenewRequest"
+  targetNamespace="http://flowable.org/processdef">
+  <bpmn2:process id="borrowRenewRequest" name="Borrow Renew Workflow" isExecutable="true">
+    <bpmn2:startEvent id="StartEvent_BorrowRenew" name="Start" />
+    <bpmn2:userTask
+      id="renewReviewTask"
+      name="Renew Review"
+      flowable:assignee="${reviewerId}" />
+    <bpmn2:userTask
+      id="renewHandleTask"
+      name="Renew Handling"
+      flowable:assignee="${handlerId}" />
+    <bpmn2:endEvent id="EndEvent_BorrowRenew" name="End" />
+    <bpmn2:sequenceFlow id="Flow_R1" sourceRef="StartEvent_BorrowRenew" targetRef="renewReviewTask" />
+    <bpmn2:sequenceFlow id="Flow_R2" sourceRef="renewReviewTask" targetRef="renewHandleTask" />
+    <bpmn2:sequenceFlow id="Flow_R3" sourceRef="renewHandleTask" targetRef="EndEvent_BorrowRenew" />
+  </bpmn2:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_BorrowRenew">
+    <bpmndi:BPMNPlane id="BPMNPlane_BorrowRenew" bpmnElement="borrowRenewRequest">
+      <bpmndi:BPMNShape id="StartEvent_BorrowRenew_di" bpmnElement="StartEvent_BorrowRenew">
+        <dc:Bounds x="140" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="renewReviewTask_di" bpmnElement="renewReviewTask">
+        <dc:Bounds x="250" y="98" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="renewHandleTask_di" bpmnElement="renewHandleTask">
+        <dc:Bounds x="430" y="98" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_BorrowRenew_di" bpmnElement="EndEvent_BorrowRenew">
+        <dc:Bounds x="630" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_R1_di" bpmnElement="Flow_R1">
+        <di:waypoint x="176" y="138" />
+        <di:waypoint x="250" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R2_di" bpmnElement="Flow_R2">
+        <di:waypoint x="360" y="138" />
+        <di:waypoint x="430" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_R3_di" bpmnElement="Flow_R3">
+        <di:waypoint x="540" y="138" />
+        <di:waypoint x="630" y="138" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn2:definitions>

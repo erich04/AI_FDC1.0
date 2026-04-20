@@ -144,6 +144,7 @@ public class PendingDocumentQueryController {
         Map<String, String> documentTypeNameMap = businessModuleMapper.selectList(new LambdaQueryWrapper<BusinessModule>()
                 .eq(BusinessModule::getDeleteFlag, "N"))
             .stream()
+            .filter(b -> b != null && StringUtils.hasText(b.getModuleCode()))
             .collect(Collectors.toMap(BusinessModule::getModuleCode, BusinessModule::getModuleName, (left, right) -> left));
         Map<String, String> carrierTypeNameMap = loadCarrierTypeNameMap();
         boolean draftOwnerQuery = command.getCreatedByUserId() != null && command.getCreatedByUserId() > 0;
@@ -188,8 +189,20 @@ public class PendingDocumentQueryController {
         }
 
         if (hasText(command.getDocumentTypeCode())) {
-            sql.append(" and biz_module_code like :documentTypeCodePrefix");
-            params.addValue("documentTypeCodePrefix", command.getDocumentTypeCode().trim() + "%");
+            // 一级文档类型对应 L1 module_code；正式表存的是叶子/二级模块编码（如 GUARANTEE），不能仅用 LIKE 'L1%'。
+            sql.append("""
+                and exists (
+                  select 1 from fdc_business_module_t bm
+                   where bm.module_code = fdc_document_t.biz_module_code
+                     and coalesce(bm.delete_flag, 'N') = 'N'
+                     and coalesce(bm.enabled_flag, 'Y') = 'Y'
+                     and (
+                          bm.module_code = :documentTypeRoot
+                       or split_part(trim(both '/' from coalesce(bm.ancestor_path, '')), '/', 1) = :documentTypeRoot
+                     )
+                )
+                """);
+            params.addValue("documentTypeRoot", command.getDocumentTypeCode().trim());
         }
         if (hasText(command.getCompanyCode())) {
             sql.append(" and company_code = :companyCode");

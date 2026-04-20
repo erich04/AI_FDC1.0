@@ -30,11 +30,6 @@
             <span>文档查询</span>
           </el-menu-item>
 
-          <el-menu-item index="/archive-management/pending-archive/query">
-            <el-icon><List /></el-icon>
-            <span>应归档数据管理</span>
-          </el-menu-item>
-
           <el-sub-menu index="/workspace">
             <template #title>
               <el-icon><List /></el-icon>
@@ -67,6 +62,7 @@
               <el-icon><FolderOpened /></el-icon>
               <span>档案业务管理</span>
             </template>
+            <el-menu-item index="/archive-management/pending-archive/query">待归档数据管理</el-menu-item>
             <el-menu-item index="/archive-management/create">发起归档</el-menu-item>
             <el-menu-item index="/archive-management/query?mine=1">待我归档</el-menu-item>
             <el-sub-menu index="archive-management-doc-transfer">
@@ -75,6 +71,7 @@
               </template>
               <el-menu-item index="/archive-management/transfer">移交申请提交</el-menu-item>
               <el-menu-item index="/archive-management/transfer-query">移交申请查询</el-menu-item>
+              <el-menu-item index="/archive-management/transfer-field-config">移交申请通用字段配置</el-menu-item>
             </el-sub-menu>
             <el-menu-item index="/archive-management/ai-search">AI+档案</el-menu-item>
             <el-menu-item index="/archive-management/borrow">借阅文档</el-menu-item>
@@ -333,7 +330,7 @@ const showAiArchiveButton = computed(
 const breadcrumbs = computed(() => {
   if (route.name === 'archive-management-detail') {
     if (firstQueryValue(route.query.from) === 'pending') {
-      return ['应归档数据管理', '应归档数据详情']
+      return ['待归档数据管理', '待归档数据详情']
     }
     return ['文档查询', '文档详情']
   }

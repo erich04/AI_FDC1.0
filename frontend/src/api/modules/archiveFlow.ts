@@ -32,6 +32,30 @@ export interface ArchiveFlowRuleUpdateCommand {
   enabledFlag: string
 }
 
+/** 归档规则匹配（默认规则且启用） */
+export interface ArchiveRuleMatchParams {
+  companyProjectCode: string
+  busiModuleCode: string
+  customRule?: string
+  archiveDestination?: string
+}
+
+export interface ArchiveRuleMatchResult {
+  matched: boolean
+  companyProjectCode?: string
+  companyName?: string
+  busiModuleCode?: string
+  busiModuleName?: string
+  customRule?: string
+  archiveDestination?: string
+  archiveDestinationName?: string
+  documentOrganizationCode?: string
+  documentOrganizationName?: string
+  retentionPeriodYears?: number
+  visibleFlag?: string
+  visibilityLabel?: string
+}
+
 export function fetchArchiveFlowRules(params: ArchiveFlowRuleQuery) {
   return apiRequest<ArchiveFlowRuleSummary[]>(http.get('/api/base-data/archive-flow-rules', { params }))
 }
@@ -66,6 +90,13 @@ export function fetchArchiveFlowDocumentOrganizationOptions() {
 
 export function fetchArchiveFlowCityOptions() {
   return apiRequest<ArchiveFlowRuleOption[]>(http.get('/api/base-data/archive-flow-rules/options/cities'))
+}
+
+/** 归档规则匹配：公司 + 业务模块必填 */
+export function fetchArchiveRuleMatch(params: ArchiveRuleMatchParams) {
+  return apiRequest<ArchiveRuleMatchResult>(
+    http.get('/api/base-data/archive-flow-rules/match', { params })
+  )
 }
 
 export function fetchModuleAudits(moduleCode: string) {
